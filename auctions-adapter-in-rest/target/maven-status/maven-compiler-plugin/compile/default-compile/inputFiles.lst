@@ -1,6 +1,6 @@
-/work/projects/github.com/michal-kudla-britenet/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionApiDelegate.java
-/work/projects/github.com/michal-kudla-britenet/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionContractMapper.java
-/work/projects/github.com/michal-kudla-britenet/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionExceptionHandler.java
-/work/projects/github.com/michal-kudla-britenet/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuthApiDelegate.java
-/work/projects/github.com/michal-kudla-britenet/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestPaymentApiDelegate.java
-/work/projects/github.com/michal-kudla-britenet/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestRequestRejectedException.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionApiDelegate.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionContractMapper.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionExceptionHandler.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuthApiDelegate.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestPaymentApiDelegate.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestRequestRejectedException.java

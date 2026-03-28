@@ -1,0 +1,6 @@
+com/acme/auctions/payment/api/PaymentGateway$PaymentStatus.class
+com/acme/auctions/payment/api/PaymentGateway$PaymentResponse.class
+com/acme/auctions/payment/api/PaymentGatewayDiscoverer$PaymentGatewayDescriptor.class
+com/acme/auctions/payment/api/PaymentGateway.class
+com/acme/auctions/payment/api/PaymentGateway$PaymentRequest.class
+com/acme/auctions/payment/api/PaymentGatewayDiscoverer.class

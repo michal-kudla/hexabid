@@ -17,7 +17,7 @@ import jakarta.annotation.Generated;
  * PaymentGatewayResponse
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-28T22:34:03.425898997+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:17:44.515227063+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 public class PaymentGatewayResponse {
 
   private String id;

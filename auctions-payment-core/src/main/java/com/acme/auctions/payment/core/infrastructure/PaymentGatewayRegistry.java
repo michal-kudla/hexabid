@@ -2,7 +2,6 @@ package com.acme.auctions.payment.core.infrastructure;
 
 import com.acme.auctions.payment.api.PaymentGateway;
 import com.acme.auctions.payment.api.PaymentGatewayDiscoverer;
-import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +9,6 @@ import java.util.Optional;
 /**
  * Registry that manages all available payment gateways discovered by plugins.
  */
-@Component
 public class PaymentGatewayRegistry {
 
     private final List<PaymentGateway> gateways;

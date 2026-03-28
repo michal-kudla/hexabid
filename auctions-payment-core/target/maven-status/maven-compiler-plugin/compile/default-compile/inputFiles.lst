@@ -1,0 +1,11 @@
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/domain/CurrencyConverter.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/domain/SimpleCurrencyConverter.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/infrastructure/PaymentGatewayRegistry.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/model/Account.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/model/AccountId.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/model/AccountingEntry.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/model/AccountingTransaction.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/model/EntryId.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/model/TransactionId.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/usecase/CompletePaymentUseCase.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-core/src/main/java/com/acme/auctions/payment/core/usecase/ProcessPaymentUseCase.java

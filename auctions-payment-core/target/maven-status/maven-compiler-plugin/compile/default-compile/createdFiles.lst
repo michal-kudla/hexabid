@@ -1,0 +1,12 @@
+com/acme/auctions/payment/core/domain/CurrencyConverter.class
+com/acme/auctions/payment/core/infrastructure/PaymentGatewayRegistry.class
+com/acme/auctions/payment/core/model/AccountingEntry$EntryType.class
+com/acme/auctions/payment/core/model/AccountingTransaction.class
+com/acme/auctions/payment/core/model/AccountingEntry.class
+com/acme/auctions/payment/core/model/AccountId.class
+com/acme/auctions/payment/core/usecase/CompletePaymentUseCase.class
+com/acme/auctions/payment/core/domain/SimpleCurrencyConverter.class
+com/acme/auctions/payment/core/model/EntryId.class
+com/acme/auctions/payment/core/model/TransactionId.class
+com/acme/auctions/payment/core/model/Account.class
+com/acme/auctions/payment/core/usecase/ProcessPaymentUseCase.class

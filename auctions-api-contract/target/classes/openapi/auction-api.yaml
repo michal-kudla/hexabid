@@ -3,7 +3,7 @@ info:
   title: Auctions API
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:18080
 tags:
   - name: Auctions
 paths:

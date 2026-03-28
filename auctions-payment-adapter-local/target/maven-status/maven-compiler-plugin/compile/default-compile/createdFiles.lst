@@ -1,0 +1,3 @@
+com/acme/auctions/payment/adapter/local/DevLocalPaymentMockController.class
+com/acme/auctions/payment/adapter/local/LocalPaymentGateway.class
+com/acme/auctions/payment/adapter/local/LocalPaymentGatewayDiscoverer.class

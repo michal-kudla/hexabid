@@ -1,0 +1,3 @@
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-adapter-local/src/main/java/com/acme/auctions/payment/adapter/local/DevLocalPaymentMockController.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-adapter-local/src/main/java/com/acme/auctions/payment/adapter/local/LocalPaymentGateway.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-payment-adapter-local/src/main/java/com/acme/auctions/payment/adapter/local/LocalPaymentGatewayDiscoverer.java

@@ -1,0 +1,25 @@
+### Ten plik służy testowaniu lokalnego procesu na porcie 18080
+
+### 1. Pobranie tokenu autoryzacyjnego dla użytkownika testowego "user"
+POST http://localhost:18080/dev-auth/login
+Content-Type: application/json
+
+{
+    "username": "user",
+    "password": "password"
+}
+
+> {%
+    client.global.set("auth_token", response.headers.valueOf("Authorization"));
+%}
+
+### 2. Pobranie listy dostawców uwierzytelniania
+GET http://localhost:18080/api/auth/providers
+
+### 3. Pobranie wszystkich dostępnych lokalnych bramek płatności
+GET http://localhost:18080/api/payments/gateways
+Authorization: {{auth_token}}
+
+### 4. Próba wykonania na ślepo jakiegoś zapytań wymagających bycia zalogowanym
+GET http://localhost:18080/api/auctions
+Authorization: {{auth_token}}

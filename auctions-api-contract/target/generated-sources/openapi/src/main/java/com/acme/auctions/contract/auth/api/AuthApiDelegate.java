@@ -19,7 +19,7 @@ import jakarta.annotation.Generated;
  * A delegate to be called by the {@link AuthApiController}}.
  * Implement this interface with a {@link org.springframework.stereotype.Service} annotated class.
  */
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-28T22:34:03.093220426+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:17:44.297527794+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 public interface AuthApiDelegate {
 
     default Optional<NativeWebRequest> getRequest() {

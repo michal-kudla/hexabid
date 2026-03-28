@@ -1,4 +1,5 @@
-/work/projects/github.com/mikoreg/sandbox/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/AuctioningConfiguration.java
-/work/projects/github.com/mikoreg/sandbox/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/DevelopmentDataConfiguration.java
-/work/projects/github.com/mikoreg/sandbox/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/DevelopmentSecurityConfiguration.java
-/work/projects/github.com/mikoreg/sandbox/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/HexabidApplication.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/AuctioningConfiguration.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/DevelopmentDataConfiguration.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/DevelopmentSecurityConfiguration.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/HexabidApplication.java
+/work/projects/github.com/michal-kudla/hexabid/auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/PaymentConfiguration.java

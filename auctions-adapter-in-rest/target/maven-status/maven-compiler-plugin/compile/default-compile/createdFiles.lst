@@ -1,0 +1,6 @@
+com/acme/auctions/adapter/in/rest/RestAuctionApiDelegate.class
+com/acme/auctions/adapter/in/rest/RestAuctionExceptionHandler.class
+com/acme/auctions/adapter/in/rest/RestRequestRejectedException.class
+com/acme/auctions/adapter/in/rest/RestPaymentApiDelegate.class
+com/acme/auctions/adapter/in/rest/RestAuthApiDelegate.class
+com/acme/auctions/adapter/in/rest/RestAuctionContractMapper.class

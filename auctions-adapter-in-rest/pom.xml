@@ -24,6 +24,11 @@
         </dependency>
         <dependency>
             <groupId>com.acme.auctions</groupId>
+            <artifactId>auctions-payment-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.acme.auctions</groupId>
             <artifactId>auctions-api-contract</artifactId>
             <version>${project.version}</version>
         </dependency>

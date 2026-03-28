@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import jakarta.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-22T20:44:36.006029430+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:10:37.729670264+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 @Controller
 @RequestMapping("${openapi.hexabidAuthentication.base-path:}")
 public class AuthApiController implements AuthApi {

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --port 14002",
     "build": "ng build",
     "contract:sync": "cd .. && mvn -pl auctions-api-contract generate-sources",
     "watch": "ng build --watch --configuration development",

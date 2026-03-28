@@ -8,6 +8,9 @@ logging:
     root: INFO
     com.acme.auctions: DEBUG
 
+server:
+  port: 18080
+
 spring:
   application:
     name: hexabid
@@ -59,10 +62,10 @@ spring:
               - email
         provider:
           custom-dev:
-            authorization-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/auth
-            token-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/token
-            user-info-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/userinfo
-            jwk-set-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/certs
+            authorization-uri: http://localhost:18080/auth/realms/dev/protocol/openid-connect/auth
+            token-uri: http://localhost:18080/auth/realms/dev/protocol/openid-connect/token
+            user-info-uri: http://localhost:18080/auth/realms/dev/protocol/openid-connect/userinfo
+            jwk-set-uri: http://localhost:18080/auth/realms/dev/protocol/openid-connect/certs
             user-name-attribute: preferred_username
 
 
@@ -77,4 +80,4 @@ auctions:
       outbid: auctions.outbid
       ended: auctions.ended
   kyc:
-    base-url: http://localhost:8081
+    base-url: http://localhost:18081
