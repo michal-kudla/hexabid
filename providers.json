@@ -1,0 +1,1 @@
+[{"registrationId":"github","name":"GitHub","loginUrl":"/oauth2/authorization/github"},{"registrationId":"dev","name":"dev","loginUrl":"/oauth2/authorization/dev"},{"registrationId":"google","name":"Google","loginUrl":"/oauth2/authorization/google"},{"registrationId":"local","name":"Local Development Account","loginUrl":"/login"}]
