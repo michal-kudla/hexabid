@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import jakarta.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:10:37.962855585+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T10:24:36.223074888+02:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 @Controller
 @RequestMapping("${openapi.hexabidPayment.base-path:}")
 public class PaymentApiController implements PaymentApi {

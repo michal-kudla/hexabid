@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import jakarta.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:10:36.482909862+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T10:24:34.633737811+02:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 @Controller
 @RequestMapping("${openapi.auctions.base-path:}")
 public class AuctionsApiController implements AuctionsApi {

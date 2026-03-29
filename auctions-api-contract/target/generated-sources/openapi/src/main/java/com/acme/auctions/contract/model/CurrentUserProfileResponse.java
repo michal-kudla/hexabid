@@ -17,7 +17,7 @@ import jakarta.annotation.Generated;
  * CurrentUserProfileResponse
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:17:43.027159009+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T10:49:37.687840808+02:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 public class CurrentUserProfileResponse {
 
   private String partyId;

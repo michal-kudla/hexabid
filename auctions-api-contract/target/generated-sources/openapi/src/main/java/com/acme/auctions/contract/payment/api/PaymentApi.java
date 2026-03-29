@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import jakarta.annotation.Generated;
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T00:17:44.515227063+01:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2026-03-29T10:49:38.392313855+02:00[Europe/Warsaw]", comments = "Generator version: 7.14.0")
 @Validated
 public interface PaymentApi {
 
