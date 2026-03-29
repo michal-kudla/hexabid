@@ -19,6 +19,13 @@ class DevAuthConfiguration {
     DevUserCatalog devUserCatalog() {
         return new DevUserCatalog(List.of(
                 new DevUserCatalog.DevUserEntry(
+                        "user",
+                        "Generic User",
+                        "user@hexabid.local",
+                        true,
+                        "Standardowy użytkownik do testów E2E."
+                ),
+                new DevUserCatalog.DevUserEntry(
                         "seller-anna",
                         "Anna Developer",
                         "anna.dev@hexabid.local",

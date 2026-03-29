@@ -24,5 +24,10 @@
     "ws": true,
     "secure": false,
     "changeOrigin": true
+  },
+  "/dev-auth": {
+    "target": "http://localhost:18080",
+    "secure": false,
+    "changeOrigin": true
   }
 }

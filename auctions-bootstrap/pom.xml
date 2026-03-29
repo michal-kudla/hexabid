@@ -116,9 +116,6 @@
              ═══════════════════════════════════════════════════════════ -->
         <profile>
             <id>kyc-prod</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <dependencies>
                 <dependency>
                     <groupId>com.acme.auctions</groupId>
@@ -129,6 +126,9 @@
         </profile>
         <profile>
             <id>kyc-local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <dependencies>
                 <dependency>
                     <groupId>com.acme.auctions</groupId>
