@@ -19,7 +19,7 @@ public class RestPaymentApiDelegate implements PaymentApiDelegate {
     }
 
     @Override
-    public ResponseEntity<List<PaymentGatewayResponse>> getPaymentGateways() {
+    public ResponseEntity<List<PaymentGatewayResponse>> getPaymentGateways(String xAPIVersion) {
         List<PaymentGatewayResponse> responses = registry.getAllDescriptors().stream()
                 .map(d -> new PaymentGatewayResponse()
                         .id(d.id())

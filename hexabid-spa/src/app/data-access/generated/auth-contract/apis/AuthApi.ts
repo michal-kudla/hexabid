@@ -18,6 +18,10 @@ import type {
   AuthProviderResponse,
 } from '../models/index';
 
+export interface GetAuthProvidersRequest {
+    xAPIVersion?: string;
+}
+
 /**
  * 
  */
@@ -26,10 +30,14 @@ export class AuthApi extends runtime.BaseAPI {
     /**
      * Get available authentication providers
      */
-    async getAuthProvidersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AuthProviderResponse>>> {
+    async getAuthProvidersRaw(requestParameters: GetAuthProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AuthProviderResponse>>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/auth/providers`;
@@ -47,8 +55,8 @@ export class AuthApi extends runtime.BaseAPI {
     /**
      * Get available authentication providers
      */
-    async getAuthProviders(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AuthProviderResponse>> {
-        const response = await this.getAuthProvidersRaw(initOverrides);
+    async getAuthProviders(requestParameters: GetAuthProvidersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AuthProviderResponse>> {
+        const response = await this.getAuthProvidersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

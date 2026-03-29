@@ -67,6 +67,9 @@ spring:
 
 
 auctions:
+  api:
+    version:
+      current: "1"
   jobs:
     close-expired:
       delay: 60000
@@ -78,3 +81,15 @@ auctions:
       ended: auctions.ended
   kyc:
     base-url: http://localhost:8081
+    retry:
+      max-attempts: 3
+      initial-backoff-millis: 200
+    circuit-breaker:
+      failure-threshold: 5
+      open-millis: 30000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

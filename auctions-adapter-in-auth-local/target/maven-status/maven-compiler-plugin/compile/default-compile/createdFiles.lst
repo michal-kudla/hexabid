@@ -1,4 +1,0 @@
-com/acme/auctions/adapter/in/auth/local/LocalAuthProviderDiscoverer.class
-com/acme/auctions/adapter/in/auth/local/LocalCurrentUserProvider.class
-com/acme/auctions/adapter/in/auth/local/LocalAuthProviderDescriptor.class
-com/acme/auctions/adapter/in/auth/local/LocalSecurityConfiguration.class

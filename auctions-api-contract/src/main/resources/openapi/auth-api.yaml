@@ -11,6 +11,8 @@ paths:
         - auth
       summary: Get available authentication providers
       operationId: getAuthProviders
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
       responses:
         '200':
           description: List of available providers
@@ -22,6 +24,15 @@ paths:
                   $ref: '#/components/schemas/AuthProviderResponse'
 
 components:
+  parameters:
+    ApiVersionHeader:
+      in: header
+      name: X-API-Version
+      required: false
+      schema:
+        type: string
+        default: "1"
+      description: API version negotiated via HTTP header.
   schemas:
     AuthProviderResponse:
       type: object

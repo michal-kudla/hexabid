@@ -11,6 +11,8 @@ paths:
         - payment
       summary: Get available payment gateways
       operationId: getPaymentGateways
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
       responses:
         '200':
           description: List of available gateways
@@ -22,6 +24,15 @@ paths:
                   $ref: '#/components/schemas/PaymentGatewayResponse'
 
 components:
+  parameters:
+    ApiVersionHeader:
+      in: header
+      name: X-API-Version
+      required: false
+      schema:
+        type: string
+        default: "1"
+      description: API version negotiated via HTTP header.
   schemas:
     PaymentGatewayResponse:
       type: object

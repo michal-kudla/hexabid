@@ -5,6 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
     "contract:sync": "cd .. && mvn -pl auctions-api-contract generate-sources",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -38,6 +40,7 @@
     "@angular/build": "^20.3.19",
     "@angular/cli": "^20.3.19",
     "@angular/compiler-cli": "^20.3.0",
+    "@playwright/test": "^1.54.2",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
