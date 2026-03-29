@@ -68,7 +68,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
 
     @Override
     public ResponseEntity<AuctionListResponse> browseAuctions(
-            String xAPIVersion,
+            String xApiVersion,
             String query,
             AuctionStatus status,
             AuctionSort sort,
@@ -80,7 +80,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     }
 
     @Override
-    public ResponseEntity<AuctionResponse> createAuction(CreateAuctionRequest request, String xAPIVersion) {
+    public ResponseEntity<AuctionResponse> createAuction(CreateAuctionRequest request, String xApiVersion) {
         var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
         if (authenticatedUser == null) {
             createAuctionRejectedCounter.increment();
@@ -102,7 +102,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     }
 
     @Override
-    public ResponseEntity<AuctionResponse> getAuctionById(UUID auctionId, String xAPIVersion) {
+    public ResponseEntity<AuctionResponse> getAuctionById(UUID auctionId, String xApiVersion) {
         getAuctionByIdCounter.increment();
         AuctionDetailsResult result = findAuctionDetailsUseCase.findAuctionDetails(new AuctionId(auctionId));
         if (result instanceof AuctionDetailsResult.AuctionFound found) {
@@ -112,7 +112,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     }
 
     @Override
-    public ResponseEntity<CurrentUserProfileResponse> getCurrentUserProfile(String xAPIVersion) {
+    public ResponseEntity<CurrentUserProfileResponse> getCurrentUserProfile(String xApiVersion) {
         return findCurrentUserProfileUseCase.findCurrentUserProfile()
                 .map(mapper::toResponse)
                 .map(ResponseEntity::ok)
@@ -121,7 +121,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
 
     @Override
     public ResponseEntity<AuctionListResponse> browseMyAuctions(
-            String xAPIVersion,
+            String xApiVersion,
             AuctionStatus status,
             AuctionSort sort,
             Integer limit,
@@ -144,7 +144,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
 
     @Override
     public ResponseEntity<AuctionListResponse> browseMyBids(
-            String xAPIVersion,
+            String xApiVersion,
             AuctionStatus status,
             AuctionSort sort,
             Integer limit,

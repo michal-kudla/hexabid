@@ -23,7 +23,7 @@ public class RestAuthApiDelegate implements AuthApiDelegate {
     }
 
     @Override
-    public ResponseEntity<List<AuthProviderResponse>> getAuthProviders(String xAPIVersion) {
+    public ResponseEntity<List<AuthProviderResponse>> getAuthProviders(String xApiVersion) {
         log.debug("Fetching auth providers from {} discoverers", discoverers.size());
         List<AuthProviderResponse> providers = discoverers.stream()
                 .flatMap(d -> {
