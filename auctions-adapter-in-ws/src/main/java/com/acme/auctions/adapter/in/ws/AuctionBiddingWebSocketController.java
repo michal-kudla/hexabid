@@ -7,6 +7,8 @@ import com.acme.auctions.core.auctioning.port.in.PlaceBidCommand;
 import com.acme.auctions.core.auctioning.port.in.PlaceBidFailureReason;
 import com.acme.auctions.core.auctioning.port.in.PlaceBidResult;
 import com.acme.auctions.core.auctioning.port.in.PlaceBidUseCase;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -21,21 +23,27 @@ public class AuctionBiddingWebSocketController {
     private final PlaceBidUseCase placeBidUseCase;
     private final CurrentUserProvider currentUserProvider;
     private final SimpMessagingTemplate messagingTemplate;
+    private final Counter bidAcceptedCounter;
+    private final Counter bidRejectedCounter;
 
     public AuctionBiddingWebSocketController(
             PlaceBidUseCase placeBidUseCase,
             CurrentUserProvider currentUserProvider,
-            SimpMessagingTemplate messagingTemplate
+            SimpMessagingTemplate messagingTemplate,
+            MeterRegistry meterRegistry
     ) {
         this.placeBidUseCase = placeBidUseCase;
         this.currentUserProvider = currentUserProvider;
         this.messagingTemplate = messagingTemplate;
+        this.bidAcceptedCounter = meterRegistry.counter("auctions.bid.accepted");
+        this.bidRejectedCounter = meterRegistry.counter("auctions.bid.rejected");
     }
 
     @MessageMapping("/auctions/{auctionId}/bids")
     public void placeBid(@DestinationVariable UUID auctionId, PlaceBidWebSocketMessage message) {
         var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
         if (authenticatedUser == null) {
+            bidRejectedCounter.increment();
             messagingTemplate.convertAndSend(
                     "/topic/auctions/" + auctionId + "/errors",
                     new BidRejectedWebSocketMessage("UNAUTHENTICATED", "authentication is required")
@@ -62,7 +70,9 @@ public class AuctionBiddingWebSocketController {
                             placedBid.placedAt().toString()
                     )
             );
+            bidAcceptedCounter.increment();
         } else {
+            bidRejectedCounter.increment();
             messagingTemplate.convertAndSend(
                     "/topic/auctions/" + auctionId + "/errors",
                     new BidRejectedWebSocketMessage(reason.name(), message1)

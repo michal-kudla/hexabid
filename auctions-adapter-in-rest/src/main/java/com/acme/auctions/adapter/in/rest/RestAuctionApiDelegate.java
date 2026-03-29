@@ -18,6 +18,8 @@ import com.acme.auctions.core.auctioning.port.in.CreateAuctionResult;
 import com.acme.auctions.core.auctioning.port.in.CreateAuctionCommand;
 import com.acme.auctions.core.auctioning.port.in.CreateAuctionUseCase;
 import com.acme.auctions.core.auctioning.port.in.FindAuctionDetailsUseCase;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,12 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     private final FindCurrentUserProfileUseCase findCurrentUserProfileUseCase;
     private final CurrentUserProvider currentUserProvider;
     private final RestAuctionContractMapper mapper;
+    private final Counter createAuctionAcceptedCounter;
+    private final Counter createAuctionRejectedCounter;
+    private final Counter browseAuctionsCounter;
+    private final Counter browseMyAuctionsCounter;
+    private final Counter browseMyBidsCounter;
+    private final Counter getAuctionByIdCounter;
 
     public RestAuctionApiDelegate(
             CreateAuctionUseCase createAuctionUseCase,
@@ -41,7 +49,8 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             BrowseAuctionsUseCase browseAuctionsUseCase,
             FindCurrentUserProfileUseCase findCurrentUserProfileUseCase,
             CurrentUserProvider currentUserProvider,
-            RestAuctionContractMapper mapper
+            RestAuctionContractMapper mapper,
+            MeterRegistry meterRegistry
     ) {
         this.createAuctionUseCase = createAuctionUseCase;
         this.findAuctionDetailsUseCase = findAuctionDetailsUseCase;
@@ -49,17 +58,32 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
         this.findCurrentUserProfileUseCase = findCurrentUserProfileUseCase;
         this.currentUserProvider = currentUserProvider;
         this.mapper = mapper;
+        this.createAuctionAcceptedCounter = meterRegistry.counter("auctions.create.accepted");
+        this.createAuctionRejectedCounter = meterRegistry.counter("auctions.create.rejected");
+        this.browseAuctionsCounter = meterRegistry.counter("auctions.browse.requests", "scope", "market");
+        this.browseMyAuctionsCounter = meterRegistry.counter("auctions.browse.requests", "scope", "seller");
+        this.browseMyBidsCounter = meterRegistry.counter("auctions.browse.requests", "scope", "bidder");
+        this.getAuctionByIdCounter = meterRegistry.counter("auctions.details.requests");
     }
 
     @Override
-    public ResponseEntity<AuctionListResponse> browseAuctions(String query, AuctionStatus status, AuctionSort sort, Integer limit, String after) {
+    public ResponseEntity<AuctionListResponse> browseAuctions(
+            String xAPIVersion,
+            String query,
+            AuctionStatus status,
+            AuctionSort sort,
+            Integer limit,
+            String after
+    ) {
+        browseAuctionsCounter.increment();
         return ResponseEntity.ok(mapper.toResponse(browseAuctionsUseCase.browseAuctions(toQuery(query, status, sort, limit, after))));
     }
 
     @Override
-    public ResponseEntity<AuctionResponse> createAuction(CreateAuctionRequest request) {
+    public ResponseEntity<AuctionResponse> createAuction(CreateAuctionRequest request, String xAPIVersion) {
         var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
         if (authenticatedUser == null) {
+            createAuctionRejectedCounter.increment();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         CreateAuctionResult result = createAuctionUseCase.createAuction(new CreateAuctionCommand(
@@ -69,14 +93,17 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
                 request.getEndsAt().toInstant()
         ));
         if (result instanceof CreateAuctionResult.AuctionCreated created) {
+            createAuctionAcceptedCounter.increment();
             return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(created.auction()));
         }
         CreateAuctionResult.AuctionCreationRejected rejected = (CreateAuctionResult.AuctionCreationRejected) result;
+        createAuctionRejectedCounter.increment();
         throw new RestRequestRejectedException(HttpStatus.BAD_REQUEST, rejected.message());
     }
 
     @Override
-    public ResponseEntity<AuctionResponse> getAuctionById(UUID auctionId) {
+    public ResponseEntity<AuctionResponse> getAuctionById(UUID auctionId, String xAPIVersion) {
+        getAuctionByIdCounter.increment();
         AuctionDetailsResult result = findAuctionDetailsUseCase.findAuctionDetails(new AuctionId(auctionId));
         if (result instanceof AuctionDetailsResult.AuctionFound found) {
             return ResponseEntity.ok(mapper.toResponse(found.auction()));
@@ -85,7 +112,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     }
 
     @Override
-    public ResponseEntity<CurrentUserProfileResponse> getCurrentUserProfile() {
+    public ResponseEntity<CurrentUserProfileResponse> getCurrentUserProfile(String xAPIVersion) {
         return findCurrentUserProfileUseCase.findCurrentUserProfile()
                 .map(mapper::toResponse)
                 .map(ResponseEntity::ok)
@@ -93,11 +120,18 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     }
 
     @Override
-    public ResponseEntity<AuctionListResponse> browseMyAuctions(AuctionStatus status, AuctionSort sort, Integer limit, String after) {
+    public ResponseEntity<AuctionListResponse> browseMyAuctions(
+            String xAPIVersion,
+            AuctionStatus status,
+            AuctionSort sort,
+            Integer limit,
+            String after
+    ) {
         var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
         if (authenticatedUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        browseMyAuctionsCounter.increment();
         return ResponseEntity.ok(
                 mapper.toResponse(
                         browseAuctionsUseCase.browseSellerAuctions(
@@ -109,11 +143,18 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     }
 
     @Override
-    public ResponseEntity<AuctionListResponse> browseMyBids(AuctionStatus status, AuctionSort sort, Integer limit, String after) {
+    public ResponseEntity<AuctionListResponse> browseMyBids(
+            String xAPIVersion,
+            AuctionStatus status,
+            AuctionSort sort,
+            Integer limit,
+            String after
+    ) {
         var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
         if (authenticatedUser == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        browseMyBidsCounter.increment();
         return ResponseEntity.ok(
                 mapper.toResponse(
                         browseAuctionsUseCase.browseBidderAuctions(

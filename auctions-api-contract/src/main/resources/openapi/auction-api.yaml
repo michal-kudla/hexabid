@@ -14,6 +14,7 @@ paths:
         - Auctions
       summary: Browse auctions for search and listing screens
       parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
         - in: query
           name: query
           schema:
@@ -49,6 +50,8 @@ paths:
       tags:
         - Auctions
       summary: Create a new auction
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
       requestBody:
         required: true
         content:
@@ -69,6 +72,7 @@ paths:
         - Auctions
       summary: Get auction details
       parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
         - in: path
           name: auctionId
           required: true
@@ -90,6 +94,8 @@ paths:
       tags:
         - Auctions
       summary: Get current authenticated user profile
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
       responses:
         '200':
           description: Current user profile
@@ -106,6 +112,7 @@ paths:
         - Auctions
       summary: Browse auctions created by current user
       parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
         - in: query
           name: status
           schema:
@@ -141,6 +148,7 @@ paths:
         - Auctions
       summary: Browse auctions where current user placed bids
       parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
         - in: query
           name: status
           schema:
@@ -170,6 +178,15 @@ paths:
         '401':
           description: Authentication required
 components:
+  parameters:
+    ApiVersionHeader:
+      in: header
+      name: X-API-Version
+      required: false
+      schema:
+        type: string
+        default: "1"
+      description: API version negotiated via HTTP header.
   schemas:
     AuctionStatus:
       type: string
