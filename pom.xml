@@ -30,13 +30,13 @@
         <module>auctions-adapter-out-db</module>
         <module>auctions-adapter-out-kafka</module>
         <module>auctions-adapter-out-kyc</module>
-        <module>auctions-adapter-out-kyc-local</module> <!-- TODO: w profilu produhcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
+        <module>auctions-adapter-out-kyc-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
         <module>auctions-payment-api-contract</module>
         <module>auctions-payment-core</module>
         <module>auctions-payment-adapter-payu</module>
         <module>auctions-payment-adapter-p24</module>
         <module>auctions-payment-adapter-crypto</module>
-        <module>auctions-payment-adapter-local</module> <!-- TODO: w profilu produhcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
+        <module>auctions-payment-adapter-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
         <module>auctions-bootstrap</module>
         <module>auctions-architecture-tests</module>
     </modules>
