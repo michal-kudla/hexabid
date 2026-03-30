@@ -24,6 +24,7 @@ import type {
 } from '../models/index';
 
 export interface BrowseAuctionsRequest {
+    xAPIVersion?: string;
     query?: string;
     status?: AuctionStatus;
     sort?: AuctionSort;
@@ -32,6 +33,7 @@ export interface BrowseAuctionsRequest {
 }
 
 export interface BrowseMyAuctionsRequest {
+    xAPIVersion?: string;
     status?: AuctionStatus;
     sort?: AuctionSort;
     limit?: number;
@@ -39,6 +41,7 @@ export interface BrowseMyAuctionsRequest {
 }
 
 export interface BrowseMyBidsRequest {
+    xAPIVersion?: string;
     status?: AuctionStatus;
     sort?: AuctionSort;
     limit?: number;
@@ -47,10 +50,16 @@ export interface BrowseMyBidsRequest {
 
 export interface CreateAuctionOperationRequest {
     createAuctionRequest: CreateAuctionRequest;
+    xAPIVersion?: string;
 }
 
 export interface GetAuctionByIdRequest {
     auctionId: string;
+    xAPIVersion?: string;
+}
+
+export interface GetCurrentUserProfileRequest {
+    xAPIVersion?: string;
 }
 
 /**
@@ -85,6 +94,10 @@ export class AuctionsApi extends runtime.BaseAPI {
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/auctions`;
@@ -131,6 +144,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/me/auctions`;
 
@@ -176,6 +193,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/me/bids`;
 
@@ -214,6 +235,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/auctions`;
 
@@ -251,6 +276,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/auctions/{auctionId}`;
         urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
@@ -276,10 +305,14 @@ export class AuctionsApi extends runtime.BaseAPI {
     /**
      * Get current authenticated user profile
      */
-    async getCurrentUserProfileRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserProfileResponse>> {
+    async getCurrentUserProfileRaw(requestParameters: GetCurrentUserProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserProfileResponse>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/me`;
@@ -297,8 +330,8 @@ export class AuctionsApi extends runtime.BaseAPI {
     /**
      * Get current authenticated user profile
      */
-    async getCurrentUserProfile(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUserProfileResponse> {
-        const response = await this.getCurrentUserProfileRaw(initOverrides);
+    async getCurrentUserProfile(requestParameters: GetCurrentUserProfileRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUserProfileResponse> {
+        const response = await this.getCurrentUserProfileRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

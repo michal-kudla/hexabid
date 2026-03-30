@@ -18,6 +18,10 @@ import type {
   PaymentGatewayResponse,
 } from '../models/index';
 
+export interface GetPaymentGatewaysRequest {
+    xAPIVersion?: string;
+}
+
 /**
  * 
  */
@@ -26,10 +30,14 @@ export class PaymentApi extends runtime.BaseAPI {
     /**
      * Get available payment gateways
      */
-    async getPaymentGatewaysRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<PaymentGatewayResponse>>> {
+    async getPaymentGatewaysRaw(requestParameters: GetPaymentGatewaysRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<PaymentGatewayResponse>>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/payments/gateways`;
@@ -47,8 +55,8 @@ export class PaymentApi extends runtime.BaseAPI {
     /**
      * Get available payment gateways
      */
-    async getPaymentGateways(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<PaymentGatewayResponse>> {
-        const response = await this.getPaymentGatewaysRaw(initOverrides);
+    async getPaymentGateways(requestParameters: GetPaymentGatewaysRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<PaymentGatewayResponse>> {
+        const response = await this.getPaymentGatewaysRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
