@@ -1,0 +1,683 @@
+= Hexabid: System Requirements and Domain Archetypes
+:toc:
+:toclevels: 4
+:sectnums:
+:source-highlighter: highlight.js
+:icons: font
+
+== Cel dokumentu
+
+Dokument opisuje kompleksową analizę brakującej funkcjonalności w systemie aukcyjnym Hexabid, niezbędnej do przejścia z proof-of-concept na produkcyjną, pełnoprawną platformę. Zawiera również katalog archetypów domenowych (zarówno klasycznych z DDD, jak i współczesnych wzorców z lat 2020-2025) oraz roadmap implementacji.
+
+Dokument stanowi rozszerzenie dokumentacji architektonicznej zawartej w `doc/architecture-c4.adoc` i jest adresowany do architektów, team leadów i seniorów piszących w domenie e-commerce.
+
+== Część I: Analiza Brakującej Funkcjonalności
+
+=== Przegląd i Priorytyzacja
+
+System Hexabid posiada solidne fundamenty architektoniczne (DDD, architektura heksagonalna, WebSocket real-time, integracja z KYC), jednak aby stać się produkcyjną platformą aukcyjną, wymaga implementacji poniższych modułów funkcjonalnych.
+
+[[sec_notification_system]]
+=== 1. System Notyfikacji i Powiadomień (CRITICAL)
+
+==== Uzasadnienie
+
+System przechowuje danych o uczestnikach (kupujących i sprzedających) oraz śledzi zdarzenia aukcji, lecz brakuje mechanizmu informowania ich o ważnych momentach w cyklu życia aukcji. Notyfikacje są kluczowe dla:
+
+- Zaangażowania użytkownika (engagement)
+- Zmniejszenia liczby porzuconych aukcji
+- Compliance z regulacjami (np. potwierdzenie transakcji)
+- Retencji użytkowników
+
+==== Scenariusze Wymagane
+
+. *Potwierdzenie utworzenia aukcji* — sprzedawca otrzymuje email/push gdy aukcja wejdzie w system
+. *Powiadomienie o przebicia oferty* — licytujący dostają notyfikację real-time (WebSocket) + backup asynchroniczny (email)
+. *Alarm 24h przed końcem* — kupujący dostają reminder o kończącej się aukcji
+. *Powiadomienie o wygranej* — zwycięzca aukcji otrzymuje potwierdzenie i instrukcje płatności
+. *Notyfikacja dla sprzedawcy* — seller dowiaduje się o wyniku (wygrana/porażka)
+. *Systemy alertów biznesowych* — zespół ops otrzymuje notyfikacje o błędach/konfliktach
+
+==== Moduły do Stworzenia
+
+* `auctions-adapter-out-notification` — port dla notyfikacji
+* `auctions-notification-adapter-email` — implementacja email (SMTP)
+* `auctions-notification-adapter-push` — implementacja push notifications
+* `auctions-notification-templates` — szablony wiadomości i-18n
+* `auctions-notification-core` — logika decyzji kto i kiedy powiadomić
+
+---
+
+=== 2. System Historii i Audytu (HIGH)
+
+==== Uzasadnienie
+
+Brak pełnego śledzenia zmian stanu aukcji i działań użytkowników powoduje:
+
+- Niemożliwość debugowania problemów biznesowych
+- Brak compliance'u z regulacjami (GDPR, prawo konkurencji)
+- Trudność w rozstrzyganiu sporów
+- Brak detekcji oszustw
+
+==== Scenariusze Wymagane
+
+. *Pełna historia licytacji* — co się zmieniało, kiedy, kto
+. *Audit trail dla compliance* — kto i kiedy utworzył/zmienił aukcję
+. *Rollback capability* — możliwość analizy poprzednich stanów (read-only)
+. *Raport sprzedawcy* — historia wszystkich jego aukcji z wynikami
+. *Raport kupującego* — historia jego ofert i wygranych aukcji
+. *Detectowanie anomalii* — alerty gdy np. ten sam user bid bez przesunięcia czasowego
+
+==== Moduły do Stworzenia
+
+* Tabela `auction_history` — snapshotowanie stanu
+* Tabela `bid_history` — każda oferta logowana
+* `auctions-adapter-out-audit` — port dla auditowania
+* `auctions-audit-core` — logika przetwarzania zdarzeń w historię
+
+---
+
+=== 3. Mechanizm Proxy Biddingu (HIGH)
+
+==== Uzasadnienie
+
+Realne aukcje potrzebują proxy biddingu. Umożliwia:
+
+- Automatyczne podnoszenie oferty do maksimum
+- Ochronę przed koniecznością monitorowania w real-time
+- Sprawiedliwą konkurencję
+- Wzrost GMV (Gross Merchandise Value)
+
+==== Scenariusze Wymagane
+
+. *Proxy bidding* — licytujący ustawia max kwotę, system automatycznie podnosi
+. *Bid increment rules* — reguły o ile minimum podnieść (np. +5 PLN dla <100, +10 dla 100-500)
+. *Uniemożliwienie skoków* — walidacja w agregacie
+. *Konflikt przy proxy* — obsługa concurrent modifications z optimistic locking
+. *Wyłączenie proxy dla ostatnich N minut* — zapobieganie automaty w ostatnich minutach
+
+==== Rozszerzenia Domeny
+
+* `BiddingStrategy` — nowy port wejściowy
+* `ProxyBidPlacementService` — use case
+* Pole `maxBidAmount` w modelu `Bid`
+* Pole `bidIncrementRules` w konfiguracji
+
+---
+
+=== 4. Wycofanie/Anulowanie Aukcji (HIGH)
+
+==== Uzasadnienie
+
+Brak możliwości anulowania aukcji powoduje problemy z compliance, niskie zaufanie użytkowników i niezdolność do reagowania na błędy.
+
+==== Scenariusze Wymagane
+
+. *Wycofanie przed rozpoczęciem* — seller może anulować przed pierwszą ofertą
+. *Wycofanie z powodami* — system zbiera powód (błąd, sprzedane poza systemem, itd.)
+. *Kompensata dla bidderów* — loyalty points/voucher
+. *Zakaz wycofań* — habitualny anulownik zostaje zablokowany
+. *Event domenowy* — `AUCTION_CANCELLED` publikowany do Kafki
+
+---
+
+=== 5. Zarządzanie Kategoriami i Wyszukiwaniem (MEDIUM)
+
+==== Uzasadnienie
+
+Brak kategoryzacji i zaawansowanego wyszukiwania powoduje niskie odkrywanie (discoverability).
+
+==== Scenariusze Wymagane
+
+. *Kategorie hierarchiczne* — Elektronika > Telefony > Smartfony
+. *Tagi/keywords* — full-text search
+. *Filtrowanie* — category, status, price range, currency
+. *Sortowanie* — cena, data końca, liczba ofert
+. *Paginacja* — cursor-based pagination
+. *Rekomendacje* — API zwraca aukcje pasujące do preferencji
+
+---
+
+=== 6. Obsługa Reklamacji (MEDIUM)
+
+==== Uzasadnienie
+
+Po wygranej aukcji mogą pojawić się konflikty między kupującym a sprzedawcą. System musi umożliwić mediacją i arbitraż.
+
+==== Scenariusze Wymagane
+
+. *Zgłoszenie problemu* — kupujący zgłasza w ciągu N dni
+. *Mediacja* — dyskusja z dokumentami
+. *Arbitraż* — arbitrator wydaje decyzję
+. *Zwrot pieniędzy* — REFUND, PARTIAL, UPHOLD_SELLER
+. *Reputacja* — liczba unresolved claims wpływa na rating
+
+---
+
+=== 7. Rating i Reputacja (MEDIUM)
+
+==== Uzasadnienie
+
+Brak feedback loop'u uniemożliwia budowanie zaufania (trust) i penalizowanie złych aktorów.
+
+==== Scenariusze Wymagane
+
+. *Rating sprzedawcy* — średnia ocen od kupców
+. *Rating kupującego* — ocena od sprzedawcy
+. *Licznik transakcji* — ile wygranych/sprzedanych
+. *Procent pozytywnych* — compliance metric
+. *Blokowanie* — rating < X = brak możliwości tworzenia aukcji
+
+---
+
+=== 8. System Opóźnień Płatności (MEDIUM)
+
+==== Uzasadnienie
+
+Po wygranej trzeba monitorować, czy kupujący zapłacił. Niezapłacone aukcje prowadzą do straty przychodu.
+
+==== Scenariusze Wymagane
+
+. *Deadline płatności* — N dni (np. 7) na zapłatę
+. *Automatyczne monity* — emaile co N dni
+. *Timeout i rezerwacja* — aukcja wraca do sprzedawcy
+. *Penalty dla defaulters* — ban czasowy lub permanentny
+. *Webhook od gateway'u* — potwierdzenie transakcji
+
+---
+
+=== 9. Geolokacja (LOW)
+
+==== Scenariusze Wymagane
+
+. *Geocoding IP* — system wie, z którego kraju loguje się user
+. *Geofencing* — ograniczenie dostępu do krajów
+. *Koszty wysyłki* — na bazie lokacji
+. *Compliance podatkowy* — VAT na bazie kraju
+
+---
+
+=== 10. Raportowanie (LOW)
+
+==== Scenariusze Wymagane
+
+. *Raport sprzedawcy* — CSV export aukcji
+. *Raport kupującego* — historia transakcji
+. *Raport operacyjny* — daily/weekly stats (GMV, liczba aukcji)
+. *Eksport do BI* — batch jobs do DataWarehouse
+. *GDPR export* — ściągnięcie wszystkich danych
+
+---
+
+== Część II: Katalog Archetypów Domenowych
+
+=== Archetypy Już Zaimplementowane w Hexabid
+
+* *Entity* — Auction, Bid, Party
+* *Value Object* — Price, AuctionId, PartyId, Lot, Product
+* *Aggregate* — Auction aggregate root
+* *Port/Adapter* — Hexagonal architecture
+* *Domain Event* — Implicit (AUCTION_LEADER_CHANGED)
+* *Repository* — AuctionRepository
+* *Service* — CreateAuctionService, PlaceBidService
+
+=== Brakujące Archetypy Klasyczne
+
+==== Specification Pattern
+
+Umożliwia wyrażenie reguł biznesowych w sposób testowalny i komponowalny:
+
+[source,java]
+----
+interface BiddingSpecification {
+    boolean isSatisfiedBy(Auction auction, PartyId bidderId, Price amount);
+    BusinessError getFailureReason();
+}
+
+class BidderMustBeVerifiedSpecification implements BiddingSpecification {
+    private final KycClient kycClient;
+
+    @Override
+    public boolean isSatisfiedBy(Auction auction, PartyId bidderId, Price amount) {
+        return kycClient.isVerified(bidderId);
+    }
+
+    @Override
+    public BusinessError getFailureReason() {
+        return new BidderNotVerifiedError();
+    }
+}
+----
+
+*Korzyści:*
+
+- Każda reguła jest testowalnym, samostojącym obiektem
+- Łatwo dodać nową specyfikację (Open/Closed Principle)
+- Specyfikacje można komponować
+- Jawne komunikowanie powodów odrzucenia
+
+==== State Machine Pattern
+
+[source,java]
+----
+enum AuctionStatus {
+    DRAFT,      // Sprzedawca przygotowuje
+    OPEN,       // Aktywna
+    CLOSING,    // Oczekiwanie na finalizację
+    CLOSED,     // Zakończona
+    CANCELLED,  // Wycofana
+    DISPUTED    // W reklamacji
+}
+----
+
+Wraz z regułami przejść:
+
+[source,java]
+----
+DRAFT -> OPEN           // Warunek: seller zaaprobował
+OPEN -> CLOSING         // Warunek: Instant.now().isAfter(endsAt)
+CLOSING -> CLOSED       // Warunek: winner determined
+ANY -> CANCELLED        // Warunek: seller initiated BEFORE first bid
+ANY -> DISPUTED         // Warunek: buyer opened dispute
+----
+
+==== Strategy Pattern
+
+[source,java]
+----
+interface BiddingStrategy {
+    PlaceBidOutcome executeBid(Auction auction, PartyId bidder,
+                              Price maxAmount, BidContext context);
+}
+
+class ManualBidStrategy implements BiddingStrategy {
+    @Override
+    public PlaceBidOutcome executeBid(...) {
+        return auction.placeBid(bidder, amount, ctx.now());
+    }
+}
+
+class AutoProxyBidStrategy implements BiddingStrategy {
+    @Override
+    public PlaceBidOutcome executeBid(...) {
+        Price nextBid = calculateNextBidAmount(auction, maxAmount, ctx);
+        return auction.placeBid(bidder, nextBid, ctx.now());
+    }
+}
+----
+
+==== Snapshot Pattern
+
+Dla Event Sourcing przyszłości:
+
+[source,java]
+----
+record AuctionSnapshot(
+    AuctionId id,
+    PartyId sellerId,
+    List<Bid> biddingHistory,
+    AuctionStatus status,
+    Instant createdAt,
+    Long snapshotVersion
+)
+----
+
+=== Archetypy Współczesne (2020-2025)
+
+==== Rich Notification Archetype
+
+[source,java]
+----
+sealed interface Notification {
+    record AuctionWonNotification(
+        PartyId winnerId,
+        AuctionId auctionId,
+        Price winPrice,
+        Instant createdAt
+    ) implements Notification {}
+
+    record BidAcceptedNotification(
+        PartyId bidderId,
+        AuctionId auctionId,
+        Integer bidPosition,
+        PartyId previousLeaderId,
+        Instant createdAt
+    ) implements Notification {}
+}
+
+interface NotificationPublisher {
+    void publish(Notification notification);
+}
+----
+
+==== Transactional Outbox Pattern
+
+[source,java]
+----
+@Entity
+@Table(name = "outbox_events")
+class OutboxEvent {
+    @Id UUID id;
+    @Enumerated EventType type;
+    @Lob String jsonPayload;
+    @Enumerated Status status = NEW;
+    @Version Long version;
+}
+
+@Service
+@Transactional
+class PlaceBidService {
+    public Outcome<BidAcceptedEvent> execute(PlaceBidCommand cmd) {
+        // 1. Update aggregate
+        auctionRepository.save(auction);
+
+        // 2. Write outbox (same transaction!)
+        outboxRepository.save(new OutboxEvent(...));
+
+        // Commit lub rollback — obie operacje razem
+        return Outcome.success(event);
+    }
+}
+----
+
+==== Result/Outcome Type
+
+[source,java]
+----
+sealed interface Outcome<T> {
+    record Success<T>(T value) implements Outcome<T> {}
+    record Failure<T>(BusinessError error) implements Outcome<T> {}
+}
+
+sealed interface BusinessError {
+    record AuctionNotFound(AuctionId id) implements BusinessError {}
+    record BidderNotVerified(PartyId bidderId) implements BusinessError {}
+    record BidAmountTooLow(Price current, Price submitted) implements BusinessError {}
+}
+----
+
+==== Option/Maybe Pattern
+
+[source,java]
+----
+record Auction {
+    Optional<PartyId> maybeWinnerId;
+    Optional<Instant> maybeClosedAt;
+    Optional<Long> maybeVersion;
+
+    public Optional<PartyId> getCurrentLeader() {
+        return biddingHistory.stream()
+            .max(Comparator.comparing(Bid::placedAt))
+            .map(Bid::bidderId);
+    }
+}
+----
+
+==== CQRS Read Model Archetype
+
+[source,java]
+----
+@Entity
+@Table(name = "auction_search_results")
+class AuctionSearchResult {
+    @Id AuctionId id;
+    String title;
+    @ManyToOne Category category;
+    Price currentPrice;
+    Integer bidCount;
+    @Embedded SellerRatingSnapshot sellerRating;
+}
+
+interface AuctionSearchQueryService {
+    List<AuctionSearchResult> search(SearchCriteria criteria);
+}
+----
+
+==== Saga Pattern
+
+[source,java]
+----
+@Service
+class PaymentSaga {
+    @EventListener
+    void onAuctionWon(AuctionWonEvent event) {
+        PaymentReservation reservation = new PaymentReservation(
+            event.winnerId(),
+            event.winPrice(),
+            LocalDateTime.now().plusDays(7)
+        );
+        paymentRepository.save(reservation);
+    }
+
+    @Scheduled(fixedRate = 3600000)
+    void checkPaymentTimeouts() {
+        List<PaymentReservation> expired =
+            paymentRepository.findExpiredUnpaid();
+
+        for (var res : expired) {
+            publishEvent(new PaymentTimeoutEvent(res.winnerId()));
+        }
+    }
+}
+----
+
+==== Event Aggregate Pattern
+
+[source,java]
+----
+sealed interface AuctionDomainEvent {
+    Instant occurredAt();
+
+    record AuctionCreatedEvent(
+        AuctionId id, PartyId sellerId, String title, Instant occurredAt
+    ) implements AuctionDomainEvent {}
+
+    record BidPlacedEvent(
+        AuctionId auctionId, PartyId bidderId, Price amount, Instant occurredAt
+    ) implements AuctionDomainEvent {}
+
+    record AuctionCancelledEvent(
+        AuctionId auctionId, PartyId sellerId, String reason, Instant occurredAt
+    ) implements AuctionDomainEvent {}
+}
+----
+
+==== Temporal/Validity Pattern
+
+[source,java]
+----
+record PartyRating(
+    PartyId partyId,
+    List<RatingScore> scoreHistory
+) {
+    record RatingScore(
+        LocalDate validFrom,
+        LocalDate validTo,
+        BigDecimal rating,
+        Integer voteCount
+    ) {}
+}
+
+BigDecimal getCurrentRating(PartyId partyId) {
+    return ratingRepository.findById(partyId)
+        .scoreHistory()
+        .stream()
+        .filter(s -> s.validTo() == null)
+        .map(RatingScore::rating)
+        .findFirst()
+        .orElse(ZERO);
+}
+----
+
+==== Dispute/Conflict Resolution Archetype
+
+[source,java]
+----
+sealed interface DisputePhase {
+    record NegotiationPhase(
+        List<DisputeMessage> messages,
+        Instant deadline
+    ) implements DisputePhase {}
+
+    record EvidenceCollectionPhase(
+        List<EvidenceSubmission> buyerEvidence,
+        List<EvidenceSubmission> sellerEvidence
+    ) implements DisputePhase {}
+
+    record ArbitrationPhase(
+        PartyId arbitrator,
+        String decision,
+        String reasoning
+    ) implements DisputePhase {}
+}
+
+@Service
+class DisputeResolutionService {
+    public Outcome<DisputeOpenedEvent> openDispute(OpenDisputeCommand cmd) { /* ... */ }
+    public Outcome<DisputeResolvedEvent> resolveDispute(ResolveDisputeCommand cmd) { /* ... */ }
+}
+----
+
+==== Verification/Attestation Archetype
+
+[source,java]
+----
+sealed interface VerificationStatus {
+    record Unverified() implements VerificationStatus {}
+    record PendingReview(Instant submittedAt, String documentType) implements VerificationStatus {}
+    record Verified(Instant verifiedAt, PartyId verifiedBy, String level) implements VerificationStatus {}
+    record Rejected(Instant rejectedAt, String reason, boolean canResubmit) implements VerificationStatus {}
+}
+----
+
+=== Mapowanie Requirements na Archetypy
+
+[cols="1,2,2"]
+|===
+| Requirement | Archetypy | Zastosowanie
+
+| #1 Notyfikacje
+| Rich Notification, Transactional Outbox, Domain Events
+| Notyfikacja jako event domenowy, outbox gwarantuje dostarczenie
+
+| #2 Historia/Audit
+| Event Aggregate, Temporal Pattern, Specification
+| Event log + temporal queries dla historii
+
+| #3 Proxy Bidding
+| Strategy Pattern, State Machine, Result/Outcome
+| Strategia + validacja + jawne błędy
+
+| #4 Anulowanie
+| State Machine, Saga Pattern, Specification
+| Saga obsługuje compensating actions
+
+| #5 Kategorie/Szukanie
+| CQRS Read Model, Specification Pattern
+| Denormalizowany read model + filtry
+
+| #6 Reklamacje
+| Dispute Archetype, Saga Pattern, State Machine
+| Orkiestracja faz (negocjacja, arbitration)
+
+| #7 Rating
+| Temporal Pattern, Event Aggregate, Value Object
+| Historia ratingów z time-travel
+
+| #8 Payment Timeout
+| Saga Pattern, State Machine, Specification
+| Monitorowanie deadline'ów, compensating actions
+
+| #9 Geolokacja
+| Value Object, Specification Pattern, Policy Pattern
+| Geo-rules dla aukcji, Value Object dla lokacji
+
+| #10 Reporting
+| CQRS Read Model, Snapshot Pattern, Batch Job
+| Denormalizowany read model dla raportów
+|===
+
+---
+
+== Część III: Implementacja Roadmap
+
+Łączny wysiłek implementacji: 3-4 miesiące dla zespołu 2-3 seniorów.
+
+=== Phase 1: Fundamenty (Tydzień 1-2)
+
+Celem jest wybudowanie fundamentów architektonicznych.
+
+*Zadania:*
+
+1. **Upgrade `AuctionStatus` (State Machine)**
+   - Dodaj stany: DRAFT, CANCELLED, DISPUTED
+   - Zdefiniuj reguły przejść
+   - Testy dla invalid transitions
+   - Effort: ~3 dni
+
+2. **Specification Pattern**
+   - Interfejs `BiddingSpecification`
+   - Implementacje: `BidderMustBeVerified`, `BidAmountMustExceed`, `SellerCannotBid`
+   - Refaktoryzacja `PlaceBidService` aby używać specyfikacji
+   - Effort: ~2 dni
+
+3. **Result/Outcome Type**
+   - `sealed interface Outcome<T>`
+   - `record Success<T>`, `record Failure<T>`
+   - `sealed interface BusinessError` z implementacjami
+   - Wrap `PlaceBidDecision` w `Outcome`
+   - Effort: ~2 dni
+
+4. **Domain Events (sealed interface)**
+   - `sealed interface AuctionDomainEvent`
+   - Implementacje: AuctionCreatedEvent, BidPlacedEvent, etc.
+   - Effort: ~1 dzień
+
+5. **Transactional Outbox**
+   - `@Entity OutboxEvent`
+   - `OutboxEventRepository`
+   - Nowy moduł: `auctions-adapter-out-outbox`
+   - Effort: ~2 dni
+
+=== Phase 2: Notyfikacje (Tydzień 3-4)
+
+1. **Rich Notification Archetype** — 1 dzień
+2. **Notification Publisher Port** — 1 dzień
+3. **Email Adapter** — 3 dni
+4. **Push Notification Adapter** — 2 dni
+5. **Outbox Polling Job** — 2 dni
+
+=== Phase 3: CQRS Read Models (Tydzień 5-6)
+
+1. **AuctionSearchResult Entity** — 2 dni
+2. **AuctionSearchQueryService** — 2 dni
+3. **Moduł `auctions-query-core`** — 1 dzień
+4. **Event Synchronization** — 2 dni
+5. **Full-Text Search (optional)** — 3 dni
+
+=== Phase 4: Disputes & Sagas (Tydzień 7-9)
+
+1. **Dispute Phase Model** — 2 dni
+2. **Dispute Resolution Service** — 4 dni
+3. **Payment Saga** — 3 dni
+4. **REST API Endpoints** — 2 dni
+5. **Webhook Handler** — 1 dzień
+
+=== Phase 5: Rating & Reputacja (Tydzień 10-11)
+
+1. **Temporal Rating Entity** — 1 dzień
+2. **RatingService** — 2 dni
+3. **Query Service** — 1 dzień
+4. **Blocking Rules** — 1 dzień
+5. **REST API** — 1 dzień
+
+=== Phase 6: Bonus/Optional (Tydzień 12+)
+
+- Kategorie
+- Geolokacja
+- Event Sourcing
+- Reporting
+
+== Executive Summary (EN)
+
+This document provides a comprehensive analysis of critical missing features in the Hexabid auction system, required to transition from proof-of-concept to a production-ready platform. It catalogues domain archetypes (both classical DDD patterns and contemporary approaches from 2020-2025), and provides a detailed 4-month implementation roadmap for a team of 2-3 senior developers.
