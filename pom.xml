@@ -39,6 +39,7 @@
         <module>auctions-payment-adapter-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
         <module>auctions-bootstrap</module>
         <module>auctions-architecture-tests</module>
+        <module>auctions-integration-tests</module>
     </modules>
 
     <properties>
