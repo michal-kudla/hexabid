@@ -19,6 +19,9 @@
     <description>Reference auction system with hexagonal architecture and contract-first approach.</description>
 
     <modules>
+        <module>quantity</module>
+        <module>product</module>
+        <module>inventory</module>
         <module>auctions-core</module>
         <module>auctions-auth-core</module>
         <module>auctions-api-contract</module>
