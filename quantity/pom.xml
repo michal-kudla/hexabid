@@ -9,23 +9,9 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>auctions-core</artifactId>
+    <artifactId>quantity</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>com.acme.auctions</groupId>
-            <artifactId>quantity</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.acme.auctions</groupId>
-            <artifactId>inventory</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jspecify</groupId>
-            <artifactId>jspecify</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

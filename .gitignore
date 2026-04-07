@@ -32,3 +32,8 @@ build/
 # Tool caches
 .idea/
 .vscode/
+.settings/
+
+# Eclipse project files
+.classpath
+.project
