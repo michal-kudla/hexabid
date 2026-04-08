@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 @Component
-class AuctionJpaMapper {
+public class AuctionJpaMapper {
 
     Auction toDomain(AuctionJpaEntity entity) {
         return Auction.rehydrate(

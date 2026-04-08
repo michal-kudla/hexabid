@@ -44,6 +44,7 @@ public class LocalSecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/*", "/api/auth/providers").permitAll()
                         .anyRequest().authenticated()
                 )
+                .httpBasic(basic -> basic.realmName("hexabid"))
                 .formLogin(form -> form.defaultSuccessUrl("/", true))
                 .oauth2Login(oauth2 -> {
                     oauth2.defaultSuccessUrl("/", true);
