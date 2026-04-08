@@ -24,6 +24,21 @@
         </dependency>
         <dependency>
             <groupId>com.acme.auctions</groupId>
+            <artifactId>quantity</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.acme.auctions</groupId>
+            <artifactId>product</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.acme.auctions</groupId>
+            <artifactId>inventory</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.acme.auctions</groupId>
             <artifactId>auctions-api-contract</artifactId>
             <version>${project.version}</version>
         </dependency>
