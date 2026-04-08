@@ -60,13 +60,13 @@ public class Batch {
     public BatchName name() { return name; }
     public ProductIdentifier batchOf() { return batchOf; }
     public Quantity quantityInBatch() { return quantityInBatch; }
-    public Optional<Instant> dateProduced() { return Optional.ofNullable(dateProduced); }
-    public Optional<Instant> sellBy() { return Optional.ofNullable(sellBy); }
-    public Optional<Instant> useBy() { return Optional.ofNullable(useBy); }
-    public Optional<Instant> bestBefore() { return Optional.ofNullable(bestBefore); }
-    public Optional<SerialNumber> startSerialNumber() { return Optional.ofNullable(startSerialNumber); }
-    public Optional<SerialNumber> endSerialNumber() { return Optional.ofNullable(endSerialNumber); }
-    public Optional<String> comments() { return Optional.ofNullable(comments); }
+    public Optional<Instant> maybeDateProduced() { return Optional.ofNullable(dateProduced); }
+    public Optional<Instant> maybeSellBy() { return Optional.ofNullable(sellBy); }
+    public Optional<Instant> maybeUseBy() { return Optional.ofNullable(useBy); }
+    public Optional<Instant> maybeBestBefore() { return Optional.ofNullable(bestBefore); }
+    public Optional<SerialNumber> maybeStartSerialNumber() { return Optional.ofNullable(startSerialNumber); }
+    public Optional<SerialNumber> maybeEndSerialNumber() { return Optional.ofNullable(endSerialNumber); }
+    public Optional<String> maybeComments() { return Optional.ofNullable(comments); }
 
     @Override
     public String toString() {

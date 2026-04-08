@@ -17,13 +17,13 @@ public interface Instance {
 
     ProductIdentifier productId();
 
-    Optional<SerialNumber> serialNumber();
+    Optional<SerialNumber> maybeSerialNumber();
 
-    Optional<BatchId> batchId();
+    Optional<BatchId> maybeBatchId();
 
-    Optional<Quantity> quantity();
+    Optional<Quantity> maybeQuantity();
 
     default Quantity effectiveQuantity() {
-        return quantity().orElse(com.acme.auctions.quantity.Quantity.of(1, com.acme.auctions.quantity.Unit.pieces()));
+        return maybeQuantity().orElse(com.acme.auctions.quantity.Quantity.of(1, com.acme.auctions.quantity.Unit.pieces()));
     }
 }
