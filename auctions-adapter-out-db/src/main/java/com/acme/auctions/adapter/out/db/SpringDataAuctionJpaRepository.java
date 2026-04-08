@@ -7,6 +7,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-interface SpringDataAuctionJpaRepository extends JpaRepository<AuctionJpaEntity, UUID> {
+public interface SpringDataAuctionJpaRepository extends JpaRepository<AuctionJpaEntity, UUID> {
     List<AuctionJpaEntity> findByStatusAndEndsAtLessThanEqual(AuctionStatus status, Instant endsAt);
 }

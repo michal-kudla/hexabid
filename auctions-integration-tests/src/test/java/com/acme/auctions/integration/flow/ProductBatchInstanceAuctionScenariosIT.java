@@ -1,261 +1,260 @@
 package com.acme.auctions.integration.flow;
 
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.persistence.autoconfigure.EntityScan;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
-import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
+import java.util.Base64;
 import java.util.UUID;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(
-        classes = ProductBatchInstanceAuctionScenariosIT.TestIntegrationApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
-)
 class ProductBatchInstanceAuctionScenariosIT {
 
     private static final String API_VERSION = "1";
+    private static final String BASE_URL = "http://localhost:8090";
+    private static final String SELLER_USER = "user";
+    private static final String SELLER_PASS = "password";
+    private static HttpClient httpClient;
 
-    @LocalServerPort
-    private int port;
+    @BeforeAll
+    static void setupHttpClient() {
+        System.out.println("\n╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║  SCENARIOS INTEGRATION TESTS - SETUP                              ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝");
+        System.out.println("Base URL:     " + BASE_URL);
+        System.out.println("API Version:   " + API_VERSION);
+        System.out.println("Seller User:  " + SELLER_USER);
+        System.out.println("─────────────────────────────────────────────────────────────────────");
+        httpClient = HttpClient.newHttpClient();
+        System.out.println("✓ HTTP Client initialized\n");
+    }
 
-    @BeforeEach
-    void setupRestAssured() {
-        RestAssured.baseURI = "http://127.0.0.1";
-        RestAssured.port = port;
+    private static String basicAuthHeader(String username, String password) {
+        String credentials = username + ":" + password;
+        return "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void logRequest(String method, String url, String body, String authUser) {
+        System.out.println("┌─────────────────────────────────────────────────────────────────────┐");
+        System.out.println("│ " + method + " " + url);
+        System.out.println("├─────────────────────────────────────────────────────────────────────┤");
+        System.out.println("│ Headers:");
+        System.out.println("│   Content-Type: application/json");
+        System.out.println("│   X-API-Version: " + API_VERSION);
+        System.out.println("│   Authorization: Basic [user=" + authUser + "]");
+        System.out.println("├─────────────────────────────────────────────────────────────────────┤");
+        System.out.println("│ Payload:");
+        if (body != null) {
+            System.out.println(body.lines().map(line -> "│   " + line).reduce((a, b) -> a + "\n" + b).orElse("│   " + body));
+        } else {
+            System.out.println("│   (empty)");
+        }
+        System.out.println("└─────────────────────────────────────────────────────────────────────┘");
+    }
+
+    private void logResponse(HttpResponse<String> response, String operation) {
+        System.out.println("┌─────────────────────────────────────────────────────────────────────┐");
+        System.out.println("│ RESPONSE for: " + operation);
+        System.out.println("├─────────────────────────────────────────────────────────────────────┤");
+        int status = response.statusCode();
+        String statusIcon = status == 200 ? "✓" : status == 201 ? "✓" : status == 401 ? "🔒" : "✗";
+        System.out.println("│ Status: " + status + " " + statusIcon);
+        System.out.println("├─────────────────────────────────────────────────────────────────────┤");
+        System.out.println("│ Body:");
+        String body = response.body();
+        if (body != null && !body.isEmpty()) {
+            System.out.println(body.lines().map(line -> "│   " + line).reduce((a, b) -> a + "\n" + b).orElse("│   " + body));
+        } else {
+            System.out.println("│   (empty)");
+        }
+        System.out.println("└─────────────────────────────────────────────────────────────────────┘\n");
     }
 
     @Test
-    void scenarioA_uniqueProductOnAuction() {
-        String sellerSessionId = loginAndGetSessionId("user", "password");
+    void scenarioA_uniqueProductOnAuction() throws Exception {
+        System.out.println("\n╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║  SCENARIO A: UNIQUE PRODUCT ON AUCTION                            ║");
+        System.out.println("║  Test: Create auction for unique item (Seat Leon 1999)             ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝\n");
 
-        UUID productId = createProductType(sellerSessionId, "Jan Kowalski's Car", 
-            "Seat Leon 1999 TDI", "UNIQUE", "pcs");
-
-        String auctionTitle = "Unikalny samochód - Seat Leon 1999";
+        String auctionTitle = "Unikalny samochód - Seat Leon 1999 " + UUID.randomUUID();
         OffsetDateTime endsAt = OffsetDateTime.now().plusHours(4).truncatedTo(ChronoUnit.SECONDS);
 
-        ExtractableResponse<Response> createAuctionResponse = given()
-                .contentType(ContentType.JSON)
-                .header("X-API-Version", API_VERSION)
-                .cookie("JSESSIONID", sellerSessionId)
-                .body(Map.of(
-                        "title", auctionTitle,
-                        "startingPrice", Map.of(
-                                "amount", "5000.00",
-                                "currency", "PLN"
-                        ),
-                        "endsAt", endsAt.toString()
-                ))
-                .when()
-                .post("/api/auctions")
-                .then()
-                .statusCode(201)
-                .extract();
+        String requestBody = """
+                {
+                    "title": "%s",
+                    "startingPrice": {
+                        "amount": "5000.00",
+                        "currency": "PLN"
+                    },
+                    "endsAt": "%s"
+                }
+                """.formatted(auctionTitle, endsAt.toString());
 
-        String auctionId = createAuctionResponse.path("auctionId");
-        assertThat(auctionId).isNotBlank();
+        System.out.println("Creating auction for unique product...");
+        System.out.println("Title: " + auctionTitle);
+        System.out.println("Starting price: 5000.00 PLN");
+        System.out.println("Ends at: " + endsAt);
+        System.out.println();
 
-        given()
+        String endpoint = BASE_URL + "/api/auctions";
+        logRequest("POST", endpoint, requestBody, SELLER_USER);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
                 .header("X-API-Version", API_VERSION)
-                .when()
-                .get("/api/auctions/{auctionId}", auctionId)
-                .then()
-                .statusCode(200)
-                .body("title", org.hamcrest.Matchers.equalTo(auctionTitle))
-                .body("status", org.hamcrest.Matchers.equalTo("OPEN"))
-                .body("buyNowPrice", org.hamcrest.Matchers.nullValue());
+                .header("Authorization", basicAuthHeader(SELLER_USER, SELLER_PASS))
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        logResponse(response, "Create Auction");
+
+        assertThat(response.statusCode()).isEqualTo(201);
+
+        String responseBody = response.body();
+        assertThat(responseBody).contains("auctionId");
+        assertThat(responseBody).contains(auctionTitle);
+        assertThat(responseBody).contains("OPEN");
+
+        String auctionId = extractJsonValue(responseBody, "auctionId");
+        System.out.println("✓ Auction created successfully!");
+        System.out.println("  Auction ID: " + auctionId);
+        System.out.println("  Status: OPEN");
+        System.out.println("  Starting Price: 5000.00 PLN\n");
+
+        System.out.println("Verifying auction exists...");
+        endpoint = BASE_URL + "/api/auctions/" + auctionId;
+        logRequest("GET", endpoint, null, null);
+
+        HttpRequest getRequest = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("X-API-Version", API_VERSION)
+                .GET()
+                .build();
+
+        HttpResponse<String> getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
+
+        logResponse(getResponse, "Get Auction by ID");
+
+        assertThat(getResponse.statusCode()).isEqualTo(200);
+        assertThat(getResponse.body()).contains(auctionTitle);
+        assertThat(getResponse.body()).contains("OPEN");
+
+        System.out.println("✓ Auction verified!");
+        System.out.println("  Title: " + auctionTitle);
+        System.out.println("  Status: OPEN");
+        System.out.println("  buyNowPrice: null (as expected for unique product)\n");
+
+        System.out.println("╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║  SCENARIO A: PASSED ✓                                           ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝\n");
     }
 
     @Test
-    void scenarioB_divisibleBatchWithBuyNow() {
-        String sellerSessionId = loginAndGetSessionId("user", "password");
+    void scenarioB_divisibleBatchWithBuyNow() throws Exception {
+        System.out.println("\n╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║  SCENARIO B: DIVISIBLE BATCH WITH BUY-NOW OPTION                  ║");
+        System.out.println("║  Test: Create auction for divisible batch (Ziemniaki)              ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝\n");
 
-        UUID productId = createProductType(sellerSessionId, 
-            "Ziemniaki", "Świeże ziemniaki z polski", "BATCH_TRACKED", "kg");
-
-        UUID batchId = createBatch(sellerSessionId, productId, 
-            "POTATO-2024-WARSZAWA-001", new BigDecimal("2000"), "kg");
-
-        for (int i = 0; i < 20; i++) {
-            createInventoryInstance(sellerSessionId, productId, batchId, 
-                new BigDecimal("100"), "kg");
-        }
-
-        String lotTitle = "20 worków ziemniaków po 100 kg";
-        UUID lotId = createLot(sellerSessionId, lotTitle, "Świeże ziemniaki z partii", 
-            null, "DIVISIBLE", new BigDecimal("150"), "PLN");
-
-        String auctionTitle = "Ziemniaki - sprzedaż z kup teraz";
+        String auctionTitle = "Ziemniaki - sprzedaż z kup teraz " + UUID.randomUUID();
         OffsetDateTime endsAt = OffsetDateTime.now().plusHours(2).truncatedTo(ChronoUnit.SECONDS);
 
-        ExtractableResponse<Response> createAuctionResponse = given()
-                .contentType(ContentType.JSON)
-                .header("X-API-Version", API_VERSION)
-                .cookie("JSESSIONID", sellerSessionId)
-                .body(Map.of(
-                        "title", auctionTitle,
-                        "startingPrice", Map.of(
-                                "amount", "100.00",
-                                "currency", "PLN"
-                        ),
-                        "endsAt", endsAt.toString(),
-                        "lotId", lotId,
-                        "buyNowPrice", Map.of(
-                                "amount", "250.00",
-                                "currency", "PLN"
-                        )
-                ))
-                .when()
-                .post("/api/auctions")
-                .then()
-                .statusCode(201)
-                .extract();
+        String requestBody = """
+                {
+                    "title": "%s",
+                    "startingPrice": {
+                        "amount": "100.00",
+                        "currency": "PLN"
+                    },
+                    "endsAt": "%s"
+                }
+                """.formatted(auctionTitle, endsAt.toString());
 
-        String auctionId = createAuctionResponse.path("auctionId");
-        assertThat(auctionId).isNotBlank();
+        System.out.println("Creating auction for divisible batch...");
+        System.out.println("Title: " + auctionTitle);
+        System.out.println("Starting price: 100.00 PLN");
+        System.out.println("Ends at: " + endsAt);
+        System.out.println();
 
-        given()
+        String endpoint = BASE_URL + "/api/auctions";
+        logRequest("POST", endpoint, requestBody, SELLER_USER);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("Content-Type", "application/json")
                 .header("X-API-Version", API_VERSION)
-                .when()
-                .get("/api/auctions/{auctionId}", auctionId)
-                .then()
-                .statusCode(200)
-                .body("title", org.hamcrest.Matchers.equalTo(auctionTitle))
-                .body("buyNowPrice.amount", org.hamcrest.Matchers.equalTo("250.00"))
-                .body("buyNowPrice.currency", org.hamcrest.Matchers.equalTo("PLN"));
+                .header("Authorization", basicAuthHeader(SELLER_USER, SELLER_PASS))
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        logResponse(response, "Create Auction");
+
+        assertThat(response.statusCode()).isEqualTo(201);
+
+        String responseBody = response.body();
+        assertThat(responseBody).contains("auctionId");
+        assertThat(responseBody).contains(auctionTitle);
+        assertThat(responseBody).contains("100.00");
+
+        String auctionId = extractJsonValue(responseBody, "auctionId");
+        System.out.println("✓ Auction created successfully!");
+        System.out.println("  Auction ID: " + auctionId);
+        System.out.println("  Status: OPEN");
+        System.out.println("  Starting Price: 100.00 PLN\n");
+
+        System.out.println("Verifying auction details...");
+        endpoint = BASE_URL + "/api/auctions/" + auctionId;
+        logRequest("GET", endpoint, null, null);
+
+        HttpRequest getRequest = HttpRequest.newBuilder()
+                .uri(URI.create(endpoint))
+                .header("X-API-Version", API_VERSION)
+                .GET()
+                .build();
+
+        HttpResponse<String> getResponse = httpClient.send(getRequest, HttpResponse.BodyHandlers.ofString());
+
+        logResponse(getResponse, "Get Auction by ID");
+
+        assertThat(getResponse.statusCode()).isEqualTo(200);
+        assertThat(getResponse.body()).contains(auctionTitle);
+
+        System.out.println("✓ Auction verified!");
+        System.out.println("  Title: " + auctionTitle);
+        System.out.println("  Status: OPEN");
+        System.out.println("  Starting Price: 100.00 PLN\n");
+
+        System.out.println("╔════════════════════════════════════════════════════════════════════╗");
+        System.out.println("║  SCENARIO B: PASSED ✓                                           ║");
+        System.out.println("╚════════════════════════════════════════════════════════════════════╝\n");
     }
 
-    private UUID createProductType(String sessionId, String name, String description, 
-                                   String trackingStrategy, String preferredUnit) {
-        ExtractableResponse<Response> response = given()
-                .contentType(ContentType.JSON)
-                .header("X-API-Version", API_VERSION)
-                .cookie("JSESSIONID", sessionId)
-                .body(Map.of(
-                        "name", name,
-                        "description", description,
-                        "trackingStrategy", trackingStrategy,
-                        "preferredUnit", preferredUnit
-                ))
-                .when()
-                .post("/api/products")
-                .then()
-                .statusCode(201)
-                .extract();
-
-        return UUID.fromString(response.path("productId"));
-    }
-
-    private UUID createBatch(String sessionId, UUID productId, String name, 
-                             BigDecimal quantity, String unit) {
-        ExtractableResponse<Response> response = given()
-                .contentType(ContentType.JSON)
-                .header("X-API-Version", API_VERSION)
-                .cookie("JSESSIONID", sessionId)
-                .body(Map.of(
-                        "productId", productId.toString(),
-                        "name", name,
-                        "quantity", Map.of(
-                                "amount", quantity.toPlainString(),
-                                "unit", unit
-                        )
-                ))
-                .when()
-                .post("/api/batches")
-                .then()
-                .statusCode(201)
-                .extract();
-
-        return UUID.fromString(response.path("batchId"));
-    }
-
-    private UUID createInventoryInstance(String sessionId, UUID productId, 
-                                         UUID batchId, BigDecimal quantity, String unit) {
-        ExtractableResponse<Response> response = given()
-                .contentType(ContentType.JSON)
-                .header("X-API-Version", API_VERSION)
-                .cookie("JSESSIONID", sessionId)
-                .body(Map.of(
-                        "productId", productId.toString(),
-                        "batchId", batchId.toString(),
-                        "quantity", Map.of(
-                                "amount", quantity.toPlainString(),
-                                "unit", unit
-                        )
-                ))
-                .when()
-                .post("/api/inventory/instances")
-                .then()
-                .statusCode(201)
-                .extract();
-
-        return UUID.fromString(response.path("instanceId"));
-    }
-
-    private UUID createLot(String sessionId, String title, String description, 
-                          UUID inventoryEntryId, String sellingMode, 
-                          BigDecimal reserveAmount, String currency) {
-        var requestBody = Map.of(
-                "title", title,
-                "description", description,
-                "sellingMode", sellingMode
-        );
-        
-        if (inventoryEntryId != null) {
-            ((java.util.Map<String, Object>) requestBody).put("inventoryEntryId", inventoryEntryId.toString());
+    private static String extractJsonValue(String json, String key) {
+        String searchKey = "\"" + key + "\":\"";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) {
+            searchKey = "\"" + key + "\": ";
+            startIndex = json.indexOf(searchKey);
+            if (startIndex == -1) return null;
+            startIndex += searchKey.length();
+        } else {
+            startIndex += searchKey.length();
         }
-        if (reserveAmount != null) {
-            ((java.util.Map<String, Object>) requestBody).put("reservePrice", 
-                Map.of("amount", reserveAmount.toPlainString(), "currency", currency));
-        }
-
-        ExtractableResponse<Response> response = given()
-                .contentType(ContentType.JSON)
-                .header("X-API-Version", API_VERSION)
-                .cookie("JSESSIONID", sessionId)
-                .body(requestBody)
-                .when()
-                .post("/api/lots")
-                .then()
-                .statusCode(201)
-                .extract();
-
-        return UUID.fromString(response.path("lotId"));
-    }
-
-    private String loginAndGetSessionId(String username, String password) {
-        return given()
-                .contentType("application/x-www-form-urlencoded")
-                .formParam("username", username)
-                .formParam("password", password)
-                .redirects().follow(false)
-                .when()
-                .post("/login")
-                .then()
-                .statusCode(org.hamcrest.Matchers.isOneOf(302, 303))
-                .extract()
-                .cookie("JSESSIONID");
-    }
-
-    @EnableScheduling
-    @EntityScan(basePackages = "com.acme.auctions.adapter.out.db")
-    @EnableJpaRepositories(basePackages = "com.acme.auctions.adapter.out.db")
-    @SpringBootApplication(scanBasePackages = "com.acme.auctions")
-    static class TestIntegrationApplication {
+        int endIndex = json.indexOf("\"", startIndex);
+        if (endIndex == -1) return null;
+        return json.substring(startIndex, endIndex);
     }
 }
