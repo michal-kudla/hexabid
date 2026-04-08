@@ -67,11 +67,11 @@ public class CatalogEntry {
         return categories.contains(category);
     }
 
-    public Optional<String> getMetadata(String key) {
+    public Optional<String> maybeMetadata(String key) {
         return Optional.ofNullable(metadata.get(key));
     }
 
-    public String getMetadataOrDefault(String key, String defaultValue) {
+    public String metadataOrDefault(String key, String defaultValue) {
         return metadata.getOrDefault(key, defaultValue);
     }
 

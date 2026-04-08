@@ -54,17 +54,17 @@ public class ProductInstance implements Instance {
     }
 
     @Override
-    public Optional<SerialNumber> serialNumber() {
+    public Optional<SerialNumber> maybeSerialNumber() {
         return Optional.ofNullable(serialNumber);
     }
 
     @Override
-    public Optional<BatchId> batchId() {
+    public Optional<BatchId> maybeBatchId() {
         return Optional.ofNullable(batchId);
     }
 
     @Override
-    public Optional<Quantity> quantity() {
+    public Optional<Quantity> maybeQuantity() {
         return Optional.ofNullable(quantity);
     }
 
