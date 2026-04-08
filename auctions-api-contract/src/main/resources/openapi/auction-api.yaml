@@ -6,7 +6,193 @@ servers:
   - url: http://localhost:8080
 tags:
   - name: Auctions
+  - name: Products
+  - name: Inventory
 paths:
+  /api/products:
+    post:
+      operationId: createProductType
+      tags:
+        - Products
+      summary: Define a new product type
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductTypeRequest'
+      responses:
+        '201':
+          description: Product type created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTypeResponse'
+        '400':
+          description: Invalid request
+  /api/products/{productId}:
+    get:
+      operationId: getProductType
+      tags:
+        - Products
+      summary: Get product type by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product type details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTypeResponse'
+        '404':
+          description: Product type not found
+  /api/batches:
+    post:
+      operationId: createBatch
+      tags:
+        - Inventory
+      summary: Define a new production batch
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBatchRequest'
+      responses:
+        '201':
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Invalid request
+  /api/batches/{batchId}:
+    get:
+      operationId: getBatch
+      tags:
+        - Inventory
+      summary: Get batch by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: batchId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Batch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '404':
+          description: Batch not found
+  /api/inventory/instances:
+    post:
+      operationId: createInventoryInstance
+      tags:
+        - Inventory
+      summary: Create an inventory instance for auction
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryInstanceRequest'
+      responses:
+        '201':
+          description: Instance created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryInstanceResponse'
+        '400':
+          description: Invalid request
+  /api/inventory/instances/{instanceId}:
+    get:
+      operationId: getInventoryInstance
+      tags:
+        - Inventory
+      summary: Get inventory instance by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: instanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryInstanceResponse'
+        '404':
+          description: Instance not found
+  /api/lots:
+    post:
+      operationId: createLot
+      tags:
+        - Auctions
+      summary: Create a lot (bridge inventory to auction)
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLotRequest'
+      responses:
+        '201':
+          description: Lot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotResponse'
+        '400':
+          description: Invalid request
+  /api/lots/{lotId}:
+    get:
+      operationId: getLot
+      tags:
+        - Auctions
+      summary: Get lot by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: lotId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lot details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotResponse'
+        '404':
+          description: Lot not found
   /api/auctions:
     get:
       operationId: browseAuctions
@@ -226,6 +412,11 @@ components:
         endsAt:
           type: string
           format: date-time
+        lotId:
+          type: string
+          format: uuid
+        buyNowPrice:
+          $ref: '#/components/schemas/Money'
     BidResponse:
       type: object
       required:
@@ -273,6 +464,16 @@ components:
           $ref: '#/components/schemas/AuctionStatus'
         leadingBidderId:
           type: string
+        lotId:
+          type: string
+          format: uuid
+        buyNowPrice:
+          type: object
+          properties:
+            amount:
+              type: string
+            currency:
+              type: string
         bids:
           type: array
           items:
@@ -335,3 +536,214 @@ components:
           type: string
         verified:
           type: boolean
+    ProductTrackingStrategy:
+      type: string
+      enum:
+        - UNIQUE
+        - INDIVIDUALLY_TRACKED
+        - BATCH_TRACKED
+        - INDIVIDUALLY_AND_BATCH_TRACKED
+        - IDENTICAL
+    CreateProductTypeRequest:
+      type: object
+      required:
+        - name
+        - description
+        - trackingStrategy
+        - preferredUnit
+      properties:
+        name:
+          type: string
+          example: "Jan Kowalski's Car"
+        description:
+          type: string
+          example: "Seat Leon 1999 TDI"
+        trackingStrategy:
+          $ref: '#/components/schemas/ProductTrackingStrategy'
+        preferredUnit:
+          type: string
+          example: "pcs"
+    ProductTypeResponse:
+      type: object
+      required:
+        - productId
+        - name
+        - trackingStrategy
+        - preferredUnit
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        trackingStrategy:
+          $ref: '#/components/schemas/ProductTrackingStrategy'
+        preferredUnit:
+          type: string
+    CreateBatchRequest:
+      type: object
+      required:
+        - productId
+        - name
+        - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "POTATO-2024-WARSZAWA-001"
+        quantity:
+          type: object
+          required:
+            - amount
+            - unit
+          properties:
+            amount:
+              type: string
+              example: "2000"
+            unit:
+              type: string
+              example: "kg"
+        dateProduced:
+          type: string
+          format: date-time
+        bestBefore:
+          type: string
+          format: date-time
+    BatchResponse:
+      type: object
+      required:
+        - batchId
+        - productId
+        - name
+        - quantity
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: object
+          properties:
+            amount:
+              type: string
+            unit:
+              type: string
+        dateProduced:
+          type: string
+          format: date-time
+        bestBefore:
+          type: string
+          format: date-time
+    CreateInventoryInstanceRequest:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        serialNumber:
+          type: string
+          example: "VIN-WVWZZZ3CZWE123456"
+        quantity:
+          type: object
+          required:
+            - amount
+            - unit
+          properties:
+            amount:
+              type: string
+              example: "100"
+            unit:
+              type: string
+              example: "kg"
+    InventoryInstanceResponse:
+      type: object
+      required:
+        - instanceId
+        - productId
+        - quantity
+      properties:
+        instanceId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        serialNumber:
+          type: string
+        quantity:
+          type: object
+          properties:
+            amount:
+              type: string
+            unit:
+              type: string
+    SellingMode:
+      type: string
+      enum:
+        - WHOLE
+        - DIVISIBLE
+        - DIVISIBLE_ONLY
+    CreateLotRequest:
+      type: object
+      required:
+        - title
+        - description
+        - inventoryEntryId
+        - sellingMode
+      properties:
+        title:
+          type: string
+          example: "2 worki ziemniaków po 100 kg"
+        description:
+          type: string
+          example: "Świeże ziemniaki z partii POTATO-2024-WARSZAWA-001"
+        inventoryEntryId:
+          type: string
+          format: uuid
+        sellingMode:
+          $ref: '#/components/schemas/SellingMode'
+        reservePrice:
+          $ref: '#/components/schemas/Money'
+    LotResponse:
+      type: object
+      required:
+        - lotId
+        - title
+        - sellingMode
+      properties:
+        lotId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        inventoryEntryId:
+          type: string
+          format: uuid
+        sellingMode:
+          $ref: '#/components/schemas/SellingMode'
+        reservePrice:
+          type: object
+          properties:
+            amount:
+              type: string
+            currency:
+              type: string
