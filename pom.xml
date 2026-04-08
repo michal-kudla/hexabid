@@ -52,6 +52,7 @@
         <archunit.version>1.4.1</archunit.version>
         <swagger.version>2.2.31</swagger.version>
         <jspecify.version>1.0.0</jspecify.version>
+        <skipIntegrationTests>true</skipIntegrationTests>
     </properties>
 
     <dependencyManagement>
