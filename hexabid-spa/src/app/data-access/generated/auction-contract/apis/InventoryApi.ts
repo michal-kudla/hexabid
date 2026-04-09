@@ -15,11 +15,29 @@
 
 import * as runtime from '../runtime';
 import type {
+  BatchListResponse,
   BatchResponse,
   CreateBatchRequest,
   CreateInventoryInstanceRequest,
+  InventoryInstanceListResponse,
   InventoryInstanceResponse,
 } from '../models/index';
+
+export interface BrowseBatchesRequest {
+    xAPIVersion?: string;
+    productId?: string;
+    query?: string;
+    limit?: number;
+    after?: string;
+}
+
+export interface BrowseInventoryInstancesRequest {
+    xAPIVersion?: string;
+    batchId?: string;
+    productId?: string;
+    limit?: number;
+    after?: string;
+}
 
 export interface CreateBatchOperationRequest {
     createBatchRequest: CreateBatchRequest;
@@ -45,6 +63,108 @@ export interface GetInventoryInstanceRequest {
  * 
  */
 export class InventoryApi extends runtime.BaseAPI {
+
+    /**
+     * Returns paginated list of production batches owned by the authenticated user. Batches are used to track products that come from the same production source.  **Archetypowy kontekst:** Inventory (M06) Batch reprezentuje partię produkcyjną - grupę produktów o wspólnym pochodzeniu. Np. kontener kukurydzy z gospodarstwa X, zbiór 2026. 
+     * Browse batches for current user
+     */
+    async browseBatchesRaw(requestParameters: BrowseBatchesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchListResponse>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['productId'] != null) {
+            queryParameters['productId'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['after'] != null) {
+            queryParameters['after'] = requestParameters['after'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/batches`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Returns paginated list of production batches owned by the authenticated user. Batches are used to track products that come from the same production source.  **Archetypowy kontekst:** Inventory (M06) Batch reprezentuje partię produkcyjną - grupę produktów o wspólnym pochodzeniu. Np. kontener kukurydzy z gospodarstwa X, zbiór 2026. 
+     * Browse batches for current user
+     */
+    async browseBatches(requestParameters: BrowseBatchesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BatchListResponse> {
+        const response = await this.browseBatchesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Returns paginated list of inventory instances owned by the authenticated user. Instances represent specific quantities of product that can be sold on auction.  **Archetypowy kontekst:** Inventory (M06) - ProductInstance Instancja to konkretna ilość produktu z danej partii. Np. \"worek 100 kg kukurydzy z partii KUKURYDZA-2026-001\" 
+     * Browse inventory instances for current user
+     */
+    async browseInventoryInstancesRaw(requestParameters: BrowseInventoryInstancesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceListResponse>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['batchId'] != null) {
+            queryParameters['batchId'] = requestParameters['batchId'];
+        }
+
+        if (requestParameters['productId'] != null) {
+            queryParameters['productId'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['after'] != null) {
+            queryParameters['after'] = requestParameters['after'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/inventory/instances`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Returns paginated list of inventory instances owned by the authenticated user. Instances represent specific quantities of product that can be sold on auction.  **Archetypowy kontekst:** Inventory (M06) - ProductInstance Instancja to konkretna ilość produktu z danej partii. Np. \"worek 100 kg kukurydzy z partii KUKURYDZA-2026-001\" 
+     * Browse inventory instances for current user
+     */
+    async browseInventoryInstances(requestParameters: BrowseInventoryInstancesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<InventoryInstanceListResponse> {
+        const response = await this.browseInventoryInstancesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Define a new production batch

@@ -10,6 +10,52 @@ tags:
   - name: Inventory
 paths:
   /api/products:
+    get:
+      operationId: browseProductTypes
+      tags:
+        - Products
+      summary: Browse all product types in catalog
+      description: |
+        Returns paginated list of all product types available in the system.
+        This is the main entry point for displaying the product catalog.
+        
+        **Archetypowy kontekst:** Product (M02 - Katalog Produktów)
+        Produkt to definicja "co to jest" - niezależny kontekst od Inventory.
+        ProductType reprezentuje szablon, według którego tworzone są instancje.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: query
+          description: Filter by product name (partial match, case-insensitive)
+          schema:
+            type: string
+        - in: query
+          name: trackingStrategy
+          description: Filter by product tracking strategy
+          schema:
+            $ref: '#/components/schemas/ProductTrackingStrategy'
+        - in: query
+          name: limit
+          description: Maximum number of items to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          description: Cursor for pagination - returns items after this cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product type list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTypeListResponse'
+        '400':
+          description: Invalid request parameters
     post:
       operationId: createProductType
       tags:
@@ -56,6 +102,51 @@ paths:
         '404':
           description: Product type not found
   /api/batches:
+    get:
+      operationId: browseBatches
+      tags:
+        - Inventory
+      summary: Browse batches for current user
+      description: |
+        Returns paginated list of production batches owned by the authenticated user.
+        Batches are used to track products that come from the same production source.
+        
+        **Archetypowy kontekst:** Inventory (M06)
+        Batch reprezentuje partię produkcyjną - grupę produktów o wspólnym pochodzeniu.
+        Np. kontener kukurydzy z gospodarstwa X, zbiór 2026.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: productId
+          description: Filter by product type ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: query
+          description: Filter by batch name (partial match)
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: Authentication required
     post:
       operationId: createBatch
       tags:
@@ -102,6 +193,52 @@ paths:
         '404':
           description: Batch not found
   /api/inventory/instances:
+    get:
+      operationId: browseInventoryInstances
+      tags:
+        - Inventory
+      summary: Browse inventory instances for current user
+      description: |
+        Returns paginated list of inventory instances owned by the authenticated user.
+        Instances represent specific quantities of product that can be sold on auction.
+        
+        **Archetypowy kontekst:** Inventory (M06) - ProductInstance
+        Instancja to konkretna ilość produktu z danej partii.
+        Np. "worek 100 kg kukurydzy z partii KUKURYDZA-2026-001"
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: batchId
+          description: Filter by batch ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: productId
+          description: Filter by product type ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Inventory instance list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryInstanceListResponse'
+        '401':
+          description: Authentication required
     post:
       operationId: createInventoryInstance
       tags:
@@ -148,6 +285,45 @@ paths:
         '404':
           description: Instance not found
   /api/lots:
+    get:
+      operationId: browseLots
+      tags:
+        - Auctions
+      summary: Browse lots for current user
+      description: |
+        Returns paginated list of lots owned by the authenticated user.
+        A lot is a bridge between inventory and auction - it defines what is being sold.
+        
+        **Archetypowy kontekst:** Lot (most Product↔Auction)
+        Lot określa: jakie instancje inventory są wystawione na sprzedaż,
+        w jakim trybie (całość/podzielne), cena rezerwowa.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: sellingMode
+          description: Filter by selling mode
+          schema:
+            $ref: '#/components/schemas/SellingMode'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lot list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotListResponse'
+        '401':
+          description: Authentication required
     post:
       operationId: createLot
       tags:
@@ -747,3 +923,56 @@ components:
               type: string
             currency:
               type: string
+    ProductTypeListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of product types
+          items:
+            $ref: '#/components/schemas/ProductTypeResponse'
+        nextCursor:
+          type: string
+          description: Cursor for pagination - pass this in next request to get next page
+          nullable: true
+    BatchListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of batches
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        nextCursor:
+          type: string
+          nullable: true
+    InventoryInstanceListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of inventory instances
+          items:
+            $ref: '#/components/schemas/InventoryInstanceResponse'
+        nextCursor:
+          type: string
+          nullable: true
+    LotListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of lots
+          items:
+            $ref: '#/components/schemas/LotResponse'
+        nextCursor:
+          type: string
+          nullable: true
