@@ -2,12 +2,10 @@ package com.acme.auctions.adapter.in.auth.oauth.dev;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 import java.util.List;
 
 @Configuration
-@Profile("dev")
 class DevAuthConfiguration {
 
     @Bean

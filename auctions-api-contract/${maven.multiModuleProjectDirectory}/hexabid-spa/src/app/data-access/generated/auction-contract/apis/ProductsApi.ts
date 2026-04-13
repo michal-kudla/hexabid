@@ -16,8 +16,18 @@
 import * as runtime from '../runtime';
 import type {
   CreateProductTypeRequest,
+  ProductTrackingStrategy,
+  ProductTypeListResponse,
   ProductTypeResponse,
 } from '../models/index';
+
+export interface BrowseProductTypesRequest {
+    xAPIVersion?: string;
+    query?: string;
+    trackingStrategy?: ProductTrackingStrategy;
+    limit?: number;
+    after?: string;
+}
 
 export interface CreateProductTypeOperationRequest {
     createProductTypeRequest: CreateProductTypeRequest;
@@ -33,6 +43,57 @@ export interface GetProductTypeRequest {
  * 
  */
 export class ProductsApi extends runtime.BaseAPI {
+
+    /**
+     * Returns paginated list of all product types available in the system. This is the main entry point for displaying the product catalog.  **Archetypowy kontekst:** Product (M02 - Katalog Produktów) Produkt to definicja \"co to jest\" - niezależny kontekst od Inventory. ProductType reprezentuje szablon, według którego tworzone są instancje. 
+     * Browse all product types in catalog
+     */
+    async browseProductTypesRaw(requestParameters: BrowseProductTypesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeListResponse>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
+        }
+
+        if (requestParameters['trackingStrategy'] != null) {
+            queryParameters['trackingStrategy'] = requestParameters['trackingStrategy'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['after'] != null) {
+            queryParameters['after'] = requestParameters['after'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/products`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Returns paginated list of all product types available in the system. This is the main entry point for displaying the product catalog.  **Archetypowy kontekst:** Product (M02 - Katalog Produktów) Produkt to definicja \"co to jest\" - niezależny kontekst od Inventory. ProductType reprezentuje szablon, według którego tworzone są instancje. 
+     * Browse all product types in catalog
+     */
+    async browseProductTypes(requestParameters: BrowseProductTypesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProductTypeListResponse> {
+        const response = await this.browseProductTypesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Define a new product type

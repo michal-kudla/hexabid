@@ -20,10 +20,15 @@ import type {
   AuctionSort,
   AuctionStatus,
   CreateAuctionRequest,
+  CreateLotRequest,
   CurrentUserProfileResponse,
+  LotListResponse,
+  LotResponse,
+  SellingMode,
 } from '../models/index';
 
 export interface BrowseAuctionsRequest {
+    xAPIVersion?: string;
     query?: string;
     status?: AuctionStatus;
     sort?: AuctionSort;
@@ -31,7 +36,15 @@ export interface BrowseAuctionsRequest {
     after?: string;
 }
 
+export interface BrowseLotsRequest {
+    xAPIVersion?: string;
+    sellingMode?: SellingMode;
+    limit?: number;
+    after?: string;
+}
+
 export interface BrowseMyAuctionsRequest {
+    xAPIVersion?: string;
     status?: AuctionStatus;
     sort?: AuctionSort;
     limit?: number;
@@ -39,6 +52,7 @@ export interface BrowseMyAuctionsRequest {
 }
 
 export interface BrowseMyBidsRequest {
+    xAPIVersion?: string;
     status?: AuctionStatus;
     sort?: AuctionSort;
     limit?: number;
@@ -47,10 +61,26 @@ export interface BrowseMyBidsRequest {
 
 export interface CreateAuctionOperationRequest {
     createAuctionRequest: CreateAuctionRequest;
+    xAPIVersion?: string;
+}
+
+export interface CreateLotOperationRequest {
+    createLotRequest: CreateLotRequest;
+    xAPIVersion?: string;
 }
 
 export interface GetAuctionByIdRequest {
     auctionId: string;
+    xAPIVersion?: string;
+}
+
+export interface GetCurrentUserProfileRequest {
+    xAPIVersion?: string;
+}
+
+export interface GetLotRequest {
+    lotId: string;
+    xAPIVersion?: string;
 }
 
 /**
@@ -86,6 +116,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/auctions`;
 
@@ -104,6 +138,53 @@ export class AuctionsApi extends runtime.BaseAPI {
      */
     async browseAuctions(requestParameters: BrowseAuctionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuctionListResponse> {
         const response = await this.browseAuctionsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Returns paginated list of lots owned by the authenticated user. A lot is a bridge between inventory and auction - it defines what is being sold.  **Archetypowy kontekst:** Lot (most Product↔Auction) Lot określa: jakie instancje inventory są wystawione na sprzedaż, w jakim trybie (całość/podzielne), cena rezerwowa. 
+     * Browse lots for current user
+     */
+    async browseLotsRaw(requestParameters: BrowseLotsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotListResponse>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['sellingMode'] != null) {
+            queryParameters['sellingMode'] = requestParameters['sellingMode'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['after'] != null) {
+            queryParameters['after'] = requestParameters['after'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/lots`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Returns paginated list of lots owned by the authenticated user. A lot is a bridge between inventory and auction - it defines what is being sold.  **Archetypowy kontekst:** Lot (most Product↔Auction) Lot określa: jakie instancje inventory są wystawione na sprzedaż, w jakim trybie (całość/podzielne), cena rezerwowa. 
+     * Browse lots for current user
+     */
+    async browseLots(requestParameters: BrowseLotsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LotListResponse> {
+        const response = await this.browseLotsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -130,6 +211,10 @@ export class AuctionsApi extends runtime.BaseAPI {
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/me/auctions`;
@@ -176,6 +261,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/me/bids`;
 
@@ -214,6 +303,10 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
 
         let urlPath = `/api/auctions`;
 
@@ -237,6 +330,49 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Create a lot (bridge inventory to auction)
+     */
+    async createLotRaw(requestParameters: CreateLotOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotResponse>> {
+        if (requestParameters['createLotRequest'] == null) {
+            throw new runtime.RequiredError(
+                'createLotRequest',
+                'Required parameter "createLotRequest" was null or undefined when calling createLot().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/lots`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['createLotRequest'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create a lot (bridge inventory to auction)
+     */
+    async createLot(requestParameters: CreateLotOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LotResponse> {
+        const response = await this.createLotRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Get auction details
      */
     async getAuctionByIdRaw(requestParameters: GetAuctionByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
@@ -250,6 +386,10 @@ export class AuctionsApi extends runtime.BaseAPI {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/auctions/{auctionId}`;
@@ -276,10 +416,14 @@ export class AuctionsApi extends runtime.BaseAPI {
     /**
      * Get current authenticated user profile
      */
-    async getCurrentUserProfileRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserProfileResponse>> {
+    async getCurrentUserProfileRaw(requestParameters: GetCurrentUserProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserProfileResponse>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
 
 
         let urlPath = `/api/me`;
@@ -297,8 +441,49 @@ export class AuctionsApi extends runtime.BaseAPI {
     /**
      * Get current authenticated user profile
      */
-    async getCurrentUserProfile(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUserProfileResponse> {
-        const response = await this.getCurrentUserProfileRaw(initOverrides);
+    async getCurrentUserProfile(requestParameters: GetCurrentUserProfileRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUserProfileResponse> {
+        const response = await this.getCurrentUserProfileRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get lot by ID
+     */
+    async getLotRaw(requestParameters: GetLotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotResponse>> {
+        if (requestParameters['lotId'] == null) {
+            throw new runtime.RequiredError(
+                'lotId',
+                'Required parameter "lotId" was null or undefined when calling getLot().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/lots/{lotId}`;
+        urlPath = urlPath.replace(`{${"lotId"}}`, encodeURIComponent(String(requestParameters['lotId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get lot by ID
+     */
+    async getLot(requestParameters: GetLotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LotResponse> {
+        const response = await this.getLotRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

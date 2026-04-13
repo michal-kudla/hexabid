@@ -1,7 +1,6 @@
 package com.acme.auctions.adapter.in.auth.oauth.dev;
 
 import com.acme.auctions.auth.core.identityaccess.model.AuthenticatedUser;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,7 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 
 @Controller
-@Profile("dev")
 class DevAuthController {
 
     private final DevUserCatalog devUserCatalog;
