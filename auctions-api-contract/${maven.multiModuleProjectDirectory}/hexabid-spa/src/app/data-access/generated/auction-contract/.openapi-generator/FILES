@@ -1,7 +1,0 @@
-apis/AuctionsApi.ts
-apis/InventoryApi.ts
-apis/ProductsApi.ts
-apis/index.ts
-index.ts
-models/index.ts
-runtime.ts

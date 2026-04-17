@@ -94,6 +94,11 @@ System_Boundary(hexabid, "Hexabid") {
     Container(kafkaAdapter, "auctions-adapter-out-kafka", "Spring Kafka", "Publikuje zdarzenia domenowe")
     Container(kycAdapter, "auctions-adapter-out-kyc", "Generated OpenAPI Client", "Implementuje port KYC")
     Container(contract, "auctions-api-contract", "OpenAPI Generator", "Kontrakt wejściowy i generowane DTO/delegaty")
+    Container(paymentCore, "auctions-payment-core", "Pure Java", "Modele płatności, konwerter walut, registry bramek")
+    Container(paymentApi, "auctions-payment-api-contract", "OpenAPI Generator", "Kontrakt płatności")
+    Container(payuAdapter, "auctions-payment-adapter-payu", "Generated Client", "Bramka PayU")
+    Container(p24Adapter, "auctions-payment-adapter-p24", "Generated Client", "Bramka Przelewy24")
+    Container(cryptoAdapter, "auctions-payment-adapter-crypto", "Spring Crypto", "Płatności kryptowalutowe")
     Container(bootstrap, "auctions-bootstrap", "Spring Boot", "Composition root i konfiguracja runtime")
 }
 

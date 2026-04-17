@@ -28,9 +28,9 @@ export interface GetPaymentGatewaysRequest {
 export class PaymentApi extends runtime.BaseAPI {
 
     /**
-     * Get available payment gateways
+     * Creates request options for getPaymentGateways without sending the request
      */
-    async getPaymentGatewaysRaw(requestParameters: GetPaymentGatewaysRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<PaymentGatewayResponse>>> {
+    async getPaymentGatewaysRequestOpts(requestParameters: GetPaymentGatewaysRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -42,12 +42,20 @@ export class PaymentApi extends runtime.BaseAPI {
 
         let urlPath = `/api/payments/gateways`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get available payment gateways
+     */
+    async getPaymentGatewaysRaw(requestParameters: GetPaymentGatewaysRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<PaymentGatewayResponse>>> {
+        const requestOptions = await this.getPaymentGatewaysRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }

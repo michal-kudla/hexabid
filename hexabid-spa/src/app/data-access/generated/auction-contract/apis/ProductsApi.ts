@@ -45,10 +45,9 @@ export interface GetProductTypeRequest {
 export class ProductsApi extends runtime.BaseAPI {
 
     /**
-     * Returns paginated list of all product types available in the system. This is the main entry point for displaying the product catalog.  **Archetypowy kontekst:** Product (M02 - Katalog Produktów) Produkt to definicja \"co to jest\" - niezależny kontekst od Inventory. ProductType reprezentuje szablon, według którego tworzone są instancje. 
-     * Browse all product types in catalog
+     * Creates request options for browseProductTypes without sending the request
      */
-    async browseProductTypesRaw(requestParameters: BrowseProductTypesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeListResponse>> {
+    async browseProductTypesRequestOpts(requestParameters: BrowseProductTypesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['query'] != null) {
@@ -76,12 +75,21 @@ export class ProductsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/products`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Returns paginated list of all product types available in the system. This is the main entry point for displaying the product catalog.  **Archetypowy kontekst:** Product (M02 - Katalog Produktów) Produkt to definicja \"co to jest\" - niezależny kontekst od Inventory. ProductType reprezentuje szablon, według którego tworzone są instancje. 
+     * Browse all product types in catalog
+     */
+    async browseProductTypesRaw(requestParameters: BrowseProductTypesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeListResponse>> {
+        const requestOptions = await this.browseProductTypesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -96,9 +104,9 @@ export class ProductsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Define a new product type
+     * Creates request options for createProductType without sending the request
      */
-    async createProductTypeRaw(requestParameters: CreateProductTypeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeResponse>> {
+    async createProductTypeRequestOpts(requestParameters: CreateProductTypeOperationRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['createProductTypeRequest'] == null) {
             throw new runtime.RequiredError(
                 'createProductTypeRequest',
@@ -119,13 +127,21 @@ export class ProductsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/products`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['createProductTypeRequest'],
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Define a new product type
+     */
+    async createProductTypeRaw(requestParameters: CreateProductTypeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeResponse>> {
+        const requestOptions = await this.createProductTypeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -139,9 +155,9 @@ export class ProductsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get product type by ID
+     * Creates request options for getProductType without sending the request
      */
-    async getProductTypeRaw(requestParameters: GetProductTypeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeResponse>> {
+    async getProductTypeRequestOpts(requestParameters: GetProductTypeRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['productId'] == null) {
             throw new runtime.RequiredError(
                 'productId',
@@ -161,12 +177,20 @@ export class ProductsApi extends runtime.BaseAPI {
         let urlPath = `/api/products/{productId}`;
         urlPath = urlPath.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get product type by ID
+     */
+    async getProductTypeRaw(requestParameters: GetProductTypeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductTypeResponse>> {
+        const requestOptions = await this.getProductTypeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }

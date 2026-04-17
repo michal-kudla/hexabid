@@ -1,0 +1,217 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.github.hexabid</groupId>
+        <artifactId>hexabid</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>hexabid-bootstrap</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-auth-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-quantity</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-product</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-inventory</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-api-contract</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-adapter-in-rest</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-adapter-in-ws</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-adapter-in-job</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-adapter-out-db</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-adapter-out-kafka</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-adapter-in-auth-oauth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-payment-api-contract</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-payment-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-payment-adapter-payu</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-payment-adapter-p24</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-payment-adapter-crypto</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <!-- ═══════════════════════════════════════════════════════════
+             PROFIL LOCAL (development)
+             Łączy wszystkie lokalne adaptery: local-auth, local-kyc, local-payment
+             Aktywny domyślnie dla wygody developmentu
+             ═══════════════════════════════════════════════════════════ -->
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-in-auth-local</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-out-kyc-local</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-payment-adapter-local</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             PROFIL PRODUKCJA
+             Używa prawdziwych serwisów: KYC, OAuth2 itp.
+             ═══════════════════════════════════════════════════════════ -->
+        <profile>
+            <id>prod</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-out-kyc</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-payment-adapter-payu</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             LEGACY: Indywidualne adaptery (dla kompatybilności)
+             ═══════════════════════════════════════════════════════════ -->
+        <profile>
+            <id>local-auth</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-in-auth-local</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>kyc-prod</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-out-kyc</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>local-kyc</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-out-kyc-local</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>local-payment</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-payment-adapter-local</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

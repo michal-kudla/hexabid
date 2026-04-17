@@ -28,9 +28,9 @@ export interface GetAuthProvidersRequest {
 export class AuthApi extends runtime.BaseAPI {
 
     /**
-     * Get available authentication providers
+     * Creates request options for getAuthProviders without sending the request
      */
-    async getAuthProvidersRaw(requestParameters: GetAuthProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AuthProviderResponse>>> {
+    async getAuthProvidersRequestOpts(requestParameters: GetAuthProvidersRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -42,12 +42,20 @@ export class AuthApi extends runtime.BaseAPI {
 
         let urlPath = `/api/auth/providers`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get available authentication providers
+     */
+    async getAuthProvidersRaw(requestParameters: GetAuthProvidersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AuthProviderResponse>>> {
+        const requestOptions = await this.getAuthProvidersRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }

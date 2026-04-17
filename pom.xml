@@ -10,7 +10,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.acme.auctions</groupId>
+    <groupId>com.github.hexabid</groupId>
     <artifactId>hexabid</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -19,30 +19,31 @@
     <description>Reference auction system with hexagonal architecture and contract-first approach.</description>
 
     <modules>
-        <module>quantity</module>
-        <module>product</module>
-        <module>inventory</module>
-        <module>auctions-core</module>
-        <module>auctions-auth-core</module>
-        <module>auctions-api-contract</module>
-        <module>auctions-adapter-in-auth-oauth</module>
-        <module>auctions-adapter-in-auth-local</module>
-        <module>auctions-adapter-in-rest</module>
-        <module>auctions-adapter-in-ws</module>
-        <module>auctions-adapter-in-job</module>
-        <module>auctions-adapter-out-db</module>
-        <module>auctions-adapter-out-kafka</module>
-        <module>auctions-adapter-out-kyc</module>
-        <module>auctions-adapter-out-kyc-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
-        <module>auctions-payment-api-contract</module>
-        <module>auctions-payment-core</module>
-        <module>auctions-payment-adapter-payu</module>
-        <module>auctions-payment-adapter-p24</module>
-        <module>auctions-payment-adapter-crypto</module>
-        <module>auctions-payment-adapter-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
-        <module>auctions-bootstrap</module>
-        <module>auctions-architecture-tests</module>
-        <module>auctions-integration-tests</module>
+        <module>hexabid-bom</module>
+        <module>hexabid-quantity</module>
+        <module>hexabid-product</module>
+        <module>hexabid-inventory</module>
+        <module>hexabid-core</module>
+        <module>hexabid-auth-core</module>
+        <module>hexabid-api-contract</module>
+        <module>hexabid-adapter-in-auth-oauth</module>
+        <module>hexabid-adapter-in-auth-local</module>
+        <module>hexabid-adapter-in-rest</module>
+        <module>hexabid-adapter-in-ws</module>
+        <module>hexabid-adapter-in-job</module>
+        <module>hexabid-adapter-out-db</module>
+        <module>hexabid-adapter-out-kafka</module>
+        <module>hexabid-adapter-out-kyc</module>
+        <module>hexabid-adapter-out-kyc-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
+        <module>hexabid-payment-api-contract</module>
+        <module>hexabid-payment-core</module>
+        <module>hexabid-payment-adapter-payu</module>
+        <module>hexabid-payment-adapter-p24</module>
+        <module>hexabid-payment-adapter-crypto</module>
+        <module>hexabid-payment-adapter-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
+        <module>hexabid-bootstrap</module>
+        <module>hexabid-architecture-tests</module>
+        <module>hexabid-integration-tests</module>
     </modules>
 
     <properties>
@@ -50,45 +51,19 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <openapi.generator.version>7.14.0</openapi.generator.version>
         <archunit.version>1.4.1</archunit.version>
-        <swagger.version>2.2.31</swagger.version>
-        <jspecify.version>1.0.0</jspecify.version>
         <skipIntegrationTests>true</skipIntegrationTests>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <!-- Import project BOM -->
             <dependency>
-                <groupId>org.jspecify</groupId>
-                <artifactId>jspecify</artifactId>
-                <version>${jspecify.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.openapitools</groupId>
-                <artifactId>jackson-databind-nullable</artifactId>
-                <version>0.2.8</version>
-            </dependency>
-            <dependency>
-                <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-annotations-jakarta</artifactId>
-                <version>${swagger.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.swagger.core.v3</groupId>
-                <artifactId>swagger-models-jakarta</artifactId>
-                <version>${swagger.version}</version>
+                <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.openapitools</groupId>
-                    <artifactId>openapi-generator-maven-plugin</artifactId>
-                    <version>${openapi.generator.version}</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 </project>
