@@ -8,30 +8,80 @@
         <outputRelativeToContentRoot value="true" />
         <module name="auctions-adapter-in-auth-local" />
         <module name="auctions-integration-tests" />
-        <module name="auctions-payment-adapter-crypto" />
         <module name="auctions-api-contract" />
         <module name="auctions-payment-adapter-local" />
         <module name="auctions-payment-adapter-p24" />
-        <module name="product" />
-        <module name="quantity" />
         <module name="auctions-adapter-in-ws" />
         <module name="auctions-adapter-out-kyc-local" />
+        <module name="hexabid-adapter-out-db" />
+        <module name="hexabid-payment-adapter-p24" />
         <module name="auctions-adapter-in-auth-oauth" />
+        <module name="hexabid-payment-adapter-payu" />
         <module name="auctions-adapter-in-rest" />
-        <module name="auctions-core" />
-        <module name="auctions-auth-core" />
         <module name="inventory" />
         <module name="auctions-adapter-out-kafka" />
-        <module name="auctions-payment-adapter-payu" />
+        <module name="hexabid-architecture-tests" />
         <module name="auctions-adapter-out-kyc" />
-        <module name="auctions-adapter-out-db" />
+        <module name="hexabid-product" />
+        <module name="hexabid-adapter-in-rest" />
         <module name="auctions-bootstrap" />
+        <module name="hexabid-adapter-in-auth-local" />
+        <module name="hexabid-payment-adapter-local" />
+        <module name="hexabid-adapter-in-job" />
+        <module name="hexabid-quantity" />
+        <module name="hexabid-payment-api-contract" />
+        <module name="hexabid-inventory" />
+        <module name="auctions-payment-adapter-crypto" />
+        <module name="product" />
+        <module name="hexabid-integration-tests" />
+        <module name="quantity" />
+        <module name="hexabid-bootstrap" />
+        <module name="auctions-core" />
+        <module name="hexabid-api-contract" />
+        <module name="auctions-auth-core" />
+        <module name="hexabid-payment-core" />
+        <module name="auctions-payment-adapter-payu" />
+        <module name="hexabid-auth-core" />
+        <module name="hexabid-payment-adapter-crypto" />
+        <module name="auctions-adapter-out-db" />
         <module name="auctions-payment-api-contract" />
+        <module name="hexabid-adapter-in-auth-oauth" />
+        <module name="hexabid-adapter-out-kafka" />
+        <module name="hexabid-adapter-in-ws" />
+        <module name="hexabid-adapter-out-kyc-local" />
         <module name="auctions-adapter-in-job" />
+        <module name="hexabid-core" />
         <module name="auctions-payment-core" />
+        <module name="hexabid-adapter-out-kyc" />
         <module name="auctions-architecture-tests" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="auctions-adapter-in-auth-local" target="25" />
+      <module name="auctions-adapter-in-auth-oauth" target="25" />
+      <module name="auctions-adapter-in-job" target="25" />
+      <module name="auctions-adapter-in-rest" target="25" />
+      <module name="auctions-adapter-in-ws" target="25" />
+      <module name="auctions-adapter-out-db" target="25" />
+      <module name="auctions-adapter-out-kafka" target="25" />
+      <module name="auctions-adapter-out-kyc" target="25" />
+      <module name="auctions-adapter-out-kyc-local" target="25" />
+      <module name="auctions-api-contract" target="25" />
+      <module name="auctions-architecture-tests" target="25" />
+      <module name="auctions-auth-core" target="25" />
+      <module name="auctions-bootstrap" target="25" />
+      <module name="auctions-core" target="25" />
+      <module name="auctions-integration-tests" target="25" />
+      <module name="auctions-payment-adapter-crypto" target="25" />
+      <module name="auctions-payment-adapter-local" target="25" />
+      <module name="auctions-payment-adapter-p24" target="25" />
+      <module name="auctions-payment-adapter-payu" target="25" />
+      <module name="auctions-payment-api-contract" target="25" />
+      <module name="auctions-payment-core" target="25" />
+      <module name="inventory" target="25" />
+      <module name="product" target="25" />
+      <module name="quantity" target="25" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -56,6 +106,30 @@
       <module name="auctions-payment-adapter-payu" options="-parameters" />
       <module name="auctions-payment-api-contract" options="-parameters" />
       <module name="auctions-payment-core" options="-parameters" />
+      <module name="hexabid-adapter-in-auth-local" options="-parameters" />
+      <module name="hexabid-adapter-in-auth-oauth" options="-parameters" />
+      <module name="hexabid-adapter-in-job" options="-parameters" />
+      <module name="hexabid-adapter-in-rest" options="-parameters" />
+      <module name="hexabid-adapter-in-ws" options="-parameters" />
+      <module name="hexabid-adapter-out-db" options="-parameters" />
+      <module name="hexabid-adapter-out-kafka" options="-parameters" />
+      <module name="hexabid-adapter-out-kyc" options="-parameters" />
+      <module name="hexabid-adapter-out-kyc-local" options="-parameters" />
+      <module name="hexabid-api-contract" options="-parameters" />
+      <module name="hexabid-architecture-tests" options="-parameters" />
+      <module name="hexabid-auth-core" options="-parameters" />
+      <module name="hexabid-bootstrap" options="-parameters" />
+      <module name="hexabid-core" options="-parameters" />
+      <module name="hexabid-integration-tests" options="-parameters" />
+      <module name="hexabid-inventory" options="-parameters" />
+      <module name="hexabid-payment-adapter-crypto" options="-parameters" />
+      <module name="hexabid-payment-adapter-local" options="-parameters" />
+      <module name="hexabid-payment-adapter-p24" options="-parameters" />
+      <module name="hexabid-payment-adapter-payu" options="-parameters" />
+      <module name="hexabid-payment-api-contract" options="-parameters" />
+      <module name="hexabid-payment-core" options="-parameters" />
+      <module name="hexabid-product" options="-parameters" />
+      <module name="hexabid-quantity" options="-parameters" />
       <module name="inventory" options="-parameters" />
       <module name="product" options="-parameters" />
       <module name="quantity" options="-parameters" />

@@ -27,3 +27,9 @@ render_pdf "$ROOT_DIR/doc/architecture-c4.adoc" "$ROOT_DIR/doc/architecture-c4.p
 
 render_html "$ROOT_DIR/doc/user-guide.adoc"
 render_pdf "$ROOT_DIR/doc/user-guide.adoc" "$ROOT_DIR/doc/user-guide.pdf"
+
+render_html "$ROOT_DIR/doc/SPECIFICATION.adoc"
+render_pdf "$ROOT_DIR/doc/SPECIFICATION.adoc" "$ROOT_DIR/doc/SPECIFICATION.pdf"
+
+render_html "$ROOT_DIR/doc/DETAILED_SPECIFICATION.adoc"
+render_pdf "$ROOT_DIR/doc/DETAILED_SPECIFICATION.adoc" "$ROOT_DIR/doc/DETAILED_SPECIFICATION.pdf"

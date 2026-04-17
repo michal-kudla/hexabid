@@ -89,9 +89,9 @@ export interface GetLotRequest {
 export class AuctionsApi extends runtime.BaseAPI {
 
     /**
-     * Browse auctions for search and listing screens
+     * Creates request options for browseAuctions without sending the request
      */
-    async browseAuctionsRaw(requestParameters: BrowseAuctionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionListResponse>> {
+    async browseAuctionsRequestOpts(requestParameters: BrowseAuctionsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['query'] != null) {
@@ -123,12 +123,20 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/auctions`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Browse auctions for search and listing screens
+     */
+    async browseAuctionsRaw(requestParameters: BrowseAuctionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionListResponse>> {
+        const requestOptions = await this.browseAuctionsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -142,10 +150,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns paginated list of lots owned by the authenticated user. A lot is a bridge between inventory and auction - it defines what is being sold.  **Archetypowy kontekst:** Lot (most Product↔Auction) Lot określa: jakie instancje inventory są wystawione na sprzedaż, w jakim trybie (całość/podzielne), cena rezerwowa. 
-     * Browse lots for current user
+     * Creates request options for browseLots without sending the request
      */
-    async browseLotsRaw(requestParameters: BrowseLotsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotListResponse>> {
+    async browseLotsRequestOpts(requestParameters: BrowseLotsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['sellingMode'] != null) {
@@ -169,12 +176,21 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/lots`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Returns paginated list of lots owned by the authenticated user. A lot is a bridge between inventory and auction - it defines what is being sold.  **Archetypowy kontekst:** Lot (most Product↔Auction) Lot określa: jakie instancje inventory są wystawione na sprzedaż, w jakim trybie (całość/podzielne), cena rezerwowa. 
+     * Browse lots for current user
+     */
+    async browseLotsRaw(requestParameters: BrowseLotsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotListResponse>> {
+        const requestOptions = await this.browseLotsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -189,9 +205,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Browse auctions created by current user
+     * Creates request options for browseMyAuctions without sending the request
      */
-    async browseMyAuctionsRaw(requestParameters: BrowseMyAuctionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionListResponse>> {
+    async browseMyAuctionsRequestOpts(requestParameters: BrowseMyAuctionsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['status'] != null) {
@@ -219,12 +235,20 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/me/auctions`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Browse auctions created by current user
+     */
+    async browseMyAuctionsRaw(requestParameters: BrowseMyAuctionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionListResponse>> {
+        const requestOptions = await this.browseMyAuctionsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -238,9 +262,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Browse auctions where current user placed bids
+     * Creates request options for browseMyBids without sending the request
      */
-    async browseMyBidsRaw(requestParameters: BrowseMyBidsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionListResponse>> {
+    async browseMyBidsRequestOpts(requestParameters: BrowseMyBidsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['status'] != null) {
@@ -268,12 +292,20 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/me/bids`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Browse auctions where current user placed bids
+     */
+    async browseMyBidsRaw(requestParameters: BrowseMyBidsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionListResponse>> {
+        const requestOptions = await this.browseMyBidsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -287,9 +319,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a new auction
+     * Creates request options for createAuction without sending the request
      */
-    async createAuctionRaw(requestParameters: CreateAuctionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
+    async createAuctionRequestOpts(requestParameters: CreateAuctionOperationRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['createAuctionRequest'] == null) {
             throw new runtime.RequiredError(
                 'createAuctionRequest',
@@ -310,13 +342,21 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/auctions`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['createAuctionRequest'],
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Create a new auction
+     */
+    async createAuctionRaw(requestParameters: CreateAuctionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
+        const requestOptions = await this.createAuctionRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -330,9 +370,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a lot (bridge inventory to auction)
+     * Creates request options for createLot without sending the request
      */
-    async createLotRaw(requestParameters: CreateLotOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotResponse>> {
+    async createLotRequestOpts(requestParameters: CreateLotOperationRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['createLotRequest'] == null) {
             throw new runtime.RequiredError(
                 'createLotRequest',
@@ -353,13 +393,21 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/lots`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['createLotRequest'],
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Create a lot (bridge inventory to auction)
+     */
+    async createLotRaw(requestParameters: CreateLotOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotResponse>> {
+        const requestOptions = await this.createLotRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -373,9 +421,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get auction details
+     * Creates request options for getAuctionById without sending the request
      */
-    async getAuctionByIdRaw(requestParameters: GetAuctionByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
+    async getAuctionByIdRequestOpts(requestParameters: GetAuctionByIdRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['auctionId'] == null) {
             throw new runtime.RequiredError(
                 'auctionId',
@@ -395,12 +443,20 @@ export class AuctionsApi extends runtime.BaseAPI {
         let urlPath = `/api/auctions/{auctionId}`;
         urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get auction details
+     */
+    async getAuctionByIdRaw(requestParameters: GetAuctionByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
+        const requestOptions = await this.getAuctionByIdRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -414,9 +470,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get current authenticated user profile
+     * Creates request options for getCurrentUserProfile without sending the request
      */
-    async getCurrentUserProfileRaw(requestParameters: GetCurrentUserProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserProfileResponse>> {
+    async getCurrentUserProfileRequestOpts(requestParameters: GetCurrentUserProfileRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -428,12 +484,20 @@ export class AuctionsApi extends runtime.BaseAPI {
 
         let urlPath = `/api/me`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get current authenticated user profile
+     */
+    async getCurrentUserProfileRaw(requestParameters: GetCurrentUserProfileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserProfileResponse>> {
+        const requestOptions = await this.getCurrentUserProfileRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -447,9 +511,9 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get lot by ID
+     * Creates request options for getLot without sending the request
      */
-    async getLotRaw(requestParameters: GetLotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotResponse>> {
+    async getLotRequestOpts(requestParameters: GetLotRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['lotId'] == null) {
             throw new runtime.RequiredError(
                 'lotId',
@@ -469,12 +533,20 @@ export class AuctionsApi extends runtime.BaseAPI {
         let urlPath = `/api/lots/{lotId}`;
         urlPath = urlPath.replace(`{${"lotId"}}`, encodeURIComponent(String(requestParameters['lotId'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get lot by ID
+     */
+    async getLotRaw(requestParameters: GetLotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LotResponse>> {
+        const requestOptions = await this.getLotRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }

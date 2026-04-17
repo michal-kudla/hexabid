@@ -65,10 +65,9 @@ export interface GetInventoryInstanceRequest {
 export class InventoryApi extends runtime.BaseAPI {
 
     /**
-     * Returns paginated list of production batches owned by the authenticated user. Batches are used to track products that come from the same production source.  **Archetypowy kontekst:** Inventory (M06) Batch reprezentuje partię produkcyjną - grupę produktów o wspólnym pochodzeniu. Np. kontener kukurydzy z gospodarstwa X, zbiór 2026. 
-     * Browse batches for current user
+     * Creates request options for browseBatches without sending the request
      */
-    async browseBatchesRaw(requestParameters: BrowseBatchesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchListResponse>> {
+    async browseBatchesRequestOpts(requestParameters: BrowseBatchesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['productId'] != null) {
@@ -96,12 +95,21 @@ export class InventoryApi extends runtime.BaseAPI {
 
         let urlPath = `/api/batches`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Returns paginated list of production batches owned by the authenticated user. Batches are used to track products that come from the same production source.  **Archetypowy kontekst:** Inventory (M06) Batch reprezentuje partię produkcyjną - grupę produktów o wspólnym pochodzeniu. Np. kontener kukurydzy z gospodarstwa X, zbiór 2026. 
+     * Browse batches for current user
+     */
+    async browseBatchesRaw(requestParameters: BrowseBatchesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchListResponse>> {
+        const requestOptions = await this.browseBatchesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -116,10 +124,9 @@ export class InventoryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Returns paginated list of inventory instances owned by the authenticated user. Instances represent specific quantities of product that can be sold on auction.  **Archetypowy kontekst:** Inventory (M06) - ProductInstance Instancja to konkretna ilość produktu z danej partii. Np. \"worek 100 kg kukurydzy z partii KUKURYDZA-2026-001\" 
-     * Browse inventory instances for current user
+     * Creates request options for browseInventoryInstances without sending the request
      */
-    async browseInventoryInstancesRaw(requestParameters: BrowseInventoryInstancesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceListResponse>> {
+    async browseInventoryInstancesRequestOpts(requestParameters: BrowseInventoryInstancesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['batchId'] != null) {
@@ -147,12 +154,21 @@ export class InventoryApi extends runtime.BaseAPI {
 
         let urlPath = `/api/inventory/instances`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Returns paginated list of inventory instances owned by the authenticated user. Instances represent specific quantities of product that can be sold on auction.  **Archetypowy kontekst:** Inventory (M06) - ProductInstance Instancja to konkretna ilość produktu z danej partii. Np. \"worek 100 kg kukurydzy z partii KUKURYDZA-2026-001\" 
+     * Browse inventory instances for current user
+     */
+    async browseInventoryInstancesRaw(requestParameters: BrowseInventoryInstancesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceListResponse>> {
+        const requestOptions = await this.browseInventoryInstancesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -167,9 +183,9 @@ export class InventoryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Define a new production batch
+     * Creates request options for createBatch without sending the request
      */
-    async createBatchRaw(requestParameters: CreateBatchOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchResponse>> {
+    async createBatchRequestOpts(requestParameters: CreateBatchOperationRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['createBatchRequest'] == null) {
             throw new runtime.RequiredError(
                 'createBatchRequest',
@@ -190,13 +206,21 @@ export class InventoryApi extends runtime.BaseAPI {
 
         let urlPath = `/api/batches`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['createBatchRequest'],
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Define a new production batch
+     */
+    async createBatchRaw(requestParameters: CreateBatchOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchResponse>> {
+        const requestOptions = await this.createBatchRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -210,9 +234,9 @@ export class InventoryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create an inventory instance for auction
+     * Creates request options for createInventoryInstance without sending the request
      */
-    async createInventoryInstanceRaw(requestParameters: CreateInventoryInstanceOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceResponse>> {
+    async createInventoryInstanceRequestOpts(requestParameters: CreateInventoryInstanceOperationRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['createInventoryInstanceRequest'] == null) {
             throw new runtime.RequiredError(
                 'createInventoryInstanceRequest',
@@ -233,13 +257,21 @@ export class InventoryApi extends runtime.BaseAPI {
 
         let urlPath = `/api/inventory/instances`;
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['createInventoryInstanceRequest'],
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Create an inventory instance for auction
+     */
+    async createInventoryInstanceRaw(requestParameters: CreateInventoryInstanceOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceResponse>> {
+        const requestOptions = await this.createInventoryInstanceRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -253,9 +285,9 @@ export class InventoryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get batch by ID
+     * Creates request options for getBatch without sending the request
      */
-    async getBatchRaw(requestParameters: GetBatchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchResponse>> {
+    async getBatchRequestOpts(requestParameters: GetBatchRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['batchId'] == null) {
             throw new runtime.RequiredError(
                 'batchId',
@@ -275,12 +307,20 @@ export class InventoryApi extends runtime.BaseAPI {
         let urlPath = `/api/batches/{batchId}`;
         urlPath = urlPath.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get batch by ID
+     */
+    async getBatchRaw(requestParameters: GetBatchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchResponse>> {
+        const requestOptions = await this.getBatchRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
@@ -294,9 +334,9 @@ export class InventoryApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get inventory instance by ID
+     * Creates request options for getInventoryInstance without sending the request
      */
-    async getInventoryInstanceRaw(requestParameters: GetInventoryInstanceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceResponse>> {
+    async getInventoryInstanceRequestOpts(requestParameters: GetInventoryInstanceRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['instanceId'] == null) {
             throw new runtime.RequiredError(
                 'instanceId',
@@ -316,12 +356,20 @@ export class InventoryApi extends runtime.BaseAPI {
         let urlPath = `/api/inventory/instances/{instanceId}`;
         urlPath = urlPath.replace(`{${"instanceId"}}`, encodeURIComponent(String(requestParameters['instanceId'])));
 
-        const response = await this.request({
+        return {
             path: urlPath,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-        }, initOverrides);
+        };
+    }
+
+    /**
+     * Get inventory instance by ID
+     */
+    async getInventoryInstanceRaw(requestParameters: GetInventoryInstanceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InventoryInstanceResponse>> {
+        const requestOptions = await this.getInventoryInstanceRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
