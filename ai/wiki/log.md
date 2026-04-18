@@ -30,6 +30,15 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Utworzona struktura LLM WIKI w `ai/wiki/`
 - Link: [[decisions/2026-04-16-documentation-structure]]
 
+## [2026-04-17] [ARCHITECTURE] Architektura ceny - moduł hexabid-pricing
+- Decyzja o wprowadzeniu modułu `hexabid-pricing` z archetypami M03 (Pricing) + M04 (Rules)
+- Modelowanie ceny jako kompozycja składowych: hammer price, wadium, akcyza, cło, VAT
+- Trójwarstwowa architektura: core (stabilny), domknięcia (policy), fabryka (selection)
+- Drzewo komponentów (CompositePriceComponent) z zależnościami między składnikami
+- Typy produktów (UNIQUE vs BATCH/IDENTICAL) wpływają na calculatory i interpretacje
+- Scenariusze E2E i endpointy dla aukcji z wadium, akcyzą, cłem i VAT
+- Link: [[decisions/2026-04-17-pricing-architecture]]
+
 ---
 
 *Automatycznie aktualizowane przez agentów AI przy każdej istotnej zmianie.*
