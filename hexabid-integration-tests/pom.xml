@@ -21,6 +21,13 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-api-contract</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>5.5.6</version>

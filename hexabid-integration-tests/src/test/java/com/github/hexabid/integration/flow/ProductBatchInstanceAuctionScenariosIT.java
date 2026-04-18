@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ProductBatchInstanceAuctionScenariosIT {
 
     private static final String API_VERSION = "1";
-    private static final String BASE_URL = "http://localhost:8090";
+    private static final String BASE_URL = "http://localhost:18080/hexabid";
     private static final String SELLER_USER = "user";
     private static final String SELLER_PASS = "password";
     private static HttpClient httpClient;

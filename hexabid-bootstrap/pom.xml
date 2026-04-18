@@ -39,6 +39,11 @@
         </dependency>
         <dependency>
             <groupId>com.github.hexabid</groupId>
+            <artifactId>hexabid-pricing</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.hexabid</groupId>
             <artifactId>hexabid-api-contract</artifactId>
             <version>${project.version}</version>
         </dependency>

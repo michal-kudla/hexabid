@@ -22,6 +22,7 @@ import com.github.hexabid.core.auctioning.usecase.CloseExpiredAuctionsService;
 import com.github.hexabid.core.auctioning.usecase.CreateAuctionService;
 import com.github.hexabid.core.auctioning.usecase.FindAuctionDetailsService;
 import com.github.hexabid.core.auctioning.usecase.PlaceBidService;
+import com.github.hexabid.pricing.auction.AuctionPricingFacade;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -120,6 +121,11 @@ class AuctioningConfiguration {
             UserVerificationStatusPort userVerificationStatusPort
     ) {
         return new FindCurrentUserProfileService(currentUserProvider, userVerificationStatusPort);
+    }
+
+    @Bean
+    AuctionPricingFacade auctionPricingFacade() {
+        return new AuctionPricingFacade();
     }
 
     private static void publishToChannels(

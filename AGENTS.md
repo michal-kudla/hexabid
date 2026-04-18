@@ -129,7 +129,7 @@ mvn -f auctions-bootstrap/pom.xml spring-boot:run
 # Backend dev (z demo data)
 mvn -f auctions-bootstrap/pom.xml spring-boot:run -Dspring-boot.run.profiles=dev
 
-# Integration tests (wymagają uruchomionego backendu na :8090)
+# Integration tests (wymagają uruchomionego backendu na :18080)
 mvn -f auctions-integration-tests/pom.xml verify
 
 # Frontend

@@ -16,15 +16,20 @@
 import * as runtime from '../runtime';
 import type {
   AuctionListResponse,
+  AuctionPriceBreakdownResponse,
   AuctionResponse,
   AuctionSort,
   AuctionStatus,
   CreateAuctionRequest,
   CreateLotRequest,
   CurrentUserProfileResponse,
+  DepositWadiumRequest,
   LotListResponse,
   LotResponse,
+  RefundWadiumRequest,
   SellingMode,
+  WadiumRefundResponse,
+  WadiumResponse,
 } from '../models/index';
 
 export interface BrowseAuctionsRequest {
@@ -69,7 +74,18 @@ export interface CreateLotOperationRequest {
     xAPIVersion?: string;
 }
 
+export interface DepositWadiumOperationRequest {
+    auctionId: string;
+    depositWadiumRequest: DepositWadiumRequest;
+    xAPIVersion?: string;
+}
+
 export interface GetAuctionByIdRequest {
+    auctionId: string;
+    xAPIVersion?: string;
+}
+
+export interface GetAuctionPriceRequest {
     auctionId: string;
     xAPIVersion?: string;
 }
@@ -80,6 +96,12 @@ export interface GetCurrentUserProfileRequest {
 
 export interface GetLotRequest {
     lotId: string;
+    xAPIVersion?: string;
+}
+
+export interface RefundWadiumOperationRequest {
+    auctionId: string;
+    refundWadiumRequest: RefundWadiumRequest;
     xAPIVersion?: string;
 }
 
@@ -421,6 +443,67 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for depositWadium without sending the request
+     */
+    async depositWadiumRequestOpts(requestParameters: DepositWadiumOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling depositWadium().'
+            );
+        }
+
+        if (requestParameters['depositWadiumRequest'] == null) {
+            throw new runtime.RequiredError(
+                'depositWadiumRequest',
+                'Required parameter "depositWadiumRequest" was null or undefined when calling depositWadium().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/wadium`;
+        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['depositWadiumRequest'],
+        };
+    }
+
+    /**
+     * Allows a buyer to deposit wadium before participating in bidding. Wadium is refunded on loss and deducted from the final price on win. 
+     * Deposit wadium (bid security) for an auction
+     */
+    async depositWadiumRaw(requestParameters: DepositWadiumOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WadiumResponse>> {
+        const requestOptions = await this.depositWadiumRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Allows a buyer to deposit wadium before participating in bidding. Wadium is refunded on loss and deducted from the final price on win. 
+     * Deposit wadium (bid security) for an auction
+     */
+    async depositWadium(requestParameters: DepositWadiumOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WadiumResponse> {
+        const response = await this.depositWadiumRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for getAuctionById without sending the request
      */
     async getAuctionByIdRequestOpts(requestParameters: GetAuctionByIdRequest): Promise<runtime.RequestOpts> {
@@ -466,6 +549,57 @@ export class AuctionsApi extends runtime.BaseAPI {
      */
     async getAuctionById(requestParameters: GetAuctionByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuctionResponse> {
         const response = await this.getAuctionByIdRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getAuctionPrice without sending the request
+     */
+    async getAuctionPriceRequestOpts(requestParameters: GetAuctionPriceRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling getAuctionPrice().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/price`;
+        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Returns a detailed price breakdown including hammer price, wadium offset, netto, excise, customs duty, VAT, and total amount due. 
+     * Get price breakdown for an auction
+     */
+    async getAuctionPriceRaw(requestParameters: GetAuctionPriceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionPriceBreakdownResponse>> {
+        const requestOptions = await this.getAuctionPriceRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Returns a detailed price breakdown including hammer price, wadium offset, netto, excise, customs duty, VAT, and total amount due. 
+     * Get price breakdown for an auction
+     */
+    async getAuctionPrice(requestParameters: GetAuctionPriceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuctionPriceBreakdownResponse> {
+        const response = await this.getAuctionPriceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -556,6 +690,67 @@ export class AuctionsApi extends runtime.BaseAPI {
      */
     async getLot(requestParameters: GetLotRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LotResponse> {
         const response = await this.getLotRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for refundWadium without sending the request
+     */
+    async refundWadiumRequestOpts(requestParameters: RefundWadiumOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling refundWadium().'
+            );
+        }
+
+        if (requestParameters['refundWadiumRequest'] == null) {
+            throw new runtime.RequiredError(
+                'refundWadiumRequest',
+                'Required parameter "refundWadiumRequest" was null or undefined when calling refundWadium().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/wadium/refund`;
+        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['refundWadiumRequest'],
+        };
+    }
+
+    /**
+     * Refunds the wadium deposit for a bidder who did not win the auction. The wadium amount is returned in full to the bidder\'s account. 
+     * Refund wadium for a losing bidder
+     */
+    async refundWadiumRaw(requestParameters: RefundWadiumOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WadiumRefundResponse>> {
+        const requestOptions = await this.refundWadiumRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Refunds the wadium deposit for a bidder who did not win the auction. The wadium amount is returned in full to the bidder\'s account. 
+     * Refund wadium for a losing bidder
+     */
+    async refundWadium(requestParameters: RefundWadiumOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WadiumRefundResponse> {
+        const response = await this.refundWadiumRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -3,6 +3,47 @@
 /**
  * 
  * @export
+ * @interface AppliedRates
+ */
+export interface AppliedRates {
+    /**
+     * Applied VAT rate (e.g. '23%')
+     * @type {string}
+     * @memberof AppliedRates
+     */
+    vatRate: string;
+    /**
+     * Applied excise rate (e.g. '3.1%' or '1.17 PLN/l')
+     * @type {string}
+     * @memberof AppliedRates
+     */
+    exciseRate?: string | null;
+    /**
+     * Applied customs duty rate (e.g. '5%')
+     * @type {string}
+     * @memberof AppliedRates
+     */
+    customsDutyRate?: string | null;
+    /**
+     * 
+     * @type {AppliedRatesWadiumTypeEnum}
+     * @memberof AppliedRates
+     */
+    wadiumType?: AppliedRatesWadiumTypeEnum | null;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum AppliedRatesWadiumTypeEnum {
+    FIXED = 'FIXED',
+    PERCENTAGE = 'PERCENTAGE'
+}
+
+/**
+ * 
+ * @export
  * @interface AuctionListItemResponse
  */
 export interface AuctionListItemResponse {
@@ -79,6 +120,61 @@ export interface AuctionListResponse {
 /**
  * 
  * @export
+ * @interface AuctionPriceBreakdownResponse
+ */
+export interface AuctionPriceBreakdownResponse {
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    hammerPrice: Money;
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    wadiumOffset: Money;
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    netto: Money;
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    excise: Money;
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    customsDuty: Money;
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    vat: Money;
+    /**
+     * 
+     * @type {Money}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    totalDue: Money;
+    /**
+     * 
+     * @type {AppliedRates}
+     * @memberof AuctionPriceBreakdownResponse
+     */
+    appliedRates: AppliedRates;
+}
+/**
+ * 
+ * @export
  * @interface AuctionResponse
  */
 export interface AuctionResponse {
@@ -148,6 +244,12 @@ export interface AuctionResponse {
      * @memberof AuctionResponse
      */
     bids: Array<BidResponse>;
+    /**
+     * 
+     * @type {PricingConfig}
+     * @memberof AuctionResponse
+     */
+    pricingConfig?: PricingConfig;
 }
 
 
@@ -338,6 +440,12 @@ export interface CreateAuctionRequest {
      * @memberof CreateAuctionRequest
      */
     buyNowPrice?: Money;
+    /**
+     * 
+     * @type {PricingConfig}
+     * @memberof CreateAuctionRequest
+     */
+    pricingConfig?: PricingConfig;
 }
 /**
  * 
@@ -557,6 +665,19 @@ export interface CurrentUserProfileResponse {
 /**
  * 
  * @export
+ * @interface DepositWadiumRequest
+ */
+export interface DepositWadiumRequest {
+    /**
+     * 
+     * @type {Money}
+     * @memberof DepositWadiumRequest
+     */
+    amount: Money;
+}
+/**
+ * 
+ * @export
  * @interface InventoryInstanceListResponse
  */
 export interface InventoryInstanceListResponse {
@@ -696,6 +817,77 @@ export interface Money {
 /**
  * 
  * @export
+ * @interface PricingConfig
+ */
+export interface PricingConfig {
+    /**
+     * 
+     * @type {WadiumStrategy}
+     * @memberof PricingConfig
+     */
+    wadiumStrategy?: WadiumStrategy;
+    /**
+     * Rate for percentage wadium (e.g. '0.05' for 5%) or fixed amount
+     * @type {string}
+     * @memberof PricingConfig
+     */
+    wadiumRate?: string;
+    /**
+     * 
+     * @type {Money}
+     * @memberof PricingConfig
+     */
+    wadiumFixedAmount?: Money;
+    /**
+     * VAT rate as fraction (e.g. '0.23' for 23%)
+     * @type {string}
+     * @memberof PricingConfig
+     */
+    vatRate?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof PricingConfig
+     */
+    isExcisable?: boolean;
+    /**
+     * Excise rate as fraction or per-unit amount
+     * @type {string}
+     * @memberof PricingConfig
+     */
+    exciseRate?: string;
+    /**
+     * 
+     * @type {PricingConfigExciseTypeEnum}
+     * @memberof PricingConfig
+     */
+    exciseType?: PricingConfigExciseTypeEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof PricingConfig
+     */
+    isImported?: boolean;
+    /**
+     * Customs duty rate as fraction (e.g. '0.05' for 5%)
+     * @type {string}
+     * @memberof PricingConfig
+     */
+    customsDutyRate?: string;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum PricingConfigExciseTypeEnum {
+    PERCENTAGE = 'PERCENTAGE',
+    PER_UNIT = 'PER_UNIT'
+}
+
+/**
+ * 
+ * @export
  * @enum {string}
  */
 export enum ProductTrackingStrategy {
@@ -767,11 +959,128 @@ export interface ProductTypeResponse {
 /**
  * 
  * @export
+ * @interface RefundWadiumRequest
+ */
+export interface RefundWadiumRequest {
+    /**
+     * ID of the bidder requesting wadium refund
+     * @type {string}
+     * @memberof RefundWadiumRequest
+     */
+    partyId: string;
+}
+/**
+ * 
+ * @export
  * @enum {string}
  */
 export enum SellingMode {
     WHOLE = 'WHOLE',
     DIVISIBLE = 'DIVISIBLE',
     DIVISIBLE_ONLY = 'DIVISIBLE_ONLY'
+}
+
+/**
+ * 
+ * @export
+ * @interface WadiumRefundResponse
+ */
+export interface WadiumRefundResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof WadiumRefundResponse
+     */
+    wadiumId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WadiumRefundResponse
+     */
+    auctionId: string;
+    /**
+     * 
+     * @type {WadiumRefundResponseStatusEnum}
+     * @memberof WadiumRefundResponse
+     */
+    status: WadiumRefundResponseStatusEnum;
+    /**
+     * 
+     * @type {Money}
+     * @memberof WadiumRefundResponse
+     */
+    refundAmount: Money;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum WadiumRefundResponseStatusEnum {
+    REFUNDED = 'REFUNDED'
+}
+
+/**
+ * 
+ * @export
+ * @interface WadiumResponse
+ */
+export interface WadiumResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof WadiumResponse
+     */
+    wadiumId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof WadiumResponse
+     */
+    auctionId: string;
+    /**
+     * 
+     * @type {WadiumResponseStatusEnum}
+     * @memberof WadiumResponse
+     */
+    status: WadiumResponseStatusEnum;
+    /**
+     * 
+     * @type {Money}
+     * @memberof WadiumResponse
+     */
+    amount: Money;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WadiumResponse
+     */
+    refundableOnLoss: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof WadiumResponse
+     */
+    deductibleOnWin: boolean;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum WadiumResponseStatusEnum {
+    PAID = 'PAID',
+    REFUNDED = 'REFUNDED',
+    DEDUCTED = 'DEDUCTED'
+}
+
+/**
+ * Strategy for calculating wadium amount
+ * @export
+ * @enum {string}
+ */
+export enum WadiumStrategy {
+    FIXED = 'FIXED',
+    PERCENTAGE = 'PERCENTAGE'
 }
 
