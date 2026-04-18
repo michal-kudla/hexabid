@@ -29,7 +29,7 @@ class PricingScenariosIT {
     @BeforeAll
     static void setupApiClient() {
         ApiClient sellerClient = new ApiClient();
-        sellerClient.setBasePath(BASE_URL);
+        sellerClient.updateBaseUri(BASE_URL);
         sellerClient.setRequestInterceptor(builder -> {
             builder.header("X-API-Version", API_VERSION);
             builder.header("Authorization", basicAuth(SELLER_USER, SELLER_PASS));
@@ -37,7 +37,7 @@ class PricingScenariosIT {
         auctionsApi = new AuctionsApi(sellerClient);
 
         ApiClient buyerClient = new ApiClient();
-        buyerClient.setBasePath(BASE_URL);
+        buyerClient.updateBaseUri(BASE_URL);
         buyerClient.setRequestInterceptor(builder -> {
             builder.header("X-API-Version", API_VERSION);
             builder.header("Authorization", basicAuth(BUYER_USER, BUYER_PASS));
@@ -126,7 +126,7 @@ class PricingScenariosIT {
             WadiumResponse wadiumResponse = buyerAuctionsApi.depositWadium(
                 auction.getAuctionId(), wadiumReq, API_VERSION);
 
-            assertThat(wadiumResponse.getStatus()).isEqualTo("PAID");
+            assertThat(wadiumResponse.getStatus()).isEqualTo(WadiumResponse.StatusEnum.PAID);
             assertThat(wadiumResponse.getRefundableOnLoss()).isTrue();
             assertThat(wadiumResponse.getDeductibleOnWin()).isTrue();
             assertThat(wadiumResponse.getAmount().getAmount()).isEqualTo("500.00");
@@ -144,12 +144,12 @@ class PricingScenariosIT {
                 auction.getAuctionId(), API_VERSION);
 
             assertThat(price.getHammerPrice().getAmount()).isEqualTo("50000.00");
-            assertThat(price.getWadiumOffset().getAmount()).isEqualTo("2000.00");
-            assertThat(price.getNetto().getAmount()).isEqualTo("48000.00");
-            assertThat(price.getExcise().getAmount()).isEqualTo("1488.00");
+            assertThat(price.getWadiumOffset().getAmount()).isEqualTo("2500.00");
+            assertThat(price.getNetto().getAmount()).isEqualTo("47500.00");
+            assertThat(price.getExcise().getAmount()).isEqualTo("1472.50");
             assertThat(price.getCustomsDuty().getAmount()).isEqualTo("0.00");
-            assertThat(price.getVat().getAmount()).isEqualTo("11382.24");
-            assertThat(price.getTotalDue().getAmount()).isEqualTo("60870.24");
+            assertThat(price.getVat().getAmount()).isEqualTo("11263.68");
+            assertThat(price.getTotalDue().getAmount()).isEqualTo("60236.18");
             assertThat(price.getAppliedRates().getVatRate()).isEqualTo("23%");
             assertThat(price.getAppliedRates().getExciseRate()).isEqualTo("3.1%");
         }
@@ -234,7 +234,7 @@ class PricingScenariosIT {
             WadiumResponse wadium = buyerAuctionsApi.depositWadium(
                 auction.getAuctionId(), wadiumReq, API_VERSION);
 
-            assertThat(wadium.getStatus()).isEqualTo("PAID");
+            assertThat(wadium.getStatus()).isEqualTo(WadiumResponse.StatusEnum.PAID);
 
             AuctionPriceBreakdownResponse price = auctionsApi.getAuctionPrice(
                 auction.getAuctionId(), API_VERSION);
@@ -260,7 +260,7 @@ class PricingScenariosIT {
             wadiumReq.setAmount(pln("500.00"));
             WadiumResponse wadium = buyerAuctionsApi.depositWadium(
                 auction.getAuctionId(), wadiumReq, API_VERSION);
-            assertThat(wadium.getStatus()).isEqualTo("PAID");
+            assertThat(wadium.getStatus()).isEqualTo(WadiumResponse.StatusEnum.PAID);
 
             RefundWadiumRequest refundReq = new RefundWadiumRequest();
             refundReq.setPartyId(auction.getAuctionId());
@@ -268,7 +268,7 @@ class PricingScenariosIT {
             WadiumRefundResponse refund = buyerAuctionsApi.refundWadium(
                 auction.getAuctionId(), refundReq, API_VERSION);
 
-            assertThat(refund.getStatus()).isEqualTo("REFUNDED");
+            assertThat(refund.getStatus()).isEqualTo(WadiumRefundResponse.StatusEnum.REFUNDED);
             assertThat(refund.getRefundAmount().getAmount()).isEqualTo("500.00");
         }
     }

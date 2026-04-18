@@ -18,7 +18,7 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[concepts/package-migration]] - Migracja pakietów z com.acme.auctions
 
 ### 🔧 Konfiguracje i Setup
-- [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych
+- [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych + systemd user services
 - [[DOCUMENTATION_STRUCTURE]] - Organizacja dokumentacji w projekcie
 
 ## 📝 Procedura Pielęgnacji

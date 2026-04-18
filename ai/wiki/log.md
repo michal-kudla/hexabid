@@ -42,3 +42,13 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 ---
 
 *Automatycznie aktualizowane przez agentów AI przy każdej istotnej zmianie.*
+
+## [2026-04-21] [IMPLEMENTATION] Pricing integration tests + REST adapter
+- Napisano 22 nowe scenariusze testowe IT_P10-IT_P31 w `PricingScenariosExtendedIT`
+- Zakres: imported+excisable car, per-unit excise, fixed wadium, zero VAT, reduced VAT 5%/8%, sum verification, consistency, customs-only, excise-only, full lifecycle
+- Zaimplementowano 3 endpointy w `RestAuctionApiDelegate`: `getAuctionPrice`, `depositWadium`, `refundWadium`
+- Naprawiono bug w testach: `setBasePath` -> `updateBaseUri` w wygenerowanym kliencie API
+- Skonfigurowano systemd user services: `hexabid-backend`, `hexabid-spa`
+- Wynik testów: 34/35 pass (1 pre-existing failure w ProductBatchInstanceAuctionScenariosIT)
+- Link: [[decisions/2026-04-17-pricing-architecture]]
+- Tagi: #pricing #integration-tests #systemd #rest-adapter
