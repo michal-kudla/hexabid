@@ -450,6 +450,100 @@ paths:
                 $ref: '#/components/schemas/AuctionResponse'
         '404':
           description: Auction not found
+  /api/auctions/{auctionId}/wadium:
+    post:
+      operationId: depositWadium
+      tags:
+        - Auctions
+      summary: Deposit wadium (bid security) for an auction
+      description: |
+        Allows a buyer to deposit wadium before participating in bidding.
+        Wadium is refunded on loss and deducted from the final price on win.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositWadiumRequest'
+      responses:
+        '201':
+          description: Wadium deposited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WadiumResponse'
+        '400':
+          description: Invalid request or wadium already deposited
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/wadium/refund:
+    post:
+      operationId: refundWadium
+      tags:
+        - Auctions
+      summary: Refund wadium for a losing bidder
+      description: |
+        Refunds the wadium deposit for a bidder who did not win the auction.
+        The wadium amount is returned in full to the bidder's account.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundWadiumRequest'
+      responses:
+        '200':
+          description: Wadium refunded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WadiumRefundResponse'
+        '400':
+          description: Cannot refund (auction still open or bidder won)
+        '404':
+          description: Auction or wadium deposit not found
+  /api/auctions/{auctionId}/price:
+    get:
+      operationId: getAuctionPrice
+      tags:
+        - Auctions
+      summary: Get price breakdown for an auction
+      description: |
+        Returns a detailed price breakdown including hammer price, wadium offset,
+        netto, excise, customs duty, VAT, and total amount due.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Price breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionPriceBreakdownResponse'
+        '404':
+          description: Auction not found
   /api/me:
     get:
       operationId: getCurrentUserProfile
@@ -593,6 +687,8 @@ components:
           format: uuid
         buyNowPrice:
           $ref: '#/components/schemas/Money'
+        pricingConfig:
+          $ref: '#/components/schemas/PricingConfig'
     BidResponse:
       type: object
       required:
@@ -654,6 +750,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BidResponse'
+        pricingConfig:
+          $ref: '#/components/schemas/PricingConfig'
     AuctionListItemResponse:
       type: object
       required:
@@ -976,3 +1074,153 @@ components:
         nextCursor:
           type: string
           nullable: true
+    WadiumStrategy:
+      type: string
+      enum:
+        - FIXED
+        - PERCENTAGE
+      description: Strategy for calculating wadium amount
+    PricingConfig:
+      type: object
+      properties:
+        wadiumStrategy:
+          $ref: '#/components/schemas/WadiumStrategy'
+        wadiumRate:
+          type: string
+          description: "Rate for percentage wadium (e.g. '0.05' for 5%) or fixed amount"
+        wadiumFixedAmount:
+          $ref: '#/components/schemas/Money'
+        vatRate:
+          type: string
+          description: "VAT rate as fraction (e.g. '0.23' for 23%)"
+        isExcisable:
+          type: boolean
+          default: false
+        exciseRate:
+          type: string
+          description: "Excise rate as fraction or per-unit amount"
+        exciseType:
+          type: string
+          enum:
+            - PERCENTAGE
+            - PER_UNIT
+        isImported:
+          type: boolean
+          default: false
+        customsDutyRate:
+          type: string
+          description: "Customs duty rate as fraction (e.g. '0.05' for 5%)"
+    DepositWadiumRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          $ref: '#/components/schemas/Money'
+    WadiumResponse:
+      type: object
+      required:
+        - wadiumId
+        - auctionId
+        - status
+        - amount
+        - refundableOnLoss
+        - deductibleOnWin
+      properties:
+        wadiumId:
+          type: string
+          format: uuid
+        auctionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PAID
+            - REFUNDED
+            - DEDUCTED
+        amount:
+          $ref: '#/components/schemas/Money'
+        refundableOnLoss:
+          type: boolean
+        deductibleOnWin:
+          type: boolean
+    RefundWadiumRequest:
+      type: object
+      required:
+        - partyId
+      properties:
+        partyId:
+          type: string
+          format: uuid
+          description: ID of the bidder requesting wadium refund
+    WadiumRefundResponse:
+      type: object
+      required:
+        - wadiumId
+        - auctionId
+        - status
+        - refundAmount
+      properties:
+        wadiumId:
+          type: string
+          format: uuid
+        auctionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - REFUNDED
+        refundAmount:
+          $ref: '#/components/schemas/Money'
+    AuctionPriceBreakdownResponse:
+      type: object
+      required:
+        - hammerPrice
+        - wadiumOffset
+        - netto
+        - excise
+        - customsDuty
+        - vat
+        - totalDue
+        - appliedRates
+      properties:
+        hammerPrice:
+          $ref: '#/components/schemas/Money'
+        wadiumOffset:
+          $ref: '#/components/schemas/Money'
+        netto:
+          $ref: '#/components/schemas/Money'
+        excise:
+          $ref: '#/components/schemas/Money'
+        customsDuty:
+          $ref: '#/components/schemas/Money'
+        vat:
+          $ref: '#/components/schemas/Money'
+        totalDue:
+          $ref: '#/components/schemas/Money'
+        appliedRates:
+          $ref: '#/components/schemas/AppliedRates'
+    AppliedRates:
+      type: object
+      required:
+        - vatRate
+      properties:
+        vatRate:
+          type: string
+          description: "Applied VAT rate (e.g. '23%')"
+        exciseRate:
+          type: string
+          nullable: true
+          description: "Applied excise rate (e.g. '3.1%' or '1.17 PLN/l')"
+        customsDutyRate:
+          type: string
+          nullable: true
+          description: "Applied customs duty rate (e.g. '5%')"
+        wadiumType:
+          type: string
+          nullable: true
+          enum:
+            - FIXED
+            - PERCENTAGE

@@ -201,6 +201,97 @@ mvn -Pprod clean package
 
 ---
 
+## 🖥️ Systemd User Services
+
+Aplikację można uruchamiać jako serwis systemd w przestrzeni użytkownika (bez sudo).
+
+### Lokalizacje plików serwisów
+
+| Serwis | Plik | Opis |
+|--------|------|------|
+| `hexabid-backend` | `~/.config/systemd/user/hexabid-backend.service` | Spring Boot backend (port 18080) |
+| `hexabid-spa` | `~/.config/systemd/user/hexabid-spa.service` | Angular SPA (port 4200) |
+
+### Komendy zarządzania
+
+```bash
+# Daemon reload po zmianie plików .service
+systemctl --user daemon-reload
+
+# Uruchomienie
+systemctl --user start hexabid-backend
+systemctl --user start hexabid-spa
+
+# Zatrzymanie
+systemctl --user stop hexabid-backend
+systemctl --user stop hexabid-spa
+
+# Restart (po rebildzie)
+systemctl --user restart hexabid-backend
+
+# Status
+systemctl --user status hexabid-backend
+systemctl --user status hexabid-spa
+
+# Logi
+journalctl --user -u hexabid-backend -f
+journalctl --user -u hexabid-spa -f
+
+# Autostart przy logowaniu
+systemctl --user enable hexabid-backend
+systemctl --user enable hexabid-spa
+```
+
+### hexabid-backend.service
+
+```ini
+[Unit]
+Description=Hexabid Backend (Spring Boot)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/work/projects/github.com/michal-kudla/hexabid
+ExecStart=java -jar hexabid-bootstrap/target/hexabid-bootstrap-0.0.1-SNAPSHOT.jar --server.port=18080 --server.servlet.context-path=/hexabid --spring.profiles.active=dev
+Restart=no
+Environment=SPRING_OUTPUT_ANSI_ENABLED=NEVER
+
+[Install]
+WantedBy=default.target
+```
+
+### hexabid-spa.service
+
+```ini
+[Unit]
+Description=Hexabid SPA (Angular)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/work/projects/github.com/michal-kudla/hexabid/hexabid-spa
+ExecStart=/usr/bin/npm start
+Restart=no
+Environment=NO_COLOR=1
+
+[Install]
+WantedBy=default.target
+```
+
+### Tip: Odtworzenie serwisów
+
+Jeśli pliki serwisowe nie istnieją, utwórz katalog i pliki:
+
+```bash
+mkdir -p ~/.config/systemd/user
+# Wklej zawartość serwisów (patrz wyżej) do:
+# ~/.config/systemd/user/hexabid-backend.service
+# ~/.config/systemd/user/hexabid-spa.service
+systemctl --user daemon-reload
+```
+
+---
+
 **Status: ✅ Gotowe do użytku**
 
 Teraz możesz uruchomić aplikację prostem poleceniem:

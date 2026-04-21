@@ -10,6 +10,7 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-04-16-module-refactoring]] - Refaktoryzacja modułów i pakietów
 - [[decisions/2026-04-16-profiles-local]] - System profili Maven/Spring
 - [[decisions/2026-04-16-documentation-structure]] - Organizacja dokumentacji
+- [[decisions/2026-04-17-pricing-architecture]] - Architektura ceny (wadium, VAT, akcyza, cło) oparta na archetypach M03+M04
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
@@ -17,7 +18,7 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[concepts/package-migration]] - Migracja pakietów z com.acme.auctions
 
 ### 🔧 Konfiguracje i Setup
-- [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych
+- [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych + systemd user services
 - [[DOCUMENTATION_STRUCTURE]] - Organizacja dokumentacji w projekcie
 
 ## 📝 Procedura Pielęgnacji
@@ -38,4 +39,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-04-16*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-04-17*

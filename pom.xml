@@ -21,6 +21,7 @@
     <modules>
         <module>hexabid-bom</module>
         <module>hexabid-quantity</module>
+        <module>hexabid-pricing</module>
         <module>hexabid-product</module>
         <module>hexabid-inventory</module>
         <module>hexabid-core</module>

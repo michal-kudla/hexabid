@@ -47,6 +47,7 @@
     <file url="file://$PROJECT_DIR$/hexabid-payment-adapter-payu/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-payment-api-contract/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-payment-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexabid-pricing/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-product/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-quantity/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/inventory/src/main/java" charset="UTF-8" />
