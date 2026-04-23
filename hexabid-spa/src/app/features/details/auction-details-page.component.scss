@@ -81,6 +81,13 @@ h1 {
   font: 700 1.25rem/1.2 var(--font-display);
 }
 
+.pricing-link {
+  display: inline-block;
+  margin-top: 1rem;
+  font-weight: 600;
+  color: rgba(11, 94, 215, 0.9);
+}
+
 .stack {
   display: grid;
   gap: 0.95rem;

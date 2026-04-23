@@ -198,3 +198,163 @@ Jeżeli użytkownik nie jest zalogowany:
 - identyfikator użytkownika w domenie jest wyprowadzany z dostawcy logowania i jego identyfikatora zewnętrznego
 - klient nie powinien próbować nadawać własnej tożsamości w payloadach
 - kanał `/events` służy do faktów biznesowych, a `/errors` do jawnych odrzuceń operacji
+
+== Kalkulacja ceny (Pricing)
+
+System kalkuluje cenę końcową aukcji na podstawie konfiguracji cenowej (`PricingConfig`), która może obejmować: wadium, VAT, akcyzę i cło.
+
+=== Formuła kalkulacji
+
+....
+netto = hammerPrice - wadiumOffset
+excise = netto * exciseRate         (jeśli isExcisable=true)
+customsDuty = (netto + excise) * customsDutyRate   (jeśli isImported=true)
+vat = (netto + excise + customsDuty) * vatRate
+totalDue = netto + excise + customsDuty + vat
+....
+
+=== Pobranie kalkulacji ceny
+
+[source,http]
+----
+GET /api/auctions/{auctionId}/price
+----
+
+Odpowiedź `200 OK`:
+
+[source,json]
+----
+{
+  "hammerPrice": { "amount": "50000.00", "currency": "PLN" },
+  "wadiumOffset": { "amount": "2500.00", "currency": "PLN" },
+  "netto": { "amount": "47500.00", "currency": "PLN" },
+  "excise": { "amount": "1472.50", "currency": "PLN" },
+  "customsDuty": { "amount": "0.00", "currency": "PLN" },
+  "vat": { "amount": "11281.78", "currency": "PLN" },
+  "totalDue": { "amount": "60254.28", "currency": "PLN" },
+  "appliedRates": {
+    "vatRate": "23%",
+    "exciseRate": "3.1%",
+    "customsDutyRate": null,
+    "wadiumType": "PERCENTAGE"
+  }
+}
+----
+
+=== Wadium
+
+Wadium to depozyt bezpieczeństwa wymagany przed licytacją. Jest:
+
+- **zwracane** po przegranej aukcji
+- **odliczane** od ceny końcowej po wygranej
+
+Strategie wadium:
+
+- `PERCENTAGE` - procent ceny młotka (np. 5% = rate 0.05)
+- `FIXED` - stała kwota (np. 50 PLN)
+
+==== Wpłata wadium
+
+[source,http]
+----
+POST /api/auctions/{auctionId}/wadium
+Content-Type: application/json
+
+{
+  "amount": { "amount": "2500.00", "currency": "PLN" }
+}
+----
+
+Odpowiedź `200 OK`:
+
+[source,json]
+----
+{
+  "wadiumId": "uuid",
+  "auctionId": "uuid",
+  "status": "PAID",
+  "amount": { "amount": "2500.00", "currency": "PLN" },
+  "refundableOnLoss": true,
+  "deductibleOnWin": true
+}
+----
+
+==== Zwrot wadium
+
+[source,http]
+----
+POST /api/auctions/{auctionId}/wadium/refund
+Content-Type: application/json
+
+{
+  "partyId": "uuid-przegranego-uczestnika"
+}
+----
+
+Odpowiedź `200 OK`:
+
+[source,json]
+----
+{
+  "wadiumId": "uuid",
+  "auctionId": "uuid",
+  "status": "REFUNDED",
+  "refundAmount": { "amount": "2500.00", "currency": "PLN" }
+}
+----
+
+=== Konfiguracja cenowa przy tworzeniu aukcji
+
+Opcjonalne pole `pricingConfig` w żądaniu tworzenia aukcji:
+
+[source,json]
+----
+{
+  "title": "Samochód importowany",
+  "startingPrice": { "amount": "50000.00", "currency": "PLN" },
+  "endsAt": "2026-06-01T12:00:00Z",
+  "pricingConfig": {
+    "wadiumStrategy": "PERCENTAGE",
+    "wadiumRate": "0.05",
+    "vatRate": "0.23",
+    "isExcisable": true,
+    "exciseRate": "0.031",
+    "exciseType": "PERCENTAGE",
+    "isImported": true,
+    "customsDutyRate": "0.05"
+  }
+}
+----
+
+Pola `pricingConfig`:
+
+|===
+|Pole|Typ|Opis
+|`wadiumStrategy`|`FIXED` \| `PERCENTAGE`|Strategia obliczania wadium
+|`wadiumRate`|string|Stawka procentowa wadium (np. `0.05`)
+|`wadiumFixedAmount`|`Money`|Stała kwota wadium (gdy FIXED)
+|`vatRate`|string|Stawka VAT jako ułamek (np. `0.23`)
+|`isExcisable`|boolean|Czy produkt podlega akcyzie
+|`exciseRate`|string|Stawka akcyzy (ułamek lub kwota/jednostkę)
+|`exciseType`|`PERCENTAGE` \| `PER_UNIT`|Typ stawki akcyzy
+|`isImported`|boolean|Czy produkt jest importowany
+|`customsDutyRate`|string|Stawka cła jako ułamek (np. `0.05`)
+|===
+
+=== Interfejs SPA
+
+W aplikacji Angular SPA:
+
+1. **Strona kalkulacji ceny** (`/auction/{auctionId}/pricing`):
+   - Tabela ze składnikami ceny: młotek, wadium, netto, akcyza, cło, VAT, należne
+   - Panel stawek zastosowanych
+   - Formuła kalkulacji (edukacyjna)
+   - Formularz wpłaty i zwrotu wadium
+
+2. **Tworzenie aukcji z ceną** (`/sell`):
+   - Przycisk "Dodaj konfigurację ceny"
+   - Dynamiczne pola: strategia wadium, stawka VAT, akcyza, cło
+   - Warunkowe wyświetlanie zależne od wybranych opcji
+
+3. **Link ze szczegółów aukcji** (`/auction/{auctionId}`):
+   - "Zobacz kalkulację ceny →" przechodzi do strony kalkulacji
