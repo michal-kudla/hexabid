@@ -19,6 +19,13 @@ export const routes: Routes = [
           )
       },
       {
+        path: 'auction/:auctionId/pricing',
+        loadComponent: () =>
+          import('./features/pricing/pricing-page.component').then(
+            (m) => m.PricingPageComponent
+          )
+      },
+      {
         path: 'sell',
         loadComponent: () =>
           import('./features/create/auction-create-page.component').then(

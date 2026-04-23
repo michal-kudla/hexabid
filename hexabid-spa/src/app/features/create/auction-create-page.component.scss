@@ -48,6 +48,33 @@
   border: 1px solid rgba(220, 38, 38, 0.16);
 }
 
+.pricing-toggle {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.pricing-section {
+  padding: 1.25rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(11, 94, 215, 0.15);
+  background: rgba(11, 94, 215, 0.03);
+}
+
+.pricing-section h3 {
+  font: 700 1rem/1.2 var(--font-display);
+  margin: 0 0 0.5rem;
+}
+
+.pricing-section .hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.pricing-grid {
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 960px) {
   .compose {
     grid-template-columns: 1fr;

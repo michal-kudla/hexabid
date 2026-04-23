@@ -52,3 +52,14 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Wynik testów: 34/35 pass (1 pre-existing failure w ProductBatchInstanceAuctionScenariosIT)
 - Link: [[decisions/2026-04-17-pricing-architecture]]
 - Tagi: #pricing #integration-tests #systemd #rest-adapter
+
+## [2026-04-21] [IMPLEMENTATION] Pricing SPA frontend module
+- Dodano moduł pricing do Angular SPA: strona kalkulacji ceny, wpłata/zwrot wadium
+- Nowe pliki data-access: `pricing-api.models.ts`, `pricing-view.mapper.ts`, `pricing-api.service.ts`
+- Nowy feature: `features/pricing/` z `PricingFacade`, `PricingPageComponent`
+- Rozszerzono stronę tworzenia aukcji o `PricingConfig` (wadium, VAT, akcyza, cło)
+- Dodano link "Zobacz kalkulację ceny" na stronie szczegółów aukcji
+- Nowa ruta: `/auction/:auctionId/pricing`
+- E2E tests: `pricing.spec.ts`, `pricing-create.spec.ts`, `pricing-navigation.spec.ts` (13 testów)
+- Link: [[decisions/2026-04-21-pricing-spa-frontend]]
+- Tagi: #pricing #spa #angular #e2e #frontend

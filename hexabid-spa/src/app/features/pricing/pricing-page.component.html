@@ -1,0 +1,167 @@
+@if (facade.loading()) {
+  <section class="surface loading-state">Ładowanie kalkulacji ceny...</section>
+} @else if (facade.error()) {
+  <app-empty-state
+    title="Nie udało się pobrać kalkulacji"
+    [description]="facade.error()!"
+    actionLabel="Wróć do aukcji"
+    [actionHref]="auctionLink()"
+  />
+} @else if (facade.breakdown(); as bd) {
+  <section class="pricing-grid">
+    <article class="surface breakdown-card">
+      <div class="section-heading">
+        <h1>Kalkulacja ceny</h1>
+        <a [routerLink]="auctionLink()" class="back-link">&larr; Powrót do aukcji</a>
+      </div>
+
+      <p class="intro-text">
+        Szczegółowy rozkład ceny aukcyjnej. Kwota należna to suma składowych netto, akcyzy, cła i VAT.
+        Wadium jest odliczane od ceny młotka przed dalszymi obliczeniami.
+      </p>
+
+      <div class="breakdown-table">
+        <div class="breakdown-row header">
+          <span>Składnik</span>
+          <span>Kwota</span>
+        </div>
+        <div class="breakdown-row">
+          <span>Cena młotka</span>
+          <span class="amount">{{ bd.hammerPrice.label }}</span>
+        </div>
+        <div class="breakdown-row offset">
+          <span>Wadium (odliczenie)</span>
+          <span class="amount offset-amount">&minus; {{ bd.wadiumOffset.label }}</span>
+        </div>
+        <div class="breakdown-row subtotal">
+          <span>Netto</span>
+          <span class="amount">{{ bd.netto.label }}</span>
+        </div>
+        @if (bd.excise.amount !== '0.00') {
+          <div class="breakdown-row">
+            <span>Akcyza</span>
+            <span class="amount">{{ bd.excise.label }}</span>
+          </div>
+        }
+        @if (bd.customsDuty.amount !== '0.00') {
+          <div class="breakdown-row">
+            <span>Cło</span>
+            <span class="amount">{{ bd.customsDuty.label }}</span>
+          </div>
+        }
+        <div class="breakdown-row">
+          <span>VAT ({{ bd.appliedRates.vatRate }})</span>
+          <span class="amount">{{ bd.vat.label }}</span>
+        </div>
+        <div class="breakdown-row total">
+          <span>Kwota należna</span>
+          <span class="amount">{{ bd.totalDue.label }}</span>
+        </div>
+      </div>
+    </article>
+
+    <aside class="surface rates-card">
+      <h2>Stawki zastosowane</h2>
+      <dl class="rates-list">
+        <div>
+          <dt>Stawka VAT</dt>
+          <dd>{{ bd.appliedRates.vatRate }}</dd>
+        </div>
+        @if (bd.appliedRates.exciseRate) {
+          <div>
+            <dt>Stawka akcyzy</dt>
+            <dd>{{ bd.appliedRates.exciseRate }}</dd>
+          </div>
+        }
+        @if (bd.appliedRates.customsDutyRate) {
+          <div>
+            <dt>Stawka cła</dt>
+            <dd>{{ bd.appliedRates.customsDutyRate }}</dd>
+          </div>
+        }
+        @if (bd.appliedRates.wadiumType) {
+          <div>
+            <dt>Typ wadium</dt>
+            <dd>{{ bd.appliedRates.wadiumTypeLabel }}</dd>
+          </div>
+        }
+      </dl>
+
+      <div class="formula-box">
+        <h3>Formuła kalkulacji</h3>
+        <code>netto = młotek &minus; wadium</code>
+        <code>akcyza = netto &times; stawka_akcyzy</code>
+        <code>cło = (netto + akcyza) &times; stawka_cła</code>
+        <code>VAT = (netto + akcyza + cło) &times; stawka_VAT</code>
+        <code>należne = netto + akcyza + cło + VAT</code>
+      </div>
+    </aside>
+  </section>
+
+  <section class="actions-grid">
+    <article class="surface wadium-card">
+      <h2>Wpłać wadium</h2>
+      <p class="hint">
+        Wadium jest zwracane po przegranej licytacji i odliczane od ceny końcowej po wygranej.
+      </p>
+
+      <form [formGroup]="wadiumForm" (ngSubmit)="submitWadium()" class="stack">
+        <label>
+          <span>Kwota wadium</span>
+          <input type="text" formControlName="amount" placeholder="500.00" />
+        </label>
+
+        <label>
+          <span>Waluta</span>
+          <select formControlName="currency">
+            <option value="PLN">PLN</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </label>
+
+        <button type="submit" [disabled]="facade.wadiumDepositing()">
+          {{ facade.wadiumDepositing() ? 'Wpłacanie...' : 'Wpłać wadium' }}
+        </button>
+      </form>
+
+      @if (facade.wadiumDeposit(); as deposit) {
+        <div class="deposit-result success">
+          <strong>Wadium wpłacone</strong>
+          <p>{{ deposit.amount.label }} &mdash; {{ deposit.statusLabel }}</p>
+          @if (deposit.refundableOnLoss) {
+            <small>Zwracane po przegranej</small>
+          }
+          @if (deposit.deductibleOnWin) {
+            <small>Odliczane po wygranej</small>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="surface refund-card">
+      <h2>Zwróć wadium</h2>
+      <p class="hint">
+        Zwróć wadium uczestnikowi, który nie wygrał aukcji.
+      </p>
+
+      <form [formGroup]="refundForm" (ngSubmit)="submitRefund()" class="stack">
+        <label>
+          <span>ID uczestnika (partyId)</span>
+          <input type="text" formControlName="partyId" placeholder="UUID uczestnika" />
+        </label>
+
+        <button type="submit" [disabled]="facade.wadiumRefunding()">
+          {{ facade.wadiumRefunding() ? 'Zwracanie...' : 'Zwróć wadium' }}
+        </button>
+      </form>
+
+      @if (facade.wadiumRefund(); as refund) {
+        <div class="deposit-result success">
+          <strong>Wadium zwrócone</strong>
+          <p>{{ refund.refundAmount.label }} &mdash; {{ refund.statusLabel }}</p>
+        </div>
+      }
+    </article>
+  </section>
+}

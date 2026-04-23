@@ -11,11 +11,13 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-04-16-profiles-local]] - System profili Maven/Spring
 - [[decisions/2026-04-16-documentation-structure]] - Organizacja dokumentacji
 - [[decisions/2026-04-17-pricing-architecture]] - Architektura ceny (wadium, VAT, akcyza, cło) oparta na archetypach M03+M04
+- [[decisions/2026-04-21-pricing-spa-frontend]] - Frontend SPA modułu pricing: kalkulacja ceny, wadium, konfiguracja
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
 - [[concepts/profile-system]] - System profili Maven i Spring
 - [[concepts/package-migration]] - Migracja pakietów z com.acme.auctions
+- [[concepts/pricing-spa-layers]] - Warstwy frontendowe modułu pricing (data-access, feature, e2e)
 
 ### 🔧 Konfiguracje i Setup
 - [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych + systemd user services
@@ -39,4 +41,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-04-17*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-04-21*

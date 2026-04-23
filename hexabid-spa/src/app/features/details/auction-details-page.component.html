@@ -39,6 +39,10 @@
           <dd>{{ auction.timeLeftLabel }}</dd>
         </div>
       </dl>
+
+      <a [routerLink]="['/auction', auction.auctionId, 'pricing']" class="pricing-link">
+        Zobacz kalkulację ceny &rarr;
+      </a>
     </article>
 
     <aside class="surface bid-panel">

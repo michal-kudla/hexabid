@@ -6,14 +6,14 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuctionDetailsFacade } from './auction-details.facade';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 
 @Component({
   selector: 'app-auction-details-page',
-  imports: [CommonModule, ReactiveFormsModule, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent],
   templateUrl: './auction-details-page.component.html',
   styleUrl: './auction-details-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
