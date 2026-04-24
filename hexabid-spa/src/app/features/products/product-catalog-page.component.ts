@@ -85,12 +85,12 @@ import { ProductTypeResponse } from '../../data-access/generated/auction-contrac
     .page-header h1 {
       font-size: 2rem;
       font-weight: 700;
-      color: var(--color-text-primary);
+      color: var(--ink);
       margin: 0 0 0.5rem 0;
     }
 
     .subtitle {
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
       margin: 0;
     }
 
@@ -102,28 +102,30 @@ import { ProductTypeResponse } from '../../data-access/generated/auction-contrac
 
     .search-input {
       flex: 1;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 44px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
       font-size: 1rem;
     }
 
     .strategy-select {
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 44px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
       font-size: 1rem;
-      background: white;
+      background: var(--bg-surface);
     }
 
     .loading, .error, .empty-state {
       text-align: center;
       padding: 3rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
     }
 
     .error {
-      color: var(--color-error);
+      color: var(--danger);
     }
 
     .hint {
@@ -140,15 +142,15 @@ import { ProductTypeResponse } from '../../data-access/generated/auction-contrac
     .product-card {
       display: block;
       padding: 1.5rem;
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-xl);
       text-decoration: none;
       transition: all 0.2s ease;
-      background: white;
+      background: var(--bg-surface);
     }
 
     .product-card:hover {
-      border-color: var(--color-primary);
+      border-color: var(--accent);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       transform: translateY(-2px);
     }
@@ -161,13 +163,13 @@ import { ProductTypeResponse } from '../../data-access/generated/auction-contrac
     .product-name {
       font-size: 1.125rem;
       font-weight: 600;
-      color: var(--color-text-primary);
+      color: var(--ink);
       margin: 0 0 0.5rem 0;
     }
 
     .product-description {
       font-size: 0.875rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
       margin: 0 0 1rem 0;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -189,28 +191,29 @@ import { ProductTypeResponse } from '../../data-access/generated/auction-contrac
     }
 
     .strategy-badge.unique {
-      background: #fef3c7;
-      color: #92400e;
+      background: var(--color-amber-50);
+      color: var(--accent-text);
     }
 
     .strategy-badge.batch {
-      background: #dbeafe;
-      color: #1e40af;
+      background: var(--accent-light);
+      color: var(--accent-text);
     }
 
     .strategy-badge.individual {
-      background: #d1fae5;
-      color: #065f46;
+      background: var(--success-bg);
+      color: var(--success-text);
     }
 
     .strategy-badge.identical {
-      background: #f3f4f6;
-      color: #374151;
+      background: var(--color-stone-100);
+      color: var(--ink-secondary);
+      border: 1px solid var(--border);
     }
 
     .unit {
       font-size: 0.875rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
     }
   `]
 })

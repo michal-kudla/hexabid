@@ -1,0 +1,99 @@
+:root {
+  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-display: 'Source Serif 4', Georgia, serif;
+  --font-mono: ui-monospace, 'Cascadia Code', monospace;
+
+  --color-amber-50: #fff8eb;
+  --color-amber-100: #ffefcf;
+  --color-amber-200: #ffdb99;
+  --color-amber-500: #c27a1a;
+  --color-amber-600: #a86514;
+  --color-amber-700: #8a5110;
+  --color-amber-800: #6d3f0d;
+
+  --color-green-50: #ecfdf5;
+  --color-green-100: #d1fae5;
+  --color-green-600: #047857;
+  --color-green-700: #036b4c;
+  --color-green-800: #02593d;
+
+  --color-red-50: #fef2f2;
+  --color-red-100: #fee2e2;
+  --color-red-600: #c42b1c;
+  --color-red-700: #a32215;
+  --color-red-800: #871c12;
+
+  --color-stone-50: #faf8f5;
+  --color-stone-100: #f2ede6;
+  --color-stone-200: #e8e0d4;
+  --color-stone-300: #d4c9b8;
+  --color-stone-400: #b5a68e;
+  --color-stone-500: #9a886e;
+  --color-stone-600: #7d6b53;
+  --color-stone-700: #5e4f3c;
+  --color-stone-800: #3d3224;
+  --color-stone-900: #1f1a12;
+
+  --bg: var(--color-stone-50);
+  --bg-surface: #ffffff;
+
+  --border: var(--color-stone-200);
+  --border-focus: var(--color-amber-600);
+  --border-strong: var(--color-stone-400);
+
+  --ink: var(--color-stone-900);
+  --ink-secondary: var(--color-stone-600);
+  --ink-muted: var(--color-stone-400);
+
+  --accent: var(--color-amber-600);
+  --accent-hover: var(--color-amber-700);
+  --accent-light: var(--color-amber-50);
+  --accent-text: var(--color-amber-800);
+
+  --success: var(--color-green-700);
+  --success-bg: var(--color-green-50);
+  --success-text: var(--color-green-800);
+
+  --danger: var(--color-red-700);
+  --danger-bg: var(--color-red-50);
+  --danger-text: var(--color-red-800);
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(31, 26, 18, 0.06);
+  --shadow-md: 0 4px 12px rgba(31, 26, 18, 0.08);
+  --shadow-lg: 0 12px 32px rgba(31, 26, 18, 0.1);
+
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+}

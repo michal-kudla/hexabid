@@ -1,128 +1,137 @@
 .details-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
-  gap: 1.25rem;
+  gap: var(--space-5);
 }
 
 .details-grid--secondary {
-  margin-top: 1.25rem;
+  margin-top: var(--space-5);
 }
 
 .surface.loading-state {
-  padding: 2rem;
-}
-
-.surface {
-  padding: 1.5rem;
+  padding: var(--space-8);
 }
 
 .spotlight {
   background:
-    radial-gradient(circle at top left, rgba(255, 122, 89, 0.18), transparent 40%),
-    linear-gradient(160deg, rgba(11, 94, 215, 0.08), rgba(255, 255, 255, 0.9));
+    radial-gradient(circle at top left, rgba(168, 101, 20, 0.1), transparent 40%),
+    linear-gradient(160deg, var(--accent-light), rgba(255, 255, 255, 0.95));
 }
 
-.eyebrow,
-.section-heading {
+.eyebrow {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-3);
   align-items: center;
-  color: var(--text-muted);
+  color: var(--ink-secondary);
 }
 
-.status-badge {
+.badge {
   display: inline-flex;
-  border-radius: 999px;
-  padding: 0.35rem 0.7rem;
-  background: rgba(22, 163, 74, 0.14);
-  color: #166534;
-  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid rgba(3, 107, 76, 0.2);
+  font: 600 var(--text-xs)/1.5 var(--font-body);
 }
 
-.status-badge.closed {
-  background: rgba(107, 114, 128, 0.14);
-  color: #374151;
+.badge-closed {
+  background: var(--color-stone-100);
+  color: var(--ink-secondary);
+  border-color: var(--border);
 }
 
 h1 {
-  margin: 1rem 0 0.75rem;
-  font: 700 clamp(2rem, 4vw, 3.4rem) / 0.95 var(--font-display);
+  margin: var(--space-3) 0 var(--space-3);
+  font: 700 clamp(1.8rem, 3.5vw, 2.8rem)/1.05 var(--font-display);
 }
 
 .lede,
 .muted,
 .bid-panel p,
 .hint {
-  color: var(--text-muted);
+  color: var(--ink-secondary);
+  line-height: var(--leading-relaxed);
 }
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0 0;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-5) 0 0;
 }
 
 .metrics div {
-  padding: 1rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
 }
 
 .metrics dt {
-  color: var(--text-muted);
-  font-size: 0.84rem;
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
 }
 
 .metrics dd {
-  margin: 0.45rem 0 0;
-  font: 700 1.25rem/1.2 var(--font-display);
+  margin-top: var(--space-1);
+  font: 700 var(--text-lg)/1.2 var(--font-display);
 }
 
 .pricing-link {
   display: inline-block;
-  margin-top: 1rem;
+  margin-top: var(--space-3);
   font-weight: 600;
-  color: rgba(11, 94, 215, 0.9);
+  color: var(--accent-text);
+}
+
+.bid-panel h2 {
+  font: 700 var(--text-xl)/1.2 var(--font-display);
+  margin-bottom: var(--space-2);
 }
 
 .stack {
   display: grid;
-  gap: 0.95rem;
-  margin-top: 1.25rem;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.meta {
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
 }
 
 .timeline,
 .feed {
   display: grid;
-  gap: 0.8rem;
-  margin-top: 1rem;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
 }
 
 .timeline-item,
 .feed-item {
-  padding: 1rem;
-  border-radius: 1rem;
-  border: 1px solid var(--border-soft);
-  background: var(--surface-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
 }
 
 .timeline-item span,
 .timeline-item small {
   display: block;
-  color: var(--text-muted);
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
 }
 
 .feed-item.success {
-  border-color: rgba(22, 163, 74, 0.25);
-  background: rgba(22, 163, 74, 0.06);
+  border-color: rgba(3, 107, 76, 0.25);
+  background: var(--success-bg);
 }
 
 .feed-item.error {
-  border-color: rgba(220, 38, 38, 0.25);
-  background: rgba(220, 38, 38, 0.05);
+  border-color: rgba(163, 34, 21, 0.25);
+  background: var(--danger-bg);
 }
 
 @media (max-width: 1024px) {

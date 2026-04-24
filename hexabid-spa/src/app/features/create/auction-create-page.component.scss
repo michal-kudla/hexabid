@@ -1,33 +1,24 @@
 .compose {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 1.25rem;
-}
-
-.surface {
-  padding: 1.5rem;
-}
-
-.intro {
-  background:
-    radial-gradient(circle at top left, rgba(11, 94, 215, 0.22), transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 122, 89, 0.08));
+  grid-template-columns: 1fr 1.1fr;
+  gap: var(--space-5);
 }
 
 .intro h1 {
-  margin: 0.65rem 0 0.8rem;
-  font: 700 clamp(2rem, 4vw, 3.2rem) / 0.95 var(--font-display);
+  font: 700 clamp(1.8rem, 3vw, 2.4rem)/1.05 var(--font-display);
+  margin: var(--space-2) 0 var(--space-3);
 }
 
 .intro p {
-  color: var(--text-muted);
+  color: var(--ink-secondary);
   max-width: 42ch;
+  line-height: var(--leading-relaxed);
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.95rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
 }
 
 .wide,
@@ -40,39 +31,32 @@
   justify-content: flex-end;
 }
 
-.inline-alert {
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  background: rgba(220, 38, 38, 0.06);
-  color: #991b1b;
-  border: 1px solid rgba(220, 38, 38, 0.16);
-}
-
 .pricing-toggle {
   display: flex;
   justify-content: flex-start;
 }
 
 .pricing-section {
-  padding: 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(11, 94, 215, 0.15);
-  background: rgba(11, 94, 215, 0.03);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--color-amber-200);
+  background: var(--accent-light);
 }
 
 .pricing-section h3 {
-  font: 700 1rem/1.2 var(--font-display);
-  margin: 0 0 0.5rem;
+  font: 700 var(--text-md)/1.2 var(--font-body);
+  margin: 0 0 var(--space-2);
 }
 
 .pricing-section .hint {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  margin: 0 0 1rem;
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-3);
+  line-height: var(--leading-relaxed);
 }
 
 .pricing-grid {
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 @media (max-width: 960px) {

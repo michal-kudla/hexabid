@@ -63,3 +63,15 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - E2E tests: `pricing.spec.ts`, `pricing-create.spec.ts`, `pricing-navigation.spec.ts` (13 testów)
 - Link: [[decisions/2026-04-21-pricing-spa-frontend]]
 - Tagi: #pricing #spa #angular #e2e #frontend
+
+## [2026-04-24] [DESIGN] SPA Visual Redesign — Concept B (Warm Professional)
+- Pełny redesign look-and-feel SPA: z "glossy" (gradienty, glow, 1px borders) na "Warm Professional" (flat buttons, 2px borders, WCAG AA)
+- Nowa paleta: Stone (#1f1a12 ink) + Amber (#a86514 accent) zamiast Blue + Orange
+- Nowe fonty: DM Sans (body) + Source Serif 4 (display) zamiast Manrope + Space Grotesk
+- Nowa architektura CSS: `src/styles/_tokens.scss` (jedno źródło prawdy), `_reset.scss`, `_components.scss`, `_utilities.scss`
+- Dostępność: 2px borders, min-height 44px, badge z border, alert z border-left:4px, focus ring 4px
+- Nawigacja: underline-based (bottom-border) zamiast pill-segmented
+- Mockupy: `.local/mockups/concept-a-clinical.html`, `concept-b-warm-professional.html`, `concept-c-nordic-calm.html`
+- Redesign proposal: `.local/mockups/REDESIGN-PROPOSAL.md`
+- Link: [[decisions/2026-04-24-spa-visual-redesign]]
+- Tagi: #spa #design #accessibility #css #tokens #redesign

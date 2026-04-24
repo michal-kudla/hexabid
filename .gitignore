@@ -37,3 +37,6 @@ build/
 # Eclipse project files
 .classpath
 .project
+
+# Local working files (LLM agents, mockups, etc.)
+.local/

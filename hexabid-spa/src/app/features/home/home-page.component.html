@@ -1,36 +1,33 @@
 <section class="hero">
-  <div class="hero__copy">
-    <span class="kicker">Hexagonal architecture on screen</span>
-    <h1>Rynek aukcyjny zaprojektowany jak produkt, a nie tylko demo API.</h1>
-    <p>
-      Pierwszy przyrost SPA pokazuje już publiczny marketplace, szczegóły aukcji, dashboard użytkownika i kanał
-      real-time. Struktura aplikacji jest przygotowana pod dalsze rozbudowywanie bez mieszania modeli i warstw.
-    </p>
+  <div class="hero-copy">
+    <span class="kicker">Rynek aukcyjny</span>
+    <h1>Odkryj unikalne przedmioty na żywym rynku licytacji</h1>
+    <p>Przeglądaj aktywne aukcje, licytuj w czasie rzeczywistym i zarządzaj swoimi ofertami. Wszystko w jednym miejscu.</p>
 
-    <div class="hero__stats">
-      <div class="surface">
+    <div class="hero-stats">
+      <div class="hero-stat">
         <strong>{{ facade.page().items.length }}</strong>
         <span>aukcji w bieżącym widoku</span>
       </div>
-      <div class="surface">
+      <div class="hero-stat">
         <strong>{{ session.isAuthenticated() ? 'online' : 'guest' }}</strong>
-        <span>stan sesji użytkownika</span>
+        <span>stan sesji</span>
       </div>
-      <div class="surface">
+      <div class="hero-stat">
         <strong>STOMP</strong>
         <span>gotowe pod licytację live</span>
       </div>
     </div>
   </div>
 
-  <div class="hero__panel surface">
+  <div class="hero-panel surface">
     <div class="panel-header">
-      <span>Eksploracja aukcji</span>
-      <a routerLink="/sell">Przejdź do wystawiania</a>
+      <span class="kicker">Eksploracja</span>
+      <a routerLink="/sell">Wystaw aukcję</a>
     </div>
 
     <form [formGroup]="filtersForm" (ngSubmit)="applyFilters()" class="search-grid">
-      <label class="search-grid__wide">
+      <label class="wide">
         <span>Szukaj frazy</span>
         <input type="text" formControlName="query" placeholder="np. komiks, figurka, dzieło sztuki" />
       </label>
@@ -52,31 +49,28 @@
         </select>
       </label>
 
-      <div class="search-grid__actions">
+      <div class="wide search-actions">
         <button type="submit">Szukaj</button>
         <button type="button" class="button-secondary" (click)="clearFilters()">Wyczyść</button>
       </div>
     </form>
 
     @if (facade.error()) {
-      <div class="inline-alert">{{ facade.error() }}</div>
+      <div class="alert-inline">{{ facade.error() }}</div>
     }
   </div>
 </section>
 
 <section class="results surface">
-  <div class="results__header">
+  <div class="section-heading">
     <div>
       <span class="kicker">Wyszukiwanie</span>
       <h2>Widok rynku</h2>
     </div>
-    <p>
-      Kryteria są utrzymywane w URL, a feature jest odseparowany od kontraktów API przez własny facade i mappery.
-    </p>
   </div>
 
   @if (facade.loading()) {
-    <div class="results__loading">Pobieranie aukcji...</div>
+    <div class="results-loading">Pobieranie aukcji...</div>
   } @else if (facade.page().items.length) {
     <div class="cards">
       @for (auction of facade.page().items; track auction.auctionId) {
@@ -85,7 +79,7 @@
     </div>
 
     @if (facade.page().nextCursor) {
-      <div class="results__footer">
+      <div class="results-footer">
         <button type="button" class="button-secondary" (click)="facade.loadMore()">Załaduj kolejne wyniki</button>
       </div>
     }

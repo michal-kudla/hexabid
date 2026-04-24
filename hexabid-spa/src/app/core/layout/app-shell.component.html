@@ -1,11 +1,11 @@
 <div class="shell">
   <header class="topbar">
     <a class="brand" routerLink="/">
-      <span class="brand__mark">HB</span>
-      <span>
-        <strong>Hexabid</strong>
-        <small>reference auction SPA</small>
-      </span>
+      <span class="brand-mark">HB</span>
+      <div>
+        <span class="brand-name">Hexabid</span>
+        <span class="brand-sub">reference auction SPA</span>
+      </div>
     </a>
 
     <nav class="nav">
@@ -23,7 +23,7 @@
           <small>{{ profile.verifiedLabel }}</small>
         </a>
         @if (profile.provider === 'dev') {
-          <a class="ghost-button" href="/dev-auth?redirect=http://localhost:4200/">Zmien usera</a>
+          <a class="ghost-button" href="/dev-auth?redirect=http://localhost:4200/">Zmień usera</a>
         }
         <button class="ghost-button" type="button" (click)="session.logout()">Wyloguj</button>
       } @else {
