@@ -24,7 +24,7 @@ mvn clean verify
 mvn -f auctions-bootstrap/pom.xml spring-boot:run
 ```
 
-REST startuje pod `http://localhost:8080`, WebSocket STOMP pod `ws://localhost:8080/ws-auctions`.
+REST startuje pod `http://localhost:18080`, WebSocket STOMP pod `ws://localhost:18080/ws-auctions`.
 
 ### Profil developerski z danymi demo
 
@@ -44,7 +44,7 @@ W tym profilu:
 
 Developer login:
 
-- otwórz `http://localhost:8080/dev-auth?redirect=http://localhost:4200/`
+- otwórz `http://localhost:18080/dev-auth?redirect=http://localhost:14200/`
 - wybierz jednego z użytkowników demo
 - po zalogowaniu możesz zmieniać użytkownika z poziomu tego samego ekranu lub z linku `Zmien usera` w SPA
 - użytkownicy oznaczeni jako `KYC blocked` pozwalają testować scenariusze negatywne

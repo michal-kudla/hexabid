@@ -7,12 +7,12 @@ export default defineConfig({
     timeout: 5_000,
   },
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:4200',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:14200',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run start -- --host 127.0.0.1 --port 4200',
-    port: 4200,
+    command: 'npm run start -- --host 127.0.0.1 --port 14200',
+    port: 14200,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

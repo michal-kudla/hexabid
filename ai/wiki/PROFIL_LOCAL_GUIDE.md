@@ -33,8 +33,8 @@ mvn clean install  # Profil 'local' aktywny domyślnie
 
 | Profil | Port | Context Path | Seed Data | CORS | Plik konfiguracji |
 |--------|------|--------------|-----------|------|-------------------|
-| `local` | 18080 | `/hexabid` | ✅ Włączone | http://localhost:14002 | `application-local.yaml` |
-| `dev` | 8080 | `/` | ❌ Wyłączone | — | `application.yaml` |
+| `local` | 18080 | `/hexabid` | ✅ Włączone | http://localhost:14200 | `application-local.yaml` |
+| `dev` | 18080 | `/` | ❌ Wyłączone | — | `application.yaml` |
 | `prod` | — | — | ❌ Wyłączone | — | `application.yaml` |
 
 ---
@@ -55,7 +55,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 - Profil Maven: **local** (domyślny) → local-auth, local-kyc, local-payment
 - Profil Spring: **local** → port 18080, context `/hexabid`, seed data włączone
 - Baza danych: H2 w pamięci
-- CORS: http://localhost:14002
+- CORS: http://localhost:14200
 
 ### Opcja 2: Production JAR
 ```bash
@@ -166,7 +166,7 @@ mvn -Pprod clean install
 # Uruchomienie
 java -jar hexabid-bootstrap-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
 
-# Dostęp: http://localhost:8080/
+# Dostęp: http://localhost:18080/
 # Bez seed data, KYC + PayU
 ```
 
@@ -210,7 +210,7 @@ Aplikację można uruchamiać jako serwis systemd w przestrzeni użytkownika (be
 | Serwis | Plik | Opis |
 |--------|------|------|
 | `hexabid-backend` | `~/.config/systemd/user/hexabid-backend.service` | Spring Boot backend (port 18080) |
-| `hexabid-spa` | `~/.config/systemd/user/hexabid-spa.service` | Angular SPA (port 4200) |
+| `hexabid-spa` | `~/.config/systemd/user/hexabid-spa.service` | Angular SPA (port 14200) |
 
 ### Komendy zarządzania
 
