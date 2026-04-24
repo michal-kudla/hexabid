@@ -3,7 +3,7 @@
 } @else if (!session.profile()) {
   <app-empty-state
     title="Zaloguj się, aby otworzyć dashboard"
-    description="Backend udostępnia już profil `me`, moje aukcje i moje licytacje. Po logowaniu ten ekran stanie się centralnym miejscem pracy użytkownika."
+    description="Backend udostępnia profil `me`, moje aukcje i moje licytacje. Po logowaniu ten ekran stanie się centralnym miejscem pracy użytkownika."
     actionLabel="Wróć do rynku"
     actionHref="/"
   />
@@ -21,7 +21,7 @@
   </section>
 
   @if (error()) {
-    <section class="surface inline-alert">{{ error() }}</section>
+    <section class="alert-inline" style="margin-top: var(--space-4)">{{ error() }}</section>
   }
 
   <section class="dashboard-grid">

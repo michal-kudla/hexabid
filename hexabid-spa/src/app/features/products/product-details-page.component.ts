@@ -104,18 +104,18 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
     }
 
     .breadcrumb a {
-      color: var(--color-primary);
+      color: var(--accent);
       text-decoration: none;
     }
 
     .loading, .error, .not-found {
       text-align: center;
       padding: 3rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
     }
 
     .error {
-      color: var(--color-error);
+      color: var(--danger);
     }
 
     .product-header {
@@ -124,7 +124,7 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
       gap: 1.5rem;
       margin-bottom: 2rem;
       padding-bottom: 2rem;
-      border-bottom: 1px solid var(--color-border);
+      border-bottom: 2px solid var(--border);
     }
 
     .product-icon {
@@ -134,7 +134,7 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
     .product-info h1 {
       margin: 0 0 0.5rem 0;
       font-size: 2rem;
-      color: var(--color-text-primary);
+      color: var(--ink);
     }
 
     .strategy-badge {
@@ -144,10 +144,10 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
       font-weight: 500;
     }
 
-    .strategy-badge.unique { background: #fef3c7; color: #92400e; }
-    .strategy-badge.batch { background: #dbeafe; color: #1e40af; }
-    .strategy-badge.individual { background: #d1fae5; color: #065f46; }
-    .strategy-badge.identical { background: #f3f4f6; color: #374151; }
+    .strategy-badge.unique { background: var(--color-amber-50); color: var(--accent-text); }
+    .strategy-badge.batch { background: var(--accent-light); color: var(--accent-text); }
+    .strategy-badge.individual { background: var(--success-bg); color: var(--success-text); }
+    .strategy-badge.identical { background: var(--color-stone-100); color: var(--ink-secondary); border: 1px solid var(--border); }
 
     .section {
       margin-bottom: 2rem;
@@ -157,7 +157,7 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
       font-size: 1.25rem;
       font-weight: 600;
       margin: 0 0 1rem 0;
-      color: var(--color-text-primary);
+      color: var(--ink);
     }
 
     .section-header {
@@ -185,24 +185,25 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
 
     .info-item .label {
       font-size: 0.875rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
     }
 
     .info-item .value {
       font-weight: 500;
-      color: var(--color-text-primary);
+      color: var(--ink);
     }
 
     .btn {
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
+      padding: 10px 22px;
+      min-height: 44px;
+      border-radius: var(--radius-md);
       text-decoration: none;
       font-weight: 500;
       cursor: pointer;
     }
 
     .btn-primary {
-      background: var(--color-primary);
+      background: var(--accent);
       color: white;
       border: none;
     }
@@ -215,31 +216,31 @@ import { ProductTypeResponse, BatchResponse } from '../../data-access/generated/
 
     .batch-card {
       padding: 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
     }
 
     .batch-card h3 {
       margin: 0 0 0.5rem 0;
       font-size: 1rem;
-      color: var(--color-text-primary);
+      color: var(--ink);
     }
 
     .batch-quantity {
       margin: 0;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
       font-size: 0.875rem;
     }
 
     .batch-date {
       margin: 0.5rem 0 0 0;
       font-size: 0.75rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
     }
 
     .loading-text, .empty-text {
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
       font-size: 0.875rem;
     }
   `]

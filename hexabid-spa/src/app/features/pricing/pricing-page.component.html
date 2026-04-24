@@ -17,7 +17,6 @@
 
       <p class="intro-text">
         Szczegółowy rozkład ceny aukcyjnej. Kwota należna to suma składowych netto, akcyzy, cła i VAT.
-        Wadium jest odliczane od ceny młotka przed dalszymi obliczeniami.
       </p>
 
       <div class="breakdown-table">
@@ -101,16 +100,13 @@
   <section class="actions-grid">
     <article class="surface wadium-card">
       <h2>Wpłać wadium</h2>
-      <p class="hint">
-        Wadium jest zwracane po przegranej licytacji i odliczane od ceny końcowej po wygranej.
-      </p>
+      <p class="hint">Wadium jest zwracane po przegranej licytacji i odliczane od ceny końcowej po wygranej.</p>
 
       <form [formGroup]="wadiumForm" (ngSubmit)="submitWadium()" class="stack">
         <label>
           <span>Kwota wadium</span>
           <input type="text" formControlName="amount" placeholder="500.00" />
         </label>
-
         <label>
           <span>Waluta</span>
           <select formControlName="currency">
@@ -119,14 +115,13 @@
             <option value="USD">USD</option>
           </select>
         </label>
-
         <button type="submit" [disabled]="facade.wadiumDepositing()">
           {{ facade.wadiumDepositing() ? 'Wpłacanie...' : 'Wpłać wadium' }}
         </button>
       </form>
 
       @if (facade.wadiumDeposit(); as deposit) {
-        <div class="deposit-result success">
+        <div class="result-success">
           <strong>Wadium wpłacone</strong>
           <p>{{ deposit.amount.label }} &mdash; {{ deposit.statusLabel }}</p>
           @if (deposit.refundableOnLoss) {
@@ -141,23 +136,20 @@
 
     <article class="surface refund-card">
       <h2>Zwróć wadium</h2>
-      <p class="hint">
-        Zwróć wadium uczestnikowi, który nie wygrał aukcji.
-      </p>
+      <p class="hint">Zwróć wadium uczestnikowi, który nie wygrał aukcji.</p>
 
       <form [formGroup]="refundForm" (ngSubmit)="submitRefund()" class="stack">
         <label>
           <span>ID uczestnika (partyId)</span>
           <input type="text" formControlName="partyId" placeholder="UUID uczestnika" />
         </label>
-
         <button type="submit" [disabled]="facade.wadiumRefunding()">
           {{ facade.wadiumRefunding() ? 'Zwracanie...' : 'Zwróć wadium' }}
         </button>
       </form>
 
       @if (facade.wadiumRefund(); as refund) {
-        <div class="deposit-result success">
+        <div class="result-success">
           <strong>Wadium zwrócone</strong>
           <p>{{ refund.refundAmount.label }} &mdash; {{ refund.statusLabel }}</p>
         </div>

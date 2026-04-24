@@ -11,14 +11,14 @@
   <section class="details-grid">
     <article class="surface spotlight">
       <div class="eyebrow">
-        <span class="status-badge" [class.closed]="auction.statusTone === 'closed'">{{ auction.statusLabel }}</span>
+        <span class="badge" [class.badge-closed]="auction.statusTone === 'closed'">{{ auction.statusLabel }}</span>
         <span>{{ auction.endsAtLabel }}</span>
       </div>
 
       <h1>{{ auction.title }}</h1>
       <p class="lede">
-        Ekran szczegółów jest już gotowy pod pracę z bieżącym API i real-time bidding. Kolejne iteracje mogą
-        rozszerzyć go o media, kategorię, wadium i richer metadata bez naruszania warstw.
+        Ekran szczegółów jest gotowy pod pracę z bieżącym API i real-time bidding. Kolejne iteracje mogą
+        rozszerzyć go o media, kategorię i wadium bez naruszania warstw.
       </p>
 
       <dl class="metrics">
@@ -82,7 +82,7 @@
     <article class="surface">
       <div class="section-heading">
         <h2>Historia ofert</h2>
-        <span>{{ auction.totalBids }} wpisów</span>
+        <span class="meta">{{ auction.totalBids }} wpisów</span>
       </div>
 
       @if (auction.bidHistory.length) {
@@ -103,7 +103,7 @@
     <article class="surface">
       <div class="section-heading">
         <h2>Strumień aktywności</h2>
-        <span>Live</span>
+        <span class="badge">Live</span>
       </div>
 
       @if (facade.feed().length) {

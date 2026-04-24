@@ -2,10 +2,7 @@
   <article class="surface intro">
     <span class="kicker">Create Auction</span>
     <h1>Wystaw aukcję przez SPA</h1>
-    <p>
-      Ten ekran korzysta z osobnej komendy formularza i adaptera HTTP. W kolejnych iteracjach można tu dodać drafty,
-      upload plików i kroki publikacji bez rozszczelniania warstwy prezentacyjnej.
-    </p>
+    <p>Ten ekran korzysta z osobnej komendy formularza i adaptera HTTP. W kolejnych iteracjach można tu dodać drafty i upload plików.</p>
   </article>
 
   <article class="surface form-card">
@@ -45,7 +42,6 @@
           <h3>Konfiguracja ceny (PricingConfig)</h3>
           <p class="hint">
             Skonfiguruj parametry kalkulacji ceny: wadium, VAT, akcyzę i cło.
-            Te dane zostaną przekazane do modułu hexabid-pricing.
           </p>
 
           <div class="form-grid pricing-grid">
@@ -118,7 +114,7 @@
       }
 
       @if (error()) {
-        <div class="wide inline-alert">{{ error() }}</div>
+        <div class="wide alert-inline">{{ error() }}</div>
       }
 
       <div class="wide actions">

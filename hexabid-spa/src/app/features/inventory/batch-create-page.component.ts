@@ -122,7 +122,7 @@ import { CreateBatchRequest, ProductTypeResponse } from '../../data-access/gener
     }
 
     .breadcrumb a {
-      color: var(--color-primary);
+      color: var(--accent);
       text-decoration: none;
     }
 
@@ -137,7 +137,7 @@ import { CreateBatchRequest, ProductTypeResponse } from '../../data-access/gener
     }
 
     .subtitle {
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
       margin: 0;
     }
 
@@ -155,26 +155,27 @@ import { CreateBatchRequest, ProductTypeResponse } from '../../data-access/gener
 
     .form-group label {
       font-weight: 500;
-      color: var(--color-text-primary);
+      color: var(--ink);
     }
 
     .form-group input,
     .form-group select {
-      padding: 0.75rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 44px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-md);
       font-size: 1rem;
     }
 
     .form-group input:focus,
     .form-group select:focus {
       outline: none;
-      border-color: var(--color-primary);
+      border-color: var(--accent);
     }
 
     .hint {
       font-size: 0.75rem;
-      color: var(--color-text-secondary);
+      color: var(--ink-secondary);
     }
 
     .form-row {
@@ -185,10 +186,10 @@ import { CreateBatchRequest, ProductTypeResponse } from '../../data-access/gener
 
     .error-message {
       padding: 1rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 8px;
-      color: #dc2626;
+      background: var(--danger-bg);
+      border: 2px solid var(--danger);
+      border-radius: var(--radius-md);
+      color: var(--danger-text);
     }
 
     .form-actions {
@@ -199,20 +200,22 @@ import { CreateBatchRequest, ProductTypeResponse } from '../../data-access/gener
     }
 
     .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
+      padding: 10px 22px;
+      min-height: 44px;
+      border-radius: var(--radius-md);
       font-weight: 500;
       cursor: pointer;
       border: none;
     }
 
     .btn-secondary {
-      background: #f3f4f6;
-      color: #374151;
+      background: var(--bg-surface);
+      color: var(--ink);
+      border: 2px solid var(--border-strong);
     }
 
     .btn-primary {
-      background: var(--color-primary);
+      background: var(--accent);
       color: white;
     }
 
