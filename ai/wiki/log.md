@@ -75,3 +75,14 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Redesign proposal: `.local/mockups/REDESIGN-PROPOSAL.md`
 - Link: [[decisions/2026-04-24-spa-visual-redesign]]
 - Tagi: #spa #design #accessibility #css #tokens #redesign
+
+## [2026-05-02] [IMPLEMENTATION] Konfigurowalny System Regul Aukcyjnych (Fazy 1-4)
+- Zaimplementowano plan z `ai/wiki/plan-system-regul.adoc` -- Fazy 1-4
+- **Faza 1 (hexabid-rules)**: AST + 3 algebry (Boolean, Compliance, ExplainedAlgebra) + RuleEngine + RuleCatalog + 124 testy
+- **Faza 2 (hexabid-core)**: Rozszerzony cykl aukcji (DRAFT→PUBLISHED→IN_PROGRESS→PENDING_SETTLEMENT→SETTLED/FAILED_SETTLEMENT/REOFFERED), 6 nowych domain events, SettleAuctionService, reservePrice enforcement
+- **Faza 3 (hexabid-core)**: Modele dokumentów (DocumentType/Status/Requirement), nowe porty (DocumentRepository, WadiumDepositPort, AuctionRuleEvaluator), SubmitDocumentService
+- **Faza 4 (hexabid-rules-adapter)**: Nowy moduł Maven z RuleEvaluatorAdapter + RulesConfiguration (12 reguł biznesowych: wadium, pelnoletność, akcyza, cło, nieruchomości), integracja PlaceBidService z AuctionRuleEvaluator, DevDocumentRepository + DevWadiumDeposit stuby
+- Nowe moduły Maven: `hexabid-rules-adapter` (dodany do root pom, BOM, bootstrap)
+- Zmieniono `AuctionStatus.OPEN` → `IN_PROGRESS`, `CLOSED` zachowane
+- Link: [[plan-system-regul]]
+- Tagi: #rules #ast #algebra #auction-lifecycle #settlement #documents #wadium

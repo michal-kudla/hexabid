@@ -647,7 +647,13 @@ components:
     AuctionStatus:
       type: string
       enum:
-        - OPEN
+        - DRAFT
+        - PUBLISHED
+        - IN_PROGRESS
+        - PENDING_SETTLEMENT
+        - SETTLED
+        - FAILED_SETTLEMENT
+        - REOFFERED
         - CLOSED
     AuctionSort:
       type: string

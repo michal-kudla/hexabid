@@ -12,24 +12,23 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
 import type {
-  AuctionListResponse,
-  AuctionPriceBreakdownResponse,
-  AuctionResponse,
-  AuctionSort,
-  AuctionStatus,
-  CreateAuctionRequest,
-  CreateLotRequest,
-  CurrentUserProfileResponse,
-  DepositWadiumRequest,
-  LotListResponse,
-  LotResponse,
-  RefundWadiumRequest,
-  SellingMode,
-  WadiumRefundResponse,
-  WadiumResponse,
+    AuctionListResponse,
+    AuctionPriceBreakdownResponse,
+    AuctionResponse,
+    AuctionSort,
+    AuctionStatus,
+    CreateAuctionRequest,
+    CreateLotRequest,
+    CurrentUserProfileResponse,
+    DepositWadiumRequest,
+    LotListResponse,
+    LotResponse,
+    RefundWadiumRequest,
+    SellingMode,
+    WadiumRefundResponse,
+    WadiumResponse,
 } from '../models/index';
 
 export interface BrowseAuctionsRequest {
@@ -472,7 +471,7 @@ export class AuctionsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/auctions/{auctionId}/wadium`;
-        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
 
         return {
             path: urlPath,
@@ -524,7 +523,7 @@ export class AuctionsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/auctions/{auctionId}`;
-        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
 
         return {
             path: urlPath,
@@ -573,7 +572,7 @@ export class AuctionsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/auctions/{auctionId}/price`;
-        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
 
         return {
             path: urlPath,
@@ -665,7 +664,7 @@ export class AuctionsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/lots/{lotId}`;
-        urlPath = urlPath.replace(`{${"lotId"}}`, encodeURIComponent(String(requestParameters['lotId'])));
+        urlPath = urlPath.replace('{lotId}', encodeURIComponent(String(requestParameters['lotId'])));
 
         return {
             path: urlPath,
@@ -723,7 +722,7 @@ export class AuctionsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/auctions/{auctionId}/wadium/refund`;
-        urlPath = urlPath.replace(`{${"auctionId"}}`, encodeURIComponent(String(requestParameters['auctionId'])));
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
 
         return {
             path: urlPath,

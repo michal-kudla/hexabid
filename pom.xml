@@ -24,6 +24,8 @@
         <module>hexabid-pricing</module>
         <module>hexabid-product</module>
         <module>hexabid-inventory</module>
+        <module>hexabid-rules</module>
+        <module>hexabid-rules-adapter</module>
         <module>hexabid-core</module>
         <module>hexabid-auth-core</module>
         <module>hexabid-api-contract</module>

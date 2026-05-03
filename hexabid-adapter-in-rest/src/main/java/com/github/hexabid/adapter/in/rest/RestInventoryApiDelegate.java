@@ -206,9 +206,12 @@ public class RestInventoryApiDelegate implements InventoryApiDelegate {
     ) {
         createInstanceCounter.increment();
         
-        // Find or create inventory entry for product
+        // Validate product exists
         UUID productIdUuid = request.getProductId();
         ProductIdentifier productId = ProductIdentifier.uuid(productIdUuid);
+        if (productFacade.findProductType(productId).isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
         
         // Get inventory entry - for now create if not exists
         List<InventoryEntry> entries = inventoryFacade.entriesForProduct(productId);

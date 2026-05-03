@@ -1,17 +1,21 @@
 package com.github.hexabid.adapter.in.ws;
 
-import com.github.hexabid.auth.core.identityaccess.port.out.CurrentUserProvider;
+import com.github.hexabid.auth.core.identityaccess.model.AuthenticatedUser;
 import com.github.hexabid.core.auctioning.model.AuctionId;
 import com.github.hexabid.core.auctioning.model.Price;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidCommand;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidFailureReason;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidResult;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidUseCase;
+import com.github.hexabid.core.party.model.PartyId;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 
 import java.math.BigDecimal;
@@ -21,27 +25,25 @@ import java.util.UUID;
 public class AuctionBiddingWebSocketController {
 
     private final PlaceBidUseCase placeBidUseCase;
-    private final CurrentUserProvider currentUserProvider;
     private final SimpMessagingTemplate messagingTemplate;
     private final Counter bidAcceptedCounter;
     private final Counter bidRejectedCounter;
 
     public AuctionBiddingWebSocketController(
             PlaceBidUseCase placeBidUseCase,
-            CurrentUserProvider currentUserProvider,
             SimpMessagingTemplate messagingTemplate,
             MeterRegistry meterRegistry
     ) {
         this.placeBidUseCase = placeBidUseCase;
-        this.currentUserProvider = currentUserProvider;
         this.messagingTemplate = messagingTemplate;
         this.bidAcceptedCounter = meterRegistry.counter("auctions.bid.accepted");
         this.bidRejectedCounter = meterRegistry.counter("auctions.bid.rejected");
     }
 
     @MessageMapping("/auctions/{auctionId}/bids")
-    public void placeBid(@DestinationVariable UUID auctionId, PlaceBidWebSocketMessage message) {
-        var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
+    public void placeBid(@DestinationVariable UUID auctionId, PlaceBidWebSocketMessage message,
+                         @AuthenticationPrincipal Authentication authentication) {
+        AuthenticatedUser authenticatedUser = resolveUser(authentication);
         if (authenticatedUser == null) {
             bidRejectedCounter.increment();
             messagingTemplate.convertAndSend(
@@ -79,5 +81,17 @@ public class AuctionBiddingWebSocketController {
             );
             return;
         }
+    }
+
+    private AuthenticatedUser resolveUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        if (authentication.getPrincipal() instanceof UserDetails userDetails) {
+            String username = userDetails.getUsername();
+            PartyId partyId = new PartyId("local:" + username);
+            return new AuthenticatedUser(partyId, "local", username, username, username + "@example.com");
+        }
+        return null;
     }
 }

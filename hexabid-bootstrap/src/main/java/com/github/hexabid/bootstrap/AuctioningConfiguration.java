@@ -13,15 +13,21 @@ import com.github.hexabid.core.auctioning.port.in.CloseExpiredAuctionsUseCase;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionUseCase;
 import com.github.hexabid.core.auctioning.port.in.FindAuctionDetailsUseCase;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidUseCase;
+import com.github.hexabid.core.auctioning.port.in.SettleAuctionUseCase;
+import com.github.hexabid.core.auctioning.port.in.SubmitDocumentUseCase;
 import com.github.hexabid.core.auctioning.port.out.AuctionEventPublisher;
 import com.github.hexabid.core.auctioning.port.out.AuctionReadModel;
 import com.github.hexabid.core.auctioning.port.out.AuctionRepository;
+import com.github.hexabid.core.auctioning.port.out.AuctionRuleEvaluator;
+import com.github.hexabid.core.auctioning.port.out.DocumentRepository;
 import com.github.hexabid.core.auctioning.port.out.KycClient;
 import com.github.hexabid.core.auctioning.usecase.BrowseAuctionsService;
 import com.github.hexabid.core.auctioning.usecase.CloseExpiredAuctionsService;
 import com.github.hexabid.core.auctioning.usecase.CreateAuctionService;
 import com.github.hexabid.core.auctioning.usecase.FindAuctionDetailsService;
 import com.github.hexabid.core.auctioning.usecase.PlaceBidService;
+import com.github.hexabid.core.auctioning.usecase.SettleAuctionService;
+import com.github.hexabid.core.auctioning.usecase.SubmitDocumentService;
 import com.github.hexabid.pricing.auction.AuctionPricingFacade;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -54,9 +60,10 @@ class AuctioningConfiguration {
             AuctionRepository repository,
             KycClient kycClient,
             AuctionEventPublisher eventPublisher,
+            AuctionRuleEvaluator ruleEvaluator,
             Clock clock
     ) {
-        return new PlaceBidService(repository, kycClient, eventPublisher, clock);
+        return new PlaceBidService(repository, kycClient, eventPublisher, ruleEvaluator, clock);
     }
 
     @Bean
@@ -75,6 +82,20 @@ class AuctioningConfiguration {
             AuctionEventPublisher eventPublisher
     ) {
         return new CloseExpiredAuctionsService(repository, eventPublisher);
+    }
+
+    @Bean
+    SettleAuctionUseCase settleAuctionUseCase(
+            AuctionRepository repository,
+            AuctionEventPublisher eventPublisher,
+            Clock clock
+    ) {
+        return new SettleAuctionService(repository, eventPublisher, clock);
+    }
+
+    @Bean
+    SubmitDocumentUseCase submitDocumentUseCase(DocumentRepository documentRepository) {
+        return new SubmitDocumentService(documentRepository);
     }
 
     @Bean

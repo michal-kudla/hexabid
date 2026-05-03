@@ -13,4 +13,8 @@ public interface AuctionRepository {
     Optional<Auction> findById(AuctionId auctionId);
 
     List<Auction> findExpiredOpenAuctions(Instant currentTime);
+
+    List<Auction> findExpiredInProgressAuctions(Instant currentTime);
+
+    List<Auction> findPendingSettlementAuctions();
 }

@@ -17,6 +17,7 @@
         <module name="hexabid-payment-adapter-local" />
         <module name="hexabid-adapter-in-job" />
         <module name="hexabid-quantity" />
+        <module name="hexabid-rules" />
         <module name="hexabid-payment-api-contract" />
         <module name="hexabid-inventory" />
         <module name="hexabid-integration-tests" />
@@ -25,6 +26,7 @@
         <module name="hexabid-payment-core" />
         <module name="hexabid-auth-core" />
         <module name="hexabid-payment-adapter-crypto" />
+        <module name="hexabid-rules-adapter" />
         <module name="hexabid-adapter-in-auth-oauth" />
         <module name="hexabid-adapter-out-kafka" />
         <module name="hexabid-adapter-in-ws" />
@@ -108,6 +110,8 @@
       <module name="hexabid-pricing" options="-parameters" />
       <module name="hexabid-product" options="-parameters" />
       <module name="hexabid-quantity" options="-parameters" />
+      <module name="hexabid-rules" options="-parameters" />
+      <module name="hexabid-rules-adapter" options="-parameters" />
       <module name="inventory" options="-parameters" />
       <module name="product" options="-parameters" />
       <module name="quantity" options="-parameters" />

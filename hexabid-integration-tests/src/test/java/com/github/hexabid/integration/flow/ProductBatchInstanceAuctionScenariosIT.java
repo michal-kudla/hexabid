@@ -124,12 +124,12 @@ class ProductBatchInstanceAuctionScenariosIT {
         String responseBody = response.body();
         assertThat(responseBody).contains("auctionId");
         assertThat(responseBody).contains(auctionTitle);
-        assertThat(responseBody).contains("OPEN");
+        assertThat(responseBody).contains("DRAFT");
 
         String auctionId = extractJsonValue(responseBody, "auctionId");
         System.out.println("✓ Auction created successfully!");
         System.out.println("  Auction ID: " + auctionId);
-        System.out.println("  Status: OPEN");
+        System.out.println("  Status: DRAFT");
         System.out.println("  Starting Price: 5000.00 PLN\n");
 
         System.out.println("Verifying auction exists...");
@@ -148,11 +148,11 @@ class ProductBatchInstanceAuctionScenariosIT {
 
         assertThat(getResponse.statusCode()).isEqualTo(200);
         assertThat(getResponse.body()).contains(auctionTitle);
-        assertThat(getResponse.body()).contains("OPEN");
+        assertThat(getResponse.body()).contains("DRAFT");
 
         System.out.println("✓ Auction verified!");
         System.out.println("  Title: " + auctionTitle);
-        System.out.println("  Status: OPEN");
+        System.out.println("  Status: DRAFT");
         System.out.println("  buyNowPrice: null (as expected for unique product)\n");
 
         System.out.println("╔════════════════════════════════════════════════════════════════════╗");
