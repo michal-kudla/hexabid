@@ -205,5 +205,10 @@ class PlaceBidServiceTest {
         public boolean hasBlockingViolations(AuctionId auctionId, PartyId partyId, String phase) {
             return false;
         }
+
+        @SuppressWarnings("RecordComponentCanBecomeClass")
+        private RuleViolation satisfied(String name) {
+            return new RuleViolation(name, "satisfied", false, "", "SATISFIED", "BLOCKING");
+        }
     }
 }

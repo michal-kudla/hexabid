@@ -544,6 +544,77 @@ paths:
                 $ref: '#/components/schemas/AuctionPriceBreakdownResponse'
         '404':
           description: Auction not found
+  /api/auctions/{auctionId}/rules:
+    get:
+      operationId: evaluateAuctionRules
+      tags:
+        - Auctions
+      summary: Evaluate rules for an auction
+      description: |
+        Returns rule evaluation results for the authenticated user and given auction.
+        Rules are grouped by phase: PARTICIPATION, BIDDING, SETTLEMENT.
+        Use the `phase` query parameter to filter by a specific phase.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: phase
+          description: Filter rules by phase. If omitted, returns rules for all phases.
+          schema:
+            $ref: '#/components/schemas/RulePhase'
+      responses:
+        '200':
+          description: Rule evaluation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleEvaluationResponse'
+        '401':
+          description: Authentication required
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/documents:
+    post:
+      operationId: submitDocument
+      tags:
+        - Auctions
+      summary: Submit a document for rule compliance
+      description: |
+        Submits a document (e.g. excise certificate, customs exemption) for the
+        authenticated user on the given auction. This can satisfy participation
+        or settlement rules that require document evidence.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitDocumentRequest'
+      responses:
+        '201':
+          description: Document accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitDocumentResponse'
+        '400':
+          description: Invalid request or document rejected
+        '401':
+          description: Authentication required
+        '404':
+          description: Auction not found
   /api/me:
     get:
       operationId: getCurrentUserProfile
@@ -1230,3 +1301,113 @@ components:
           enum:
             - FIXED
             - PERCENTAGE
+    RulePhase:
+      type: string
+      enum:
+        - PARTICIPATION
+        - BIDDING
+        - SETTLEMENT
+      description: Phase of the auction lifecycle where rules apply
+    RuleStatus:
+      type: string
+      enum:
+        - SATISFIED
+        - PENDING
+        - VIOLATED
+      description: Evaluation status of a single rule
+    RuleSeverity:
+      type: string
+      enum:
+        - BLOCKING
+        - WARNING
+        - INFORMATIVE
+      description: Severity level of a rule violation
+    DocumentType:
+      type: string
+      enum:
+        - EXCISE_CERTIFICATE
+        - CUSTOMS_EXEMPTION
+        - REAL_ESTATE_SETTLEMENT
+        - IDENTITY_VERIFICATION
+        - VEHICLE_REGISTRATION
+    DocumentStatus:
+      type: string
+      enum:
+        - MISSING
+        - COPY
+        - ORIGINAL
+    RuleViolationItem:
+      type: object
+      required:
+        - ruleName
+        - message
+        - blocking
+        - requiredAction
+        - status
+        - severity
+      properties:
+        ruleName:
+          type: string
+          description: Unique identifier of the rule
+          example: "WADIUM_10_PERCENT_ABOVE_10K"
+        message:
+          type: string
+          description: Human-readable rule evaluation message
+        blocking:
+          type: boolean
+          description: Whether this violation blocks the associated action
+        requiredAction:
+          type: string
+          description: Action required to satisfy this rule (non-empty for PENDING rules)
+        status:
+          $ref: '#/components/schemas/RuleStatus'
+        severity:
+          $ref: '#/components/schemas/RuleSeverity'
+    RulePhaseEvaluation:
+      type: object
+      required:
+        - phase
+        - rules
+        - hasBlockingViolations
+      properties:
+        phase:
+          $ref: '#/components/schemas/RulePhase'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleViolationItem'
+        hasBlockingViolations:
+          type: boolean
+    RuleEvaluationResponse:
+      type: object
+      required:
+        - auctionId
+        - evaluations
+      properties:
+        auctionId:
+          type: string
+          format: uuid
+        evaluations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RulePhaseEvaluation'
+    SubmitDocumentRequest:
+      type: object
+      required:
+        - documentType
+        - status
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentType'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+    SubmitDocumentResponse:
+      type: object
+      required:
+        - documentType
+        - status
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentType'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'

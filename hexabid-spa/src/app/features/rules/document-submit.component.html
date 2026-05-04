@@ -1,0 +1,29 @@
+<article class="surface doc-submit-card">
+  <h3>Złóż dokument</h3>
+  <p class="hint">Złóż dokument, aby spełnić wymogi regulaminowe aukcji.</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="stack">
+    <label>
+      <span>Typ dokumentu</span>
+      <select formControlName="documentType">
+        <option [ngValue]="DocumentType.EXCISE_CERTIFICATE">Zaświadczenie akcyzowe</option>
+        <option [ngValue]="DocumentType.CUSTOMS_EXEMPTION">Zwolnienie celne</option>
+        <option [ngValue]="DocumentType.REAL_ESTATE_SETTLEMENT">Dokument rozliczenia nieruchomości</option>
+        <option [ngValue]="DocumentType.IDENTITY_VERIFICATION">Weryfikacja tożsamości</option>
+        <option [ngValue]="DocumentType.VEHICLE_REGISTRATION">Rejestracja pojazdu</option>
+      </select>
+    </label>
+
+    <label>
+      <span>Status dokumentu</span>
+      <select formControlName="status">
+        <option [ngValue]="DocumentStatus.COPY">Kopia</option>
+        <option [ngValue]="DocumentStatus.ORIGINAL">Oryginał</option>
+      </select>
+    </label>
+
+    <button type="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Składanie...' : 'Złóż dokument' }}
+    </button>
+  </form>
+</article>

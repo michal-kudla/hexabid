@@ -134,6 +134,35 @@ h1 {
   background: var(--danger-bg);
 }
 
+.blocking-hint {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.82rem;
+  border-left: 3px solid #dc3545;
+}
+
+.result-success {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #f0fdf4;
+  border-left: 3px solid #28a745;
+
+  strong {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #555;
+  }
+}
+
 @media (max-width: 1024px) {
   .details-grid {
     grid-template-columns: 1fr;

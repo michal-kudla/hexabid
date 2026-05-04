@@ -37,7 +37,7 @@ export class HomePageComponent {
       const statusParam = params.get('status');
       const sortParam = params.get('sort');
       const status: AuctionStatus | '' =
-        statusParam === AuctionStatus.OPEN || statusParam === AuctionStatus.CLOSED
+        statusParam === AuctionStatus.IN_PROGRESS || statusParam === AuctionStatus.CLOSED
           ? statusParam
           : '';
       const sort: AuctionSort =

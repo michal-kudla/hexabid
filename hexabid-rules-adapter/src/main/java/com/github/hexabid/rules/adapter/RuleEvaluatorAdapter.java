@@ -92,9 +92,9 @@ public class RuleEvaluatorAdapter implements AuctionRuleEvaluator {
 
     private RuleViolation toViolation(RuleEvaluationResult result) {
         return switch (result) {
-            case Satisfied s -> new RuleViolation(s.ruleName().value(), "satisfied", false, "");
-            case Pending p -> new RuleViolation(p.ruleName().value(), p.requiredAction(), false, p.requiredAction());
-            case Violated v -> new RuleViolation(v.ruleName().value(), v.violationMessage(), v.severity() == com.github.hexabid.rules.model.RuleSeverity.BLOCKING, "");
+            case Satisfied s -> new RuleViolation(s.ruleName().value(), "satisfied", false, "", "SATISFIED", s.severity().name());
+            case Pending p -> new RuleViolation(p.ruleName().value(), p.requiredAction(), false, p.requiredAction(), "PENDING", p.severity().name());
+            case Violated v -> new RuleViolation(v.ruleName().value(), v.violationMessage(), v.severity() == com.github.hexabid.rules.model.RuleSeverity.BLOCKING, "", "VIOLATED", v.severity().name());
         };
     }
 }

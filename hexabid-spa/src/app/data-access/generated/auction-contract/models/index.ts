@@ -684,6 +684,30 @@ export interface DepositWadiumRequest {
 /**
  * 
  * @export
+ * @enum {string}
+ */
+export enum DocumentStatus {
+    MISSING = 'MISSING',
+    COPY = 'COPY',
+    ORIGINAL = 'ORIGINAL'
+}
+
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+export enum DocumentType {
+    EXCISE_CERTIFICATE = 'EXCISE_CERTIFICATE',
+    CUSTOMS_EXEMPTION = 'CUSTOMS_EXEMPTION',
+    REAL_ESTATE_SETTLEMENT = 'REAL_ESTATE_SETTLEMENT',
+    IDENTITY_VERIFICATION = 'IDENTITY_VERIFICATION',
+    VEHICLE_REGISTRATION = 'VEHICLE_REGISTRATION'
+}
+
+/**
+ * 
+ * @export
  * @interface InventoryInstanceListResponse
  */
 export interface InventoryInstanceListResponse {
@@ -978,6 +1002,130 @@ export interface RefundWadiumRequest {
 /**
  * 
  * @export
+ * @interface RuleEvaluationResponse
+ */
+export interface RuleEvaluationResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof RuleEvaluationResponse
+     */
+    auctionId: string;
+    /**
+     * 
+     * @type {Array<RulePhaseEvaluation>}
+     * @memberof RuleEvaluationResponse
+     */
+    evaluations: Array<RulePhaseEvaluation>;
+}
+/**
+ * Phase of the auction lifecycle where rules apply
+ * @export
+ * @enum {string}
+ */
+export enum RulePhase {
+    PARTICIPATION = 'PARTICIPATION',
+    BIDDING = 'BIDDING',
+    SETTLEMENT = 'SETTLEMENT'
+}
+
+/**
+ * 
+ * @export
+ * @interface RulePhaseEvaluation
+ */
+export interface RulePhaseEvaluation {
+    /**
+     * 
+     * @type {RulePhase}
+     * @memberof RulePhaseEvaluation
+     */
+    phase: RulePhase;
+    /**
+     * 
+     * @type {Array<RuleViolationItem>}
+     * @memberof RulePhaseEvaluation
+     */
+    rules: Array<RuleViolationItem>;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof RulePhaseEvaluation
+     */
+    hasBlockingViolations: boolean;
+}
+
+
+/**
+ * Severity level of a rule violation
+ * @export
+ * @enum {string}
+ */
+export enum RuleSeverity {
+    BLOCKING = 'BLOCKING',
+    WARNING = 'WARNING',
+    INFORMATIVE = 'INFORMATIVE'
+}
+
+/**
+ * Evaluation status of a single rule
+ * @export
+ * @enum {string}
+ */
+export enum RuleStatus {
+    SATISFIED = 'SATISFIED',
+    PENDING = 'PENDING',
+    VIOLATED = 'VIOLATED'
+}
+
+/**
+ * 
+ * @export
+ * @interface RuleViolationItem
+ */
+export interface RuleViolationItem {
+    /**
+     * Unique identifier of the rule
+     * @type {string}
+     * @memberof RuleViolationItem
+     */
+    ruleName: string;
+    /**
+     * Human-readable rule evaluation message
+     * @type {string}
+     * @memberof RuleViolationItem
+     */
+    message: string;
+    /**
+     * Whether this violation blocks the associated action
+     * @type {boolean}
+     * @memberof RuleViolationItem
+     */
+    blocking: boolean;
+    /**
+     * Action required to satisfy this rule (non-empty for PENDING rules)
+     * @type {string}
+     * @memberof RuleViolationItem
+     */
+    requiredAction: string;
+    /**
+     * 
+     * @type {RuleStatus}
+     * @memberof RuleViolationItem
+     */
+    status: RuleStatus;
+    /**
+     * 
+     * @type {RuleSeverity}
+     * @memberof RuleViolationItem
+     */
+    severity: RuleSeverity;
+}
+
+
+/**
+ * 
+ * @export
  * @enum {string}
  */
 export enum SellingMode {
@@ -985,6 +1133,48 @@ export enum SellingMode {
     DIVISIBLE = 'DIVISIBLE',
     DIVISIBLE_ONLY = 'DIVISIBLE_ONLY'
 }
+
+/**
+ * 
+ * @export
+ * @interface SubmitDocumentRequest
+ */
+export interface SubmitDocumentRequest {
+    /**
+     * 
+     * @type {DocumentType}
+     * @memberof SubmitDocumentRequest
+     */
+    documentType: DocumentType;
+    /**
+     * 
+     * @type {DocumentStatus}
+     * @memberof SubmitDocumentRequest
+     */
+    status: DocumentStatus;
+}
+
+
+/**
+ * 
+ * @export
+ * @interface SubmitDocumentResponse
+ */
+export interface SubmitDocumentResponse {
+    /**
+     * 
+     * @type {DocumentType}
+     * @memberof SubmitDocumentResponse
+     */
+    documentType: DocumentType;
+    /**
+     * 
+     * @type {DocumentStatus}
+     * @memberof SubmitDocumentResponse
+     */
+    status: DocumentStatus;
+}
+
 
 /**
  * 

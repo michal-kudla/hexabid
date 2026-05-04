@@ -156,4 +156,35 @@
       }
     </article>
   </section>
+
+  <section class="actions-grid">
+    <article class="surface">
+      <div class="section-heading">
+        <h2>Reguły rozliczenia</h2>
+        @if (rulesFacade.loading()) {
+          <span class="meta">Ładowanie...</span>
+        }
+      </div>
+
+      @if (rulesFacade.error()) {
+        <p class="muted">{{ rulesFacade.error() }}</p>
+      } @else if (rulesFacade.evaluation(); as eval_) {
+        <app-rules-panel [evaluations]="eval_.evaluations" />
+      }
+    </article>
+
+    <article class="surface">
+      <app-document-submit
+        [submitting]="rulesFacade.documentSubmitting()"
+        (documentSubmitted)="onDocumentSubmitted($event)"
+      />
+
+      @if (rulesFacade.submittedDocument(); as doc) {
+        <div class="result-success">
+          <strong>Dokument złożony</strong>
+          <p>{{ doc.documentTypeLabel }} &mdash; {{ doc.statusLabel }}</p>
+        </div>
+      }
+    </article>
+  </section>
 }

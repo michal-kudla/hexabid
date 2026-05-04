@@ -19,11 +19,19 @@ public interface AuctionRuleEvaluator {
             String ruleName,
             String message,
             boolean blocking,
-            String requiredAction
+            String requiredAction,
+            String status,
+            String severity
     ) {
         public RuleViolation {
             if (ruleName == null || message == null) {
                 throw new IllegalArgumentException("ruleName and message must not be null");
+            }
+            if (status == null) {
+                status = "VIOLATED";
+            }
+            if (severity == null) {
+                severity = "BLOCKING";
             }
         }
     }
