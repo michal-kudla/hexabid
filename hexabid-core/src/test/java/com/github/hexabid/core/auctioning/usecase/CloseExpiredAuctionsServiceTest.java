@@ -1,10 +1,11 @@
 package com.github.hexabid.core.auctioning.usecase;
 
-import com.github.hexabid.core.auctioning.event.AuctionDomainEvent;
 import com.github.hexabid.core.auctioning.event.AuctionClosedWithoutWinnerEvent;
+import com.github.hexabid.core.auctioning.event.AuctionDomainEvent;
 import com.github.hexabid.core.auctioning.exception.AuctionConcurrencyConflictException;
 import com.github.hexabid.core.auctioning.model.Auction;
 import com.github.hexabid.core.auctioning.model.AuctionId;
+import com.github.hexabid.core.auctioning.model.AuctionStatus;
 import com.github.hexabid.core.auctioning.model.Price;
 import com.github.hexabid.core.auctioning.port.in.CloseExpiredAuctionsCommand;
 import com.github.hexabid.core.auctioning.port.in.ClosedAuctionsResult;
@@ -27,23 +28,31 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class CloseExpiredAuctionsServiceTest {
 
+    private static Auction createInProgressAuction(AuctionId id, PartyId sellerId, String title,
+                                                    Price startingPrice, Instant endsAt) {
+        var auction = Auction.create(id, sellerId, Lot.singleProductDraft(title), startingPrice, endsAt);
+        auction.publish(Instant.now());
+        auction.start(Instant.now());
+        return auction;
+    }
+
     @Test
-    void shouldCloseOnlyExpiredOpenAuctions() {
+    void shouldCloseOnlyExpiredInProgressAuctions() {
         Instant now = Instant.parse("2026-03-05T12:00:00Z");
         InMemoryAuctionRepository repository = new InMemoryAuctionRepository();
         RecordingAuctionEventPublisher events = new RecordingAuctionEventPublisher();
 
-        Auction expired = Auction.create(
+        Auction expired = createInProgressAuction(
                 AuctionId.newId(),
                 new PartyId("seller-1"),
-                Lot.singleProductDraft("Vinyl"),
+                "Vinyl",
                 new Price(new BigDecimal("50.00"), "PLN"),
                 now.minusSeconds(60)
         );
-        Auction active = Auction.create(
+        Auction active = createInProgressAuction(
                 AuctionId.newId(),
                 new PartyId("seller-2"),
-                Lot.singleProductDraft("Sneakers"),
+                "Sneakers",
                 new Price(new BigDecimal("200.00"), "PLN"),
                 now.plusSeconds(3600)
         );
@@ -67,10 +76,10 @@ class CloseExpiredAuctionsServiceTest {
         repository.failOnSave = true;
         RecordingAuctionEventPublisher events = new RecordingAuctionEventPublisher();
 
-        Auction expired = Auction.create(
+        Auction expired = createInProgressAuction(
                 AuctionId.newId(),
                 new PartyId("seller-1"),
-                Lot.singleProductDraft("Watch"),
+                "Watch",
                 new Price(new BigDecimal("80.00"), "PLN"),
                 now.minusSeconds(60)
         );
@@ -106,10 +115,20 @@ class CloseExpiredAuctionsServiceTest {
 
         @Override
         public List<Auction> findExpiredOpenAuctions(Instant currentTime) {
+            return List.of();
+        }
+
+        @Override
+        public List<Auction> findExpiredInProgressAuctions(Instant currentTime) {
             return storage.values().stream()
-                    .filter(auction -> auction.status().name().equals("OPEN"))
+                    .filter(auction -> auction.status() == AuctionStatus.IN_PROGRESS)
                     .filter(auction -> auction.isExpiredAt(currentTime))
                     .toList();
+        }
+
+        @Override
+        public List<Auction> findPendingSettlementAuctions() {
+            return List.of();
         }
     }
 

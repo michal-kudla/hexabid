@@ -149,8 +149,8 @@ class BasicCommerceFlowApiIT {
 
         assertThat(getResponse.statusCode()).isEqualTo(200);
         assertThat(getResponse.body()).contains(auctionTitle);
-        assertThat(getResponse.body()).contains("OPEN");
-        System.out.println("✓ Auction verified: title='" + auctionTitle + "', status=OPEN\n");
+        assertThat(getResponse.body()).contains("DRAFT");
+        System.out.println("✓ Auction verified: title='" + auctionTitle + "', status=DRAFT\n");
 
         System.out.println("STEP 3: List SELLER's auctions (/api/me/auctions)");
         System.out.println("────────────────────────────────────────────────\n");

@@ -12,15 +12,14 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
 import type {
-  BatchListResponse,
-  BatchResponse,
-  CreateBatchRequest,
-  CreateInventoryInstanceRequest,
-  InventoryInstanceListResponse,
-  InventoryInstanceResponse,
+    BatchListResponse,
+    BatchResponse,
+    CreateBatchRequest,
+    CreateInventoryInstanceRequest,
+    InventoryInstanceListResponse,
+    InventoryInstanceResponse,
 } from '../models/index';
 
 export interface BrowseBatchesRequest {
@@ -305,7 +304,7 @@ export class InventoryApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/batches/{batchId}`;
-        urlPath = urlPath.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId'])));
+        urlPath = urlPath.replace('{batchId}', encodeURIComponent(String(requestParameters['batchId'])));
 
         return {
             path: urlPath,
@@ -354,7 +353,7 @@ export class InventoryApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/inventory/instances/{instanceId}`;
-        urlPath = urlPath.replace(`{${"instanceId"}}`, encodeURIComponent(String(requestParameters['instanceId'])));
+        urlPath = urlPath.replace('{instanceId}', encodeURIComponent(String(requestParameters['instanceId'])));
 
         return {
             path: urlPath,

@@ -49,6 +49,7 @@ public final class CreateAuctionService implements CreateAuctionUseCase {
                 command.startingPrice(),
                 command.endsAt()
         );
-        return new CreateAuctionResult.AuctionCreated(AuctionViews.from(auctionRepository.save(created)));
+        var saved = auctionRepository.save(created);
+        return new CreateAuctionResult.AuctionCreated(AuctionViews.from(saved));
     }
 }

@@ -12,13 +12,12 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
 import type {
-  CreateProductTypeRequest,
-  ProductTrackingStrategy,
-  ProductTypeListResponse,
-  ProductTypeResponse,
+    CreateProductTypeRequest,
+    ProductTrackingStrategy,
+    ProductTypeListResponse,
+    ProductTypeResponse,
 } from '../models/index';
 
 export interface BrowseProductTypesRequest {
@@ -175,7 +174,7 @@ export class ProductsApi extends runtime.BaseAPI {
 
 
         let urlPath = `/api/products/{productId}`;
-        urlPath = urlPath.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId'])));
+        urlPath = urlPath.replace('{productId}', encodeURIComponent(String(requestParameters['productId'])));
 
         return {
             path: urlPath,

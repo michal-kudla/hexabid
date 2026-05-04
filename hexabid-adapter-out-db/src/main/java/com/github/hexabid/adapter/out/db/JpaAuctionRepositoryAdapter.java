@@ -41,7 +41,21 @@ public class JpaAuctionRepositoryAdapter implements AuctionRepository {
 
     @Override
     public List<Auction> findExpiredOpenAuctions(Instant currentTime) {
-        return repository.findByStatusAndEndsAtLessThanEqual(AuctionStatus.OPEN, currentTime).stream()
+        return repository.findByStatusAndEndsAtLessThanEqual(AuctionStatus.IN_PROGRESS, currentTime).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Auction> findExpiredInProgressAuctions(Instant currentTime) {
+        return repository.findByStatusAndEndsAtLessThanEqual(AuctionStatus.IN_PROGRESS, currentTime).stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Auction> findPendingSettlementAuctions() {
+        return repository.findByStatus(AuctionStatus.PENDING_SETTLEMENT).stream()
                 .map(mapper::toDomain)
                 .toList();
     }

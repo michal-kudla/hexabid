@@ -24,8 +24,20 @@ public final class CloseExpiredAuctionsService implements CloseExpiredAuctionsUs
     public ClosedAuctionsResult closeExpiredAuctions(CloseExpiredAuctionsCommand command) {
         int closedCount = 0;
         int conflictCount = 0;
+        for (Auction auction : auctionRepository.findExpiredInProgressAuctions(command.currentTime())) {
+            var endedEvent = auction.closeIfExpired(command.currentTime());
+            if (endedEvent.isPresent()) {
+                try {
+                    endedEvent.ifPresent(eventPublisher::publish);
+                    auctionRepository.save(auction);
+                    closedCount++;
+                } catch (AuctionConcurrencyConflictException exception) {
+                    conflictCount++;
+                }
+            }
+        }
         for (Auction auction : auctionRepository.findExpiredOpenAuctions(command.currentTime())) {
-            var endedEvent = auction.maybeCloseIfExpired(command.currentTime());
+            var endedEvent = auction.closeIfExpired(command.currentTime());
             if (endedEvent.isPresent()) {
                 try {
                     endedEvent.ifPresent(eventPublisher::publish);

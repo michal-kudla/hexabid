@@ -2,6 +2,7 @@ package com.github.hexabid.core.auctioning.usecase;
 
 import com.github.hexabid.core.auctioning.model.Auction;
 import com.github.hexabid.core.auctioning.model.AuctionId;
+import com.github.hexabid.core.auctioning.model.AuctionStatus;
 import com.github.hexabid.core.auctioning.model.Price;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionCommand;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionFailureReason;
@@ -45,7 +46,7 @@ class CreateAuctionServiceTest {
     }
 
     @Test
-    void shouldCreateAuctionWhenInputIsValid() {
+    void shouldCreateAuctionInDraftStatus() {
         Instant now = Instant.parse("2026-03-05T12:00:00Z");
         Clock clock = Clock.fixed(now, ZoneOffset.UTC);
         InMemoryAuctionRepository repository = new InMemoryAuctionRepository();
@@ -81,6 +82,19 @@ class CreateAuctionServiceTest {
 
         @Override
         public List<Auction> findExpiredOpenAuctions(Instant currentTime) {
+            return List.of();
+        }
+
+        @Override
+        public List<Auction> findExpiredInProgressAuctions(Instant currentTime) {
+            return storage.values().stream()
+                    .filter(auction -> auction.status() == AuctionStatus.IN_PROGRESS)
+                    .filter(auction -> auction.isExpiredAt(currentTime))
+                    .toList();
+        }
+
+        @Override
+        public List<Auction> findPendingSettlementAuctions() {
             return List.of();
         }
     }

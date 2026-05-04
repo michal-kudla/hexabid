@@ -13,6 +13,7 @@ import com.github.hexabid.core.auctioning.port.in.PlaceBidResult;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidUseCase;
 import com.github.hexabid.core.auctioning.port.out.AuctionEventPublisher;
 import com.github.hexabid.core.auctioning.port.out.AuctionRepository;
+import com.github.hexabid.core.auctioning.port.out.AuctionRuleEvaluator;
 import com.github.hexabid.core.auctioning.port.out.KycClient;
 
 import java.time.Clock;
@@ -23,17 +24,20 @@ public final class PlaceBidService implements PlaceBidUseCase {
     private final AuctionRepository auctionRepository;
     private final KycClient kycClient;
     private final AuctionEventPublisher eventPublisher;
+    private final AuctionRuleEvaluator ruleEvaluator;
     private final Clock clock;
 
     public PlaceBidService(
             AuctionRepository auctionRepository,
             KycClient kycClient,
             AuctionEventPublisher eventPublisher,
+            AuctionRuleEvaluator ruleEvaluator,
             Clock clock
     ) {
         this.auctionRepository = Objects.requireNonNull(auctionRepository, "auctionRepository must not be null");
         this.kycClient = Objects.requireNonNull(kycClient, "kycClient must not be null");
         this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher must not be null");
+        this.ruleEvaluator = Objects.requireNonNull(ruleEvaluator, "ruleEvaluator must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
     }
 
@@ -47,6 +51,17 @@ public final class PlaceBidService implements PlaceBidUseCase {
                 .orElse(null);
         if (auction == null) {
             return rejected(PlaceBidFailureReason.AUCTION_NOT_FOUND, "auction not found");
+        }
+
+        if (!auction.isBiddable()) {
+            return rejected(PlaceBidFailureReason.AUCTION_NOT_IN_PROGRESS, "auction is not in progress");
+        }
+
+        var violations = ruleEvaluator.evaluateBiddingRules(auction.id(), command.bidderId());
+        var blockingViolations = violations.stream().filter(AuctionRuleEvaluator.RuleViolation::blocking).toList();
+        if (!blockingViolations.isEmpty()) {
+            var messages = blockingViolations.stream().map(AuctionRuleEvaluator.RuleViolation::message).toList();
+            return rejected(PlaceBidFailureReason.AUCTION_RULE_VIOLATION, String.join("; ", messages));
         }
 
         try {

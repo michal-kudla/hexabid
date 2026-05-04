@@ -12,10 +12,9 @@
  * Do not edit the class manually.
  */
 
-
 import * as runtime from '../runtime';
 import type {
-  AuthProviderResponse,
+    AuthProviderResponse,
 } from '../models/index';
 
 export interface GetAuthProvidersRequest {

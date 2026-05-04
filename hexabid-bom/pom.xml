@@ -43,6 +43,16 @@
             </dependency>
             <dependency>
                 <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-rules</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-rules-adapter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.hexabid</groupId>
                 <artifactId>hexabid-core</artifactId>
                 <version>${project.version}</version>
             </dependency>

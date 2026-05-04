@@ -5,12 +5,14 @@ import com.github.hexabid.core.auctioning.event.AuctionLeaderChangedEvent;
 import com.github.hexabid.core.auctioning.exception.AuctionConcurrencyConflictException;
 import com.github.hexabid.core.auctioning.model.Auction;
 import com.github.hexabid.core.auctioning.model.AuctionId;
+import com.github.hexabid.core.auctioning.model.AuctionStatus;
 import com.github.hexabid.core.auctioning.model.Price;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidCommand;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidFailureReason;
 import com.github.hexabid.core.auctioning.port.in.PlaceBidResult;
 import com.github.hexabid.core.auctioning.port.out.AuctionEventPublisher;
 import com.github.hexabid.core.auctioning.port.out.AuctionRepository;
+import com.github.hexabid.core.auctioning.port.out.AuctionRuleEvaluator;
 import com.github.hexabid.core.auctioning.port.out.KycClient;
 import com.github.hexabid.core.lot.model.Lot;
 import com.github.hexabid.core.party.model.PartyId;
@@ -32,6 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlaceBidServiceTest {
 
+    private static Auction createInProgressAuction(AuctionId id, PartyId sellerId, String title,
+                                                    Price startingPrice, Instant endsAt) {
+        var auction = Auction.create(id, sellerId, Lot.singleProductDraft(title), startingPrice, endsAt);
+        auction.publish(Instant.now());
+        auction.start(Instant.now());
+        return auction;
+    }
+
     @Test
     void shouldPublishLeaderChangedEventWhenLeaderChanges() {
         Instant now = Instant.parse("2026-03-05T12:00:00Z");
@@ -40,17 +50,17 @@ class PlaceBidServiceTest {
         RecordingAuctionEventPublisher events = new RecordingAuctionEventPublisher();
         KycClient kycClient = partyId -> true;
 
-        Auction auction = Auction.create(
+        Auction auction = createInProgressAuction(
                 AuctionId.newId(),
                 new PartyId("seller-1"),
-                Lot.singleProductDraft("Rare comic book"),
+                "Rare comic book",
                 new Price(new BigDecimal("100.00"), "PLN"),
                 now.plusSeconds(3600)
         );
         auction.placeBid(new PartyId("bidder-1"), new Price(new BigDecimal("120.00"), "PLN"), now.minusSeconds(60));
         repository.save(auction);
 
-        PlaceBidService service = new PlaceBidService(repository, kycClient, events, clock);
+        PlaceBidService service = new PlaceBidService(repository, kycClient, events, new NoOpRuleEvaluator(), clock);
 
         PlaceBidResult result = service.placeBid(new PlaceBidCommand(
                 auction.id(),
@@ -73,16 +83,16 @@ class PlaceBidServiceTest {
         RecordingAuctionEventPublisher events = new RecordingAuctionEventPublisher();
         KycClient kycClient = partyId -> false;
 
-        Auction auction = Auction.create(
+        Auction auction = createInProgressAuction(
                 AuctionId.newId(),
                 new PartyId("seller-1"),
-                Lot.singleProductDraft("Collector camera"),
+                "Collector camera",
                 new Price(new BigDecimal("400.00"), "PLN"),
                 now.plusSeconds(3600)
         );
         repository.save(auction);
 
-        PlaceBidService service = new PlaceBidService(repository, kycClient, events, clock);
+        PlaceBidService service = new PlaceBidService(repository, kycClient, events, new NoOpRuleEvaluator(), clock);
 
         PlaceBidResult result = service.placeBid(new PlaceBidCommand(
                 auction.id(),
@@ -103,17 +113,17 @@ class PlaceBidServiceTest {
         RecordingAuctionEventPublisher events = new RecordingAuctionEventPublisher();
         KycClient kycClient = partyId -> true;
 
-        Auction auction = Auction.create(
+        Auction auction = createInProgressAuction(
                 AuctionId.newId(),
                 new PartyId("seller-1"),
-                Lot.singleProductDraft("Console"),
+                "Console",
                 new Price(new BigDecimal("1000.00"), "PLN"),
                 now.plusSeconds(3600)
         );
         repository.save(auction);
         repository.failOnSave = true;
 
-        PlaceBidService service = new PlaceBidService(repository, kycClient, events, clock);
+        PlaceBidService service = new PlaceBidService(repository, kycClient, events, new NoOpRuleEvaluator(), clock);
 
         PlaceBidResult result = service.placeBid(new PlaceBidCommand(
                 auction.id(),
@@ -147,10 +157,20 @@ class PlaceBidServiceTest {
 
         @Override
         public List<Auction> findExpiredOpenAuctions(Instant currentTime) {
+            return List.of();
+        }
+
+        @Override
+        public List<Auction> findExpiredInProgressAuctions(Instant currentTime) {
             return storage.values().stream()
-                    .filter(auction -> auction.status().name().equals("OPEN"))
+                    .filter(auction -> auction.status() == AuctionStatus.IN_PROGRESS)
                     .filter(auction -> auction.isExpiredAt(currentTime))
                     .toList();
+        }
+
+        @Override
+        public List<Auction> findPendingSettlementAuctions() {
+            return List.of();
         }
     }
 
@@ -161,6 +181,29 @@ class PlaceBidServiceTest {
         @Override
         public void publish(AuctionDomainEvent event) {
             events.add(event);
+        }
+    }
+
+    private static final class NoOpRuleEvaluator implements AuctionRuleEvaluator {
+
+        @Override
+        public List<RuleViolation> evaluateParticipationRules(AuctionId auctionId, PartyId partyId) {
+            return List.of();
+        }
+
+        @Override
+        public List<RuleViolation> evaluateBiddingRules(AuctionId auctionId, PartyId bidderId) {
+            return List.of();
+        }
+
+        @Override
+        public List<RuleViolation> evaluateSettlementRules(AuctionId auctionId) {
+            return List.of();
+        }
+
+        @Override
+        public boolean hasBlockingViolations(AuctionId auctionId, PartyId partyId, String phase) {
+            return false;
         }
     }
 }

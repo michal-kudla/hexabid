@@ -288,7 +288,13 @@ export enum AuctionSort {
  * @enum {string}
  */
 export enum AuctionStatus {
-    OPEN = 'OPEN',
+    DRAFT = 'DRAFT',
+    PUBLISHED = 'PUBLISHED',
+    IN_PROGRESS = 'IN_PROGRESS',
+    PENDING_SETTLEMENT = 'PENDING_SETTLEMENT',
+    SETTLED = 'SETTLED',
+    FAILED_SETTLEMENT = 'FAILED_SETTLEMENT',
+    REOFFERED = 'REOFFERED',
     CLOSED = 'CLOSED'
 }
 
