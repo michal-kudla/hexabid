@@ -26,7 +26,11 @@ import type {
     LotListResponse,
     LotResponse,
     RefundWadiumRequest,
+    RuleEvaluationResponse,
+    RulePhase,
     SellingMode,
+    SubmitDocumentRequest,
+    SubmitDocumentResponse,
     WadiumRefundResponse,
     WadiumResponse,
 } from '../models/index';
@@ -79,6 +83,12 @@ export interface DepositWadiumOperationRequest {
     xAPIVersion?: string;
 }
 
+export interface EvaluateAuctionRulesRequest {
+    auctionId: string;
+    xAPIVersion?: string;
+    phase?: RulePhase;
+}
+
 export interface GetAuctionByIdRequest {
     auctionId: string;
     xAPIVersion?: string;
@@ -101,6 +111,12 @@ export interface GetLotRequest {
 export interface RefundWadiumOperationRequest {
     auctionId: string;
     refundWadiumRequest: RefundWadiumRequest;
+    xAPIVersion?: string;
+}
+
+export interface SubmitDocumentOperationRequest {
+    auctionId: string;
+    submitDocumentRequest: SubmitDocumentRequest;
     xAPIVersion?: string;
 }
 
@@ -503,6 +519,61 @@ export class AuctionsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for evaluateAuctionRules without sending the request
+     */
+    async evaluateAuctionRulesRequestOpts(requestParameters: EvaluateAuctionRulesRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling evaluateAuctionRules().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['phase'] != null) {
+            queryParameters['phase'] = requestParameters['phase'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/rules`;
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Returns rule evaluation results for the authenticated user and given auction. Rules are grouped by phase: PARTICIPATION, BIDDING, SETTLEMENT. Use the `phase` query parameter to filter by a specific phase. 
+     * Evaluate rules for an auction
+     */
+    async evaluateAuctionRulesRaw(requestParameters: EvaluateAuctionRulesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<RuleEvaluationResponse>> {
+        const requestOptions = await this.evaluateAuctionRulesRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Returns rule evaluation results for the authenticated user and given auction. Rules are grouped by phase: PARTICIPATION, BIDDING, SETTLEMENT. Use the `phase` query parameter to filter by a specific phase. 
+     * Evaluate rules for an auction
+     */
+    async evaluateAuctionRules(requestParameters: EvaluateAuctionRulesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<RuleEvaluationResponse> {
+        const response = await this.evaluateAuctionRulesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for getAuctionById without sending the request
      */
     async getAuctionByIdRequestOpts(requestParameters: GetAuctionByIdRequest): Promise<runtime.RequestOpts> {
@@ -750,6 +821,67 @@ export class AuctionsApi extends runtime.BaseAPI {
      */
     async refundWadium(requestParameters: RefundWadiumOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WadiumRefundResponse> {
         const response = await this.refundWadiumRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for submitDocument without sending the request
+     */
+    async submitDocumentRequestOpts(requestParameters: SubmitDocumentOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling submitDocument().'
+            );
+        }
+
+        if (requestParameters['submitDocumentRequest'] == null) {
+            throw new runtime.RequiredError(
+                'submitDocumentRequest',
+                'Required parameter "submitDocumentRequest" was null or undefined when calling submitDocument().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/documents`;
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['submitDocumentRequest'],
+        };
+    }
+
+    /**
+     * Submits a document (e.g. excise certificate, customs exemption) for the authenticated user on the given auction. This can satisfy participation or settlement rules that require document evidence. 
+     * Submit a document for rule compliance
+     */
+    async submitDocumentRaw(requestParameters: SubmitDocumentOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubmitDocumentResponse>> {
+        const requestOptions = await this.submitDocumentRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Submits a document (e.g. excise certificate, customs exemption) for the authenticated user on the given auction. This can satisfy participation or settlement rules that require document evidence. 
+     * Submit a document for rule compliance
+     */
+    async submitDocument(requestParameters: SubmitDocumentOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubmitDocumentResponse> {
+        const response = await this.submitDocumentRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

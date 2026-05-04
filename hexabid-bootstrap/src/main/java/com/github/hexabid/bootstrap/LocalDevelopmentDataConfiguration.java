@@ -38,90 +38,101 @@ class LocalDevelopmentDataConfiguration {
             }
 
             Instant now = clock.instant();
+            Instant startedAt = now.minus(Duration.ofDays(10));
             List<Auction> sampleAuctions = List.of(
                     activeAuction(
                             "Apartament z tarasem w Gdyni",
-                            "google:seller-anna",
+                            "dev:seller-anna",
                             money("485000.00", "PLN"),
                             now.plus(Duration.ofDays(6)),
-                            List.of(new BidSeed("github:bidder-ola", "501000.00", now.minus(Duration.ofHours(6))))
+                            List.of(new BidSeed("dev:bidder-ola", "501000.00", now.minus(Duration.ofHours(6)))),
+                            startedAt
                     ),
                     activeAuction(
                             "Ford Mustang Fastback 1968",
-                            "github:seller-marek",
+                            "dev:seller-marek",
                             money("185000.00", "PLN"),
                             now.plus(Duration.ofDays(4)),
                             List.of(
-                                    new BidSeed("google:bidder-jan", "192500.00", now.minus(Duration.ofHours(8))),
-                                    new BidSeed("github:bidder-ola", "198000.00", now.minus(Duration.ofHours(2)))
-                            )
+                                    new BidSeed("dev:bidder-jan", "192500.00", now.minus(Duration.ofHours(8))),
+                                    new BidSeed("dev:bidder-ola", "198000.00", now.minus(Duration.ofHours(2)))
+                            ),
+                            startedAt
                     ),
                     activeAuction(
                             "Kolekcja komiksow z lat 90.",
-                            "google:seller-julia",
+                            "dev:seller-anna",
                             money("1200.00", "PLN"),
                             now.plus(Duration.ofDays(2)),
-                            List.of(new BidSeed("github:bidder-piotr", "1480.00", now.minus(Duration.ofMinutes(40))))
+                            List.of(new BidSeed("dev:bidder-jan", "1480.00", now.minus(Duration.ofMinutes(40)))),
+                            startedAt
                     ),
                     activeAuction(
                             "Maszyna CNC po przegladzie serwisowym",
-                            "github:seller-adam",
+                            "dev:seller-marek",
                             money("27500.00", "PLN"),
                             now.plus(Duration.ofDays(9)),
-                            List.of()
+                            List.of(),
+                            startedAt
                     ),
                     activeAuction(
                             "Fotografia kolekcjonerska - edycja limitowana",
-                            "google:seller-kasia",
+                            "dev:seller-anna",
                             money("950.00", "PLN"),
                             now.plus(Duration.ofHours(19)),
                             List.of(
-                                    new BidSeed("github:bidder-lena", "1100.00", now.minus(Duration.ofHours(5))),
-                                    new BidSeed("google:bidder-michal", "1250.00", now.minus(Duration.ofMinutes(55)))
-                            )
+                                    new BidSeed("dev:bidder-lena", "1100.00", now.minus(Duration.ofHours(5))),
+                                    new BidSeed("dev:bidder-jan", "1250.00", now.minus(Duration.ofMinutes(55)))
+                            ),
+                            startedAt
                     ),
                     activeAuction(
                             "Zestaw mebli loftowych do biura",
-                            "github:seller-robert",
+                            "dev:seller-marek",
                             money("8900.00", "PLN"),
                             now.plus(Duration.ofDays(3)),
-                            List.of(new BidSeed("google:bidder-ola", "9300.00", now.minus(Duration.ofHours(4))))
+                            List.of(new BidSeed("dev:bidder-ola", "9300.00", now.minus(Duration.ofHours(4)))),
+                            startedAt
                     ),
                     activeAuction(
                             "Skuter Vespa Primavera",
-                            "google:seller-ewa",
+                            "dev:seller-anna",
                             money("3200.00", "EUR"),
                             now.plus(Duration.ofDays(5)),
                             List.of(
-                                    new BidSeed("github:bidder-nina", "3400.00", now.minus(Duration.ofHours(10))),
-                                    new BidSeed("google:bidder-tomek", "3600.00", now.minus(Duration.ofHours(3)))
-                            )
+                                    new BidSeed("dev:bidder-lena", "3400.00", now.minus(Duration.ofHours(10))),
+                                    new BidSeed("dev:bidder-jan", "3600.00", now.minus(Duration.ofHours(3)))
+                            ),
+                            startedAt
                     ),
                     activeAuction(
                             "Gitara Fender Stratocaster USA",
-                            "github:seller-pawel",
+                            "dev:seller-marek",
                             money("7800.00", "PLN"),
                             now.plus(Duration.ofDays(1)),
-                            List.of(new BidSeed("google:bidder-jan", "8200.00", now.minus(Duration.ofMinutes(25))))
+                            List.of(new BidSeed("dev:bidder-ola", "8200.00", now.minus(Duration.ofMinutes(25)))),
+                            startedAt
                     ),
                     closedAuction(
                             "Dzialka rekreacyjna nad jeziorem",
-                            "google:seller-anna",
+                            "dev:seller-anna",
                             money("99000.00", "PLN"),
                             now.minus(Duration.ofDays(2)),
                             List.of(
-                                    new BidSeed("github:bidder-ola", "103000.00", now.minus(Duration.ofDays(3))),
-                                    new BidSeed("google:bidder-tomek", "108500.00", now.minus(Duration.ofDays(2)).minus(Duration.ofHours(2)))
+                                    new BidSeed("dev:bidder-ola", "103000.00", now.minus(Duration.ofDays(3))),
+                                    new BidSeed("dev:bidder-jan", "108500.00", now.minus(Duration.ofDays(2)).minus(Duration.ofHours(2)))
                             ),
-                            now
+                            now,
+                            startedAt
                     ),
                     closedAuction(
                             "Konsola retro z kolekcja gier",
-                            "github:seller-marek",
+                            "dev:seller-marek",
                             money("650.00", "PLN"),
                             now.minus(Duration.ofDays(1)),
                             List.of(),
-                            now
+                            now,
+                            startedAt
                     )
             );
 
@@ -141,7 +152,8 @@ class LocalDevelopmentDataConfiguration {
             String sellerId,
             Price startingPrice,
             Instant endsAt,
-            List<BidSeed> bids
+            List<BidSeed> bids,
+            Instant startedAt
     ) {
         Auction auction = Auction.create(
                 AuctionId.newId(),
@@ -150,6 +162,8 @@ class LocalDevelopmentDataConfiguration {
                 startingPrice,
                 endsAt
         );
+        auction.publish(startedAt);
+        auction.start(startedAt);
         bids.forEach(bid -> auction.placeBid(new PartyId(bid.bidderId()), new Price(new BigDecimal(bid.amount()), startingPrice.currency()), bid.placedAt()));
         return auction;
     }
@@ -160,9 +174,10 @@ class LocalDevelopmentDataConfiguration {
             Price startingPrice,
             Instant endsAt,
             List<BidSeed> bids,
-            Instant now
+            Instant now,
+            Instant startedAt
     ) {
-        Auction auction = activeAuction(title, sellerId, startingPrice, endsAt, bids);
+        Auction auction = activeAuction(title, sellerId, startingPrice, endsAt, bids, startedAt);
         auction.maybeCloseIfExpired(now);
         return auction;
     }

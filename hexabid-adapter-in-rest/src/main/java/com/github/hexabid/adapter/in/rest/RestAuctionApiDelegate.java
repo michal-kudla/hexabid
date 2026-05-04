@@ -5,6 +5,8 @@ import com.github.hexabid.auth.core.identityaccess.port.out.CurrentUserProvider;
 import com.github.hexabid.contract.model.*;
 import com.github.hexabid.contract.api.AuctionsApiDelegate;
 import com.github.hexabid.core.auctioning.model.AuctionId;
+import com.github.hexabid.core.auctioning.model.DocumentStatus;
+import com.github.hexabid.core.auctioning.model.DocumentType;
 import com.github.hexabid.core.auctioning.model.Price;
 import com.github.hexabid.core.auctioning.port.in.AuctionDetailsResult;
 import com.github.hexabid.core.auctioning.port.in.BrowseAuctionsQuery;
@@ -13,6 +15,11 @@ import com.github.hexabid.core.auctioning.port.in.CreateAuctionResult;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionCommand;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionUseCase;
 import com.github.hexabid.core.auctioning.port.in.FindAuctionDetailsUseCase;
+import com.github.hexabid.core.auctioning.port.in.SubmitDocumentCommand;
+import com.github.hexabid.core.auctioning.port.in.SubmitDocumentResult;
+import com.github.hexabid.core.auctioning.port.in.SubmitDocumentUseCase;
+import com.github.hexabid.core.auctioning.port.out.AuctionRuleEvaluator;
+import com.github.hexabid.core.party.model.PartyId;
 import com.github.hexabid.pricing.auction.AuctionPriceBreakdown;
 import com.github.hexabid.pricing.auction.AuctionPricingFacade;
 import com.github.hexabid.pricing.model.CustomsDutyRate;
@@ -42,6 +49,8 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     private final CurrentUserProvider currentUserProvider;
     private final RestAuctionContractMapper mapper;
     private final AuctionPricingFacade auctionPricingFacade;
+    private final AuctionRuleEvaluator ruleEvaluator;
+    private final SubmitDocumentUseCase submitDocumentUseCase;
     private final Counter createAuctionAcceptedCounter;
     private final Counter createAuctionRejectedCounter;
     private final Counter browseAuctionsCounter;
@@ -60,6 +69,8 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             CurrentUserProvider currentUserProvider,
             RestAuctionContractMapper mapper,
             AuctionPricingFacade auctionPricingFacade,
+            AuctionRuleEvaluator ruleEvaluator,
+            SubmitDocumentUseCase submitDocumentUseCase,
             MeterRegistry meterRegistry
     ) {
         this.createAuctionUseCase = createAuctionUseCase;
@@ -69,6 +80,8 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
         this.currentUserProvider = currentUserProvider;
         this.mapper = mapper;
         this.auctionPricingFacade = auctionPricingFacade;
+        this.ruleEvaluator = ruleEvaluator;
+        this.submitDocumentUseCase = submitDocumentUseCase;
         this.createAuctionAcceptedCounter = meterRegistry.counter("auctions.create.accepted");
         this.createAuctionRejectedCounter = meterRegistry.counter("auctions.create.rejected");
         this.browseAuctionsCounter = meterRegistry.counter("auctions.browse.requests", "scope", "market");
@@ -256,6 +269,81 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
         refundAmount.setCurrency(deposit.currency);
         response.setRefundAmount(refundAmount);
         return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<RuleEvaluationResponse> evaluateAuctionRules(UUID auctionId, String xApiVersion, com.github.hexabid.contract.model.RulePhase phase) {
+        var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        AuctionId aid = new AuctionId(auctionId);
+        PartyId partyId = authenticatedUser.partyId();
+
+        RuleEvaluationResponse response = new RuleEvaluationResponse();
+        response.setAuctionId(auctionId);
+        var evaluations = new java.util.ArrayList<RulePhaseEvaluation>();
+
+        if (phase == null || phase == com.github.hexabid.contract.model.RulePhase.PARTICIPATION) {
+            var violations = ruleEvaluator.evaluateParticipationRules(aid, partyId);
+            evaluations.add(toPhaseEvaluation(com.github.hexabid.contract.model.RulePhase.PARTICIPATION, violations));
+        }
+        if (phase == null || phase == com.github.hexabid.contract.model.RulePhase.BIDDING) {
+            var violations = ruleEvaluator.evaluateBiddingRules(aid, partyId);
+            evaluations.add(toPhaseEvaluation(com.github.hexabid.contract.model.RulePhase.BIDDING, violations));
+        }
+        if (phase == null || phase == com.github.hexabid.contract.model.RulePhase.SETTLEMENT) {
+            var violations = ruleEvaluator.evaluateSettlementRules(aid);
+            evaluations.add(toPhaseEvaluation(com.github.hexabid.contract.model.RulePhase.SETTLEMENT, violations));
+        }
+
+        response.setEvaluations(evaluations);
+        return ResponseEntity.ok(response);
+    }
+
+    @Override
+    public ResponseEntity<SubmitDocumentResponse> submitDocument(UUID auctionId, com.github.hexabid.contract.model.SubmitDocumentRequest submitDocumentRequest, String xApiVersion) {
+        var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        SubmitDocumentCommand command = new SubmitDocumentCommand(
+                authenticatedUser.partyId(),
+                new AuctionId(auctionId),
+                DocumentType.valueOf(submitDocumentRequest.getDocumentType().getValue()),
+                DocumentStatus.valueOf(submitDocumentRequest.getStatus().getValue())
+        );
+
+        SubmitDocumentResult result = submitDocumentUseCase.submitDocument(command);
+
+        if (result instanceof SubmitDocumentResult.DocumentAccepted accepted) {
+            com.github.hexabid.contract.model.SubmitDocumentResponse response = new com.github.hexabid.contract.model.SubmitDocumentResponse();
+            response.setDocumentType(com.github.hexabid.contract.model.DocumentType.valueOf(accepted.type().name()));
+            response.setStatus(com.github.hexabid.contract.model.DocumentStatus.valueOf(accepted.status().name()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        }
+
+        SubmitDocumentResult.DocumentRejected rejected = (SubmitDocumentResult.DocumentRejected) result;
+        throw new RestRequestRejectedException(HttpStatus.BAD_REQUEST, rejected.reason());
+    }
+
+    private RulePhaseEvaluation toPhaseEvaluation(com.github.hexabid.contract.model.RulePhase phase, java.util.List<AuctionRuleEvaluator.RuleViolation> violations) {
+        RulePhaseEvaluation eval = new RulePhaseEvaluation();
+        eval.setPhase(phase);
+        eval.setHasBlockingViolations(violations.stream().anyMatch(AuctionRuleEvaluator.RuleViolation::blocking));
+        eval.setRules(violations.stream().map(v -> {
+            RuleViolationItem item = new RuleViolationItem();
+            item.setRuleName(v.ruleName());
+            item.setMessage(v.message());
+            item.setBlocking(v.blocking());
+            item.setRequiredAction(v.requiredAction());
+            item.setStatus(com.github.hexabid.contract.model.RuleStatus.valueOf(v.status()));
+            item.setSeverity(com.github.hexabid.contract.model.RuleSeverity.valueOf(v.severity()));
+            return item;
+        }).toList());
+        return eval;
     }
 
     private PricingContext buildPricingContext(BigDecimal hammerAmount, String currency, PricingConfig config) {

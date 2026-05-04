@@ -23,12 +23,12 @@
           <small>{{ profile.verifiedLabel }}</small>
         </a>
         @if (profile.provider === 'dev') {
-          <a class="ghost-button" href="/dev-auth?redirect=http://localhost:4200/">Zmień usera</a>
+          <a class="ghost-button" href="/login/dev">Zmień usera</a>
         }
         <button class="ghost-button" type="button" (click)="session.logout()">Wyloguj</button>
       } @else {
         <div class="login-group">
-          @for (provider of session.loginProviders; track provider.id) {
+           @for (provider of session.loginProviders(); track provider.id) {
             <a class="ghost-button" [href]="provider.href">{{ provider.label }}</a>
           }
         </div>

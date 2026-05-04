@@ -81,6 +81,43 @@
   <section class="details-grid details-grid--secondary">
     <article class="surface">
       <div class="section-heading">
+        <h2>Reguły aukcyjne</h2>
+        @if (rulesFacade.loading()) {
+          <span class="meta">Ładowanie...</span>
+        }
+      </div>
+
+      @if (rulesFacade.error()) {
+        <p class="muted">{{ rulesFacade.error() }}</p>
+      } @else if (rulesFacade.evaluation(); as eval_) {
+        <app-rules-panel [evaluations]="eval_.evaluations" />
+
+        @if (eval_.hasAnyBlockingViolations) {
+          <p class="hint blocking-hint">
+            Masz blokujące naruszenia reguł. Złóż wymagane dokumenty, aby móc licytować.
+          </p>
+        }
+      }
+    </article>
+
+    <article class="surface">
+      <app-document-submit
+        [submitting]="rulesFacade.documentSubmitting()"
+        (documentSubmitted)="onDocumentSubmitted($event)"
+      />
+
+      @if (rulesFacade.submittedDocument(); as doc) {
+        <div class="result-success">
+          <strong>Dokument złożony</strong>
+          <p>{{ doc.documentTypeLabel }} &mdash; {{ doc.statusLabel }}</p>
+        </div>
+      }
+    </article>
+  </section>
+
+  <section class="details-grid details-grid--secondary">
+    <article class="surface">
+      <div class="section-heading">
         <h2>Historia ofert</h2>
         <span class="meta">{{ auction.totalBids }} wpisów</span>
       </div>

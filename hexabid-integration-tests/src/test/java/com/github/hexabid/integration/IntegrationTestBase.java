@@ -61,12 +61,21 @@ public abstract class IntegrationTestBase {
         buyerInventoryApi = new InventoryApi(buyerClient);
     }
 
-    private static ApiClient apiClientFor(String user, String pass) {
+    protected static ApiClient apiClientFor(String user, String pass) {
         ApiClient client = new ApiClient();
         client.updateBaseUri(BASE_URL);
         client.setRequestInterceptor(builder -> {
             builder.header("X-API-Version", API_VERSION);
             builder.header("Authorization", basicAuth(user, pass));
+        });
+        return client;
+    }
+
+    protected static ApiClient anonymousApiClient() {
+        ApiClient client = new ApiClient();
+        client.updateBaseUri(BASE_URL);
+        client.setRequestInterceptor(builder -> {
+            builder.header("X-API-Version", API_VERSION);
         });
         return client;
     }

@@ -17,6 +17,6 @@ public class LocalAuthProviderDiscoverer implements AuthProviderDiscoverer {
 
     @Override
     public List<AuthProviderDescriptor> getProviders() {
-        return List.of(descriptor);
+        return List.of();
     }
 }

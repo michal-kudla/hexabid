@@ -46,8 +46,16 @@
         <module>hexabid-payment-adapter-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
         <module>hexabid-bootstrap</module>
         <module>hexabid-architecture-tests</module>
-        <module>hexabid-integration-tests</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>it</id>
+            <modules>
+                <module>hexabid-integration-tests</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <java.version>25</java.version>

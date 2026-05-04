@@ -86,3 +86,16 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Zmieniono `AuctionStatus.OPEN` → `IN_PROGRESS`, `CLOSED` zachowane
 - Link: [[plan-system-regul]]
 - Tagi: #rules #ast #algebra #auction-lifecycle #settlement #documents #wadium
+
+## [2026-05-04] [IMPLEMENTATION] Rules REST API + SPA GUI
+- Dodano 2 nowe endpointy REST: `GET /api/auctions/{id}/rules?phase=` + `POST /api/auctions/{id}/documents`
+- Rozszerzono `RuleViolation` o pola `status` (SATISFIED/PENDING/VIOLATED) i `severity` (BLOCKING/WARNING/INFORMATIVE)
+- Zaktualizowano OpenAPI YAML: nowe schematy RuleEvaluationResponse, RulePhaseEvaluation, RuleViolationItem, RulePhase, RuleStatus, RuleSeverity, SubmitDocumentRequest/Response, DocumentType, DocumentStatus
+- Regeneracja TypeScript client z nowymi typami reguł
+- Nowe komponenty SPA: `RulesPanelComponent` (3-phase rules display), `DocumentSubmitComponent` (document submission form), `RulesFacade` (rules state management)
+- Integracja rules panel na stronach: Auction Details (PARTICIPATION + BIDDING) i Pricing (SETTLEMENT)
+- Nowe pliki data-access: `rules-api.models.ts`, `rules-view.mapper.ts`, `rules-api.service.ts`
+- Naprawiono bug: `AuctionStatus.OPEN` → `AuctionStatus.IN_PROGRESS` w mapper i home page
+- Testy integracyjne: `RulesEvaluationIT` (R1.1-R1.7 rules evaluation, R2.1-R2.2 document submission, R3.1-R3.2 security)
+- Testy e2e Playwright: `rules.spec.ts` (rules panel visibility, document form, settlement rules, status indicators)
+- Tagi: #rules #spa #rest-api #openapi #e2e #integration-tests

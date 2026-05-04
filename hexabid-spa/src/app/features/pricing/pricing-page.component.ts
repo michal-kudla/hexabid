@@ -10,18 +10,23 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PricingFacade } from './pricing.facade';
+import { RulesFacade } from '../rules/rules.facade';
+import { RulesPanelComponent } from '../rules/rules-panel.component';
+import { DocumentSubmitComponent } from '../rules/document-submit.component';
+import { DocumentType, DocumentStatus, RulePhase } from '../../data-access/generated/auction-contract';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 
 @Component({
   selector: 'app-pricing-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent, RulesPanelComponent, DocumentSubmitComponent],
   templateUrl: './pricing-page.component.html',
   styleUrl: './pricing-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [PricingFacade]
+  providers: [PricingFacade, RulesFacade]
 })
 export class PricingPageComponent {
   readonly facade = inject(PricingFacade);
+  readonly rulesFacade = inject(RulesFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -46,6 +51,7 @@ export class PricingPageComponent {
       this.auctionId = params.get('auctionId');
       if (this.auctionId) {
         void this.facade.loadBreakdown(this.auctionId);
+        void this.rulesFacade.evaluateRules(this.auctionId, RulePhase.SETTLEMENT);
       }
     });
   }
@@ -70,5 +76,11 @@ export class PricingPageComponent {
     const { partyId } = this.refundForm.getRawValue();
     void this.facade.refundWadium(this.auctionId, partyId);
     this.refundForm.controls.partyId.reset('');
+  }
+
+  onDocumentSubmitted(event: { documentType: DocumentType; status: DocumentStatus }): void {
+    if (this.auctionId) {
+      void this.rulesFacade.submitDocument(this.auctionId, event.documentType, event.status);
+    }
   }
 }

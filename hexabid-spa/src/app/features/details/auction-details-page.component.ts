@@ -9,18 +9,23 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuctionDetailsFacade } from './auction-details.facade';
+import { RulesFacade } from '../rules/rules.facade';
+import { RulesPanelComponent } from '../rules/rules-panel.component';
+import { DocumentSubmitComponent } from '../rules/document-submit.component';
+import { DocumentType, DocumentStatus, RulePhase } from '../../data-access/generated/auction-contract';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 
 @Component({
   selector: 'app-auction-details-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent, RulesPanelComponent, DocumentSubmitComponent],
   templateUrl: './auction-details-page.component.html',
   styleUrl: './auction-details-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AuctionDetailsFacade]
+  providers: [AuctionDetailsFacade, RulesFacade]
 })
 export class AuctionDetailsPageComponent {
   readonly facade = inject(AuctionDetailsFacade);
+  readonly rulesFacade = inject(RulesFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -37,6 +42,7 @@ export class AuctionDetailsPageComponent {
       const auctionId = params.get('auctionId');
       if (auctionId) {
         void this.facade.loadAuction(auctionId);
+        void this.rulesFacade.evaluateRules(auctionId);
       }
     });
 
@@ -54,5 +60,12 @@ export class AuctionDetailsPageComponent {
     const { amount, currency } = this.bidForm.getRawValue();
     this.facade.submitBid(amount, currency);
     this.bidForm.controls.amount.reset('');
+  }
+
+  onDocumentSubmitted(event: { documentType: DocumentType; status: DocumentStatus }): void {
+    const auctionId = this.route.snapshot.paramMap.get('auctionId');
+    if (auctionId) {
+      void this.rulesFacade.submitDocument(auctionId, event.documentType, event.status);
+    }
   }
 }

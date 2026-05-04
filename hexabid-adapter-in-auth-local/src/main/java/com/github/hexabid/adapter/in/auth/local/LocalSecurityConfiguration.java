@@ -13,6 +13,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -62,7 +64,7 @@ public class LocalSecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/*", "/api/auth/providers").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(basic -> basic.realmName("hexabid"))
+                .httpBasic(basic -> basic.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .formLogin(form -> form.defaultSuccessUrl("/", true))
                 .oauth2Login(oauth2 -> {
                     oauth2.defaultSuccessUrl("/", true);
