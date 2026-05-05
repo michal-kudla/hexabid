@@ -99,3 +99,12 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Testy integracyjne: `RulesEvaluationIT` (R1.1-R1.7 rules evaluation, R2.1-R2.2 document submission, R3.1-R3.2 security)
 - Testy e2e Playwright: `rules.spec.ts` (rules panel visibility, document form, settlement rules, status indicators)
 - Tagi: #rules #spa #rest-api #openapi #e2e #integration-tests
+
+## [2026-05-04] [IMPLEMENTATION] SPA E2E jako scenariusze biznesowe click-through
+- Dodano nowy zestaw Playwright: `hexabid-spa/e2e/business-flow.spec.ts` (market->details->pricing, sell flow, rules/documents)
+- Testy są "strict": brak aukcji demo lub brak krytycznego elementu UI powoduje fail (bez cichego pomijania scenariusza)
+- Włączono artefakty diagnostyczne Playwright na fail: trace + screenshot + video
+- Dodano przewodnik uruchamiania i zasad: `hexabid-spa/e2e/README.md`
+- Rozszerzono scenariusze o Product + Inventory (katalog/filtrowanie + formularz tworzenia partii) oraz step-level screenshot attachments
+- Link: [[decisions/2026-05-04-spa-e2e-business-flow]]
+- Tagi: #spa #e2e #playwright #business-flow #regresja

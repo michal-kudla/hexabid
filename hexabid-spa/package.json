@@ -9,7 +9,9 @@
     "e2e:headed": "playwright test --headed",
     "contract:sync": "cd .. && mvn -pl auctions-api-contract generate-sources",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "e2e:business": "playwright test e2e/business-flow.spec.ts",
+    "e2e:report": "playwright show-report"
   },
   "prettier": {
     "printWidth": 100,

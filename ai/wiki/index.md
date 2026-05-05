@@ -12,6 +12,7 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-04-16-documentation-structure]] - Organizacja dokumentacji
 - [[decisions/2026-04-17-pricing-architecture]] - Architektura ceny (wadium, VAT, akcyza, cło) oparta na archetypach M03+M04
 - [[decisions/2026-04-21-pricing-spa-frontend]] - Frontend SPA modułu pricing: kalkulacja ceny, wadium, konfiguracja
+- [[decisions/2026-05-04-spa-e2e-business-flow]] - Reprojekt E2E SPA na scenariusze biznesowe click-through
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
