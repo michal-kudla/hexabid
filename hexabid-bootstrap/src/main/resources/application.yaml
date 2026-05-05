@@ -1,3 +1,9 @@
+server:
+  servlet:
+    session:
+      cookie:
+        path: /
+
 logging:
   file:
     name: /work/var/log/hexabid.log
@@ -59,10 +65,10 @@ spring:
               - email
         provider:
           custom-dev:
-            authorization-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/auth
-            token-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/token
-            user-info-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/userinfo
-            jwk-set-uri: http://localhost:8080/auth/realms/dev/protocol/openid-connect/certs
+            authorization-uri: ${DEV_OIDC_AUTHORIZATION_URI:http://localhost:18080/hexabid/login/dev}
+            token-uri: ${DEV_OIDC_TOKEN_URI:http://localhost:18080/hexabid/login/dev/token}
+            user-info-uri: ${DEV_OIDC_USER_INFO_URI:http://localhost:18080/hexabid/login/dev/userinfo}
+            jwk-set-uri: ${DEV_OIDC_JWK_SET_URI:http://localhost:18080/hexabid/login/dev/certs}
             user-name-attribute: preferred_username
 
 
@@ -80,7 +86,7 @@ auctions:
       outbid: auctions.outbid
       ended: auctions.ended
   kyc:
-    base-url: http://localhost:8081
+    base-url: ${KYC_BASE_URL:https://kyc.example.test}
     retry:
       max-attempts: 3
       initial-backoff-millis: 200

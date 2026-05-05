@@ -1,6 +1,9 @@
 <article class="surface doc-submit-card">
   <h3>Złóż dokument</h3>
-  <p class="hint">Złóż dokument, aby spełnić wymogi regulaminowe aukcji.</p>
+  <p class="hint">
+    Kopia wystarcza jako sygnał gotowości do udziału, jeśli reguła uczestnictwa tego wymaga.
+    Oryginał jest potrzebny dopiero na etapie rozliczenia po wygranej, gdy reguła wyraźnie go wskazuje.
+  </p>
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="stack">
     <label>
@@ -21,6 +24,11 @@
         <option [ngValue]="DocumentStatus.ORIGINAL">Oryginał</option>
       </select>
     </label>
+
+    <p class="document-guidance">
+      Wybierz "Kopia", gdy chcesz odblokować warunek udziału lub pokazać dokument licytującemu.
+      Wybierz "Oryginał" tylko wtedy, gdy finalizujesz rozliczenie po wygranej.
+    </p>
 
     <button type="submit" [disabled]="submitting()">
       {{ submitting() ? 'Składanie...' : 'Złóż dokument' }}

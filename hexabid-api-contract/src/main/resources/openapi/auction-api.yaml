@@ -3,7 +3,7 @@ info:
   title: Auctions API
   version: 1.0.0
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:18080/hexabid
 tags:
   - name: Auctions
   - name: Products
@@ -448,6 +448,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuctionResponse'
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/activate:
+    post:
+      operationId: activateAuction
+      tags:
+        - Auctions
+      summary: Publish and start a draft auction
+      description: |
+        Moves an auction owned by the authenticated seller from DRAFT/PUBLISHED
+        to IN_PROGRESS. This is the explicit hand-off from auction preparation
+        to live bidding.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Auction activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionResponse'
+        '400':
+          description: Auction cannot be activated from the current state
+        '401':
+          description: Authentication required
+        '403':
+          description: Only the seller can activate the auction
         '404':
           description: Auction not found
   /api/auctions/{auctionId}/wadium:

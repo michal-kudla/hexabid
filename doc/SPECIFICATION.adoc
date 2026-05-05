@@ -29,7 +29,7 @@ product/              - Product catalog domain
 inventory/           - Inventory management domain
 auctions-core/         - Core auctioning domain (Pure Java)
 auctions-auth-core/    - Authentication domain (Party model)
-auctions-api-contract/ - OpenAPI contract definitions
+hexabid-api-contract/ - OpenAPI contract definitions
 auctions-adapter-in-rest/      - REST API adapter
 auctions-adapter-in-ws/        - WebSocket STOMP adapter
 auctions-adapter-in-job/        - Scheduler adapter
@@ -45,7 +45,7 @@ auctions-payment-adapter-payu/    - PayU gateway
 auctions-payment-adapter-p24/       - Przelewy24 gateway
 auctions-payment-adapter-crypto/    - Crypto payments
 auctions-payment-adapter-local/  - Local mock (dev)
-auctions-bootstrap/        - Spring Boot composition root
+hexabid-bootstrap/        - Spring Boot composition root
 ----
 
 == Core Domain Models

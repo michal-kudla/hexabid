@@ -8,6 +8,10 @@ import com.github.hexabid.core.auctioning.model.AuctionId;
 import com.github.hexabid.core.auctioning.model.DocumentStatus;
 import com.github.hexabid.core.auctioning.model.DocumentType;
 import com.github.hexabid.core.auctioning.model.Price;
+import com.github.hexabid.core.auctioning.port.in.ActivateAuctionCommand;
+import com.github.hexabid.core.auctioning.port.in.ActivateAuctionFailureReason;
+import com.github.hexabid.core.auctioning.port.in.ActivateAuctionResult;
+import com.github.hexabid.core.auctioning.port.in.ActivateAuctionUseCase;
 import com.github.hexabid.core.auctioning.port.in.AuctionDetailsResult;
 import com.github.hexabid.core.auctioning.port.in.BrowseAuctionsQuery;
 import com.github.hexabid.core.auctioning.port.in.BrowseAuctionsUseCase;
@@ -43,6 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RestAuctionApiDelegate implements AuctionsApiDelegate {
 
     private final CreateAuctionUseCase createAuctionUseCase;
+    private final ActivateAuctionUseCase activateAuctionUseCase;
     private final FindAuctionDetailsUseCase findAuctionDetailsUseCase;
     private final BrowseAuctionsUseCase browseAuctionsUseCase;
     private final FindCurrentUserProfileUseCase findCurrentUserProfileUseCase;
@@ -63,6 +68,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
 
     public RestAuctionApiDelegate(
             CreateAuctionUseCase createAuctionUseCase,
+            ActivateAuctionUseCase activateAuctionUseCase,
             FindAuctionDetailsUseCase findAuctionDetailsUseCase,
             BrowseAuctionsUseCase browseAuctionsUseCase,
             FindCurrentUserProfileUseCase findCurrentUserProfileUseCase,
@@ -74,6 +80,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             MeterRegistry meterRegistry
     ) {
         this.createAuctionUseCase = createAuctionUseCase;
+        this.activateAuctionUseCase = activateAuctionUseCase;
         this.findAuctionDetailsUseCase = findAuctionDetailsUseCase;
         this.browseAuctionsUseCase = browseAuctionsUseCase;
         this.findCurrentUserProfileUseCase = findCurrentUserProfileUseCase;
@@ -138,6 +145,32 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             return ResponseEntity.ok(mapper.toResponse(found.auction()));
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @Override
+    public ResponseEntity<AuctionResponse> activateAuction(UUID auctionId, String xApiVersion) {
+        var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ActivateAuctionResult result = activateAuctionUseCase.activateAuction(new ActivateAuctionCommand(
+                new AuctionId(auctionId),
+                authenticatedUser.partyId()
+        ));
+        if (result instanceof ActivateAuctionResult.AuctionActivated activated) {
+            return ResponseEntity.ok(mapper.toResponse(activated.auction()));
+        }
+
+        ActivateAuctionResult.AuctionActivationRejected rejected =
+                (ActivateAuctionResult.AuctionActivationRejected) result;
+        if (rejected.reason() == ActivateAuctionFailureReason.AUCTION_NOT_FOUND) {
+            return ResponseEntity.notFound().build();
+        }
+        if (rejected.reason() == ActivateAuctionFailureReason.ACTOR_IS_NOT_SELLER) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        throw new RestRequestRejectedException(HttpStatus.BAD_REQUEST, rejected.message());
     }
 
     @Override

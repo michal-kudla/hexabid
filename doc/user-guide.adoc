@@ -71,7 +71,7 @@ Klient łączy się z WebSocket STOMP pod:
 
 [source,text]
 ----
-ws://localhost:8080/ws-auctions
+ws://localhost:18080/hexabid/ws-auctions
 ----
 
 Kanały:

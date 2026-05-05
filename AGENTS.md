@@ -37,43 +37,22 @@ Hexabid to aplikacja aukcyjna wzorcowa z **architekturą heksagonalną** (hexago
 
 ### Struktura modułów
 
-**Moduły domenowe** (czyste Java, bez framework'u):
-- `quantity` - jednostki i wartości ilościowe
-- `product` - katalog produktów (ProductType, PackageType)
-- `inventory` - zarządzanie inwentarzem
-- `auctions-core` - domena aukcji (Auction, Bid, Lot)
-- `auctions-auth-core` - model Party i uwierzytelniania
-- `auctions-payment-core` - przetwarzanie płatności
+**Domena**: `hexabid-quantity`, `hexabid-product`, `hexabid-inventory`, `hexabid-core`, `hexabid-auth-core`, `hexabid-payment-core`, `hexabid-pricing`, `hexabid-rules`.
 
-**Porty i adaptery wejściowe** (inbound):
-- `auctions-adapter-in-rest` - REST API (Spring MVC + OpenAPI generowane)
-- `auctions-adapter-in-ws` - WebSocket STOMP dla licytacji real-time
-- `auctions-adapter-in-job` - scheduler dla zamykania przeterminowanych aukcji
-- `auctions-adapter-in-auth-oauth` - OAuth2/OpenID Connect (Google, GitHub)
-- `auctions-adapter-in-auth-local` - local form login (dev)
+**Adaptery wejściowe**: `hexabid-adapter-in-rest`, `hexabid-adapter-in-ws`, `hexabid-adapter-in-job`, `hexabid-adapter-in-auth-oauth`, `hexabid-adapter-in-auth-local`.
 
-**Porty i adaptery wyjściowe** (outbound):
-- `auctions-adapter-out-db` - JPA/Hibernate persistence
-- `auctions-adapter-out-kafka` - publikacja domenowych zdarzeń
-- `auctions-adapter-out-kyc` - external KYC verification (klient OpenAPI)
-- `auctions-adapter-out-kyc-local` - local KYC mock (dev)
-- `auctions-payment-adapter-{payu|p24|crypto|local}` - payment gateways
+**Adaptery wyjściowe**: `hexabid-adapter-out-db`, `hexabid-adapter-out-kafka`, `hexabid-adapter-out-kyc`, `hexabid-adapter-out-kyc-local`, `hexabid-payment-adapter-{payu|p24|crypto|local}`.
 
-**Warstwy techniczne**:
-- `auctions-api-contract` - OpenAPI (auction, auth, payment) + kod generowany
-- `auctions-bootstrap` - composition root i Spring Boot entry point
-- `auctions-architecture-tests` - reguły ArchUnit pilnujące granic
-- `auctions-integration-tests` - end-to-end tests na HTTP + WebSocket
+**Warstwy techniczne**: `hexabid-api-contract`, `hexabid-payment-api-contract`, `hexabid-bootstrap`, `hexabid-architecture-tests`, `hexabid-integration-tests`.
 
-**Frontend**:
-- `hexabid-spa` - Angular 20 SPA z wygenerowanym klientem TypeScript z OpenAPI
+**Frontend**: `hexabid-spa` - Angular 20 SPA z wygenerowanym klientem TypeScript z OpenAPI.
 
 ### Reguły architektury
 
-Egzekwowane przez `auctions-architecture-tests`:
+Egzekwowane przez `hexabid-architecture-tests`:
 
 - **Moduły domenowe nie mogą zależeć od Springa ani JPA**: `@NullMarked` (jspecify) zamiast null-safety frameworku
-- **Separacja kodu wygenerowanego i ręcznego**: Wygenerowany kod dostaje swoje package'i (`com.acme.auctions.contract.*`), ręczny kod to `com.acme.auctions.adapter.*`
+- **Separacja kodu wygenerowanego i ręcznego**: Wygenerowany kod dostaje swoje package'i (`com.github.hexabid.contract.*`), ręczny kod to `com.github.hexabid.adapter.*`
 - **Dependency injection tylko w adapterach**: Domeny są prostymi klasami bez Spring annotacji
 
 ## Reguły nazewnictwa
@@ -94,13 +73,13 @@ Dla zmiennych/parametrów reprezentujących nagłówek `X-API-Version` używaj z
 ### Kod wygenerowany vs ręczny
 
 **Wygenerowany kod** (nigdy nie edituj bezpośrednio):
-- Java: `auctions-api-contract/target/generated-sources/openapi/`
+- Java: `hexabid-api-contract/target/generated-sources/openapi/`
 - TypeScript: `hexabid-spa/src/app/data-access/generated/`
-- Regeneruj: `mvn -pl auctions-api-contract generate-sources` (z repo root)
+- Regeneruj: `mvn -pl hexabid-api-contract generate-sources` (z repo root)
 - Frontend sync: `npm run contract:sync` (z `hexabid-spa/`)
 
 **Ręczny kod** (ownerszy):
-- Java REST delegates: `auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/`
+- Java REST delegates: `hexabid-adapter-in-rest/src/main/java/com/github/hexabid/adapter/in/rest/`
 - TypeScript façades/mappers: `hexabid-spa/src/app/data-access/`
 
 ## Konwencje OpenAPI
@@ -124,13 +103,10 @@ Dla zmiennych/parametrów reprezentujących nagłówek `X-API-Version` używaj z
 ```bash
 # Backend build i run
 mvn clean verify
-mvn -f auctions-bootstrap/pom.xml spring-boot:run
-
-# Backend dev (z demo data)
-mvn -f auctions-bootstrap/pom.xml spring-boot:run -Dspring-boot.run.profiles=dev
+mvn -f hexabid-bootstrap/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
 
 # Integration tests (wymagają uruchomionego backendu na :18080)
-mvn -f auctions-integration-tests/pom.xml verify
+mvn -f hexabid-integration-tests/pom.xml verify
 
 # Frontend
 cd hexabid-spa
@@ -154,14 +130,4 @@ npm run contract:sync
 
 ## Dokumentacja dla Agentów AI
 
-**Katalog `ai/`** zawiera dokumentację w formacie Markdown przeznaczoną dla agentów AI/LLM:
-
-- `ai/PROFIL_LOCAL_GUIDE.md` - Szczegółowy przewodnik po profilach Maven i Spring dla lokalnego developmentu
-- `ai/DOCUMENTATION_STRUCTURE.md` - Organizacja dokumentacji w projekcie
-- Dokumentacja ta zawiera informacje techniczne, przykłady uruchomienia i konfiguracje potrzebne do kontynuowania pracy nad projektem
-
-**Uwagi dla agentów AI:**
-- Dokumentacja w `ai/` jest przeznaczona do szybkiego zrozumienia kontekstu projektu
-- Zawiera informacje o zmianach, konfiguracjach i procedurach uruchomienia
-- Jest aktualizowana przy istotnych zmianach w projekcie
-- Format Markdown ułatwia parsowanie przez LLM
+Czytaj najpierw `ai/wiki/index.md`, a dla lokalnych profili `ai/wiki/PROFIL_LOCAL_GUIDE.md`. Aktualizuj `ai/wiki/log.md` i decyzje w `ai/wiki/decisions/` po istotnych zmianach.

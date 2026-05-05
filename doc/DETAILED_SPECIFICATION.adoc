@@ -64,12 +64,12 @@ It covers the module structure, domain models, use cases, API contracts, and arc
 
 === Contracts
 
-* `auctions-api-contract` - OpenAPI definitions for auction API
+* `hexabid-api-contract` - OpenAPI definitions for auction API
 * `auctions-payment-api-contract` - OpenAPI definitions for payment API
 
 === Bootstrap
 
-* `auctions-bootstrap` - Spring Boot application entry point
+* `hexabid-bootstrap` - Spring Boot application entry point
 
 == Domain Models
 
@@ -256,7 +256,7 @@ Response: 200 OK with AuctionBrowsePage
 
 [source,text]
 ----
-ws://localhost:8080/ws-auctions
+ws://localhost:18080/hexabid/ws-auctions
 ----
 
 ==== Place Bid

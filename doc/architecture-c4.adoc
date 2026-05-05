@@ -93,13 +93,13 @@ System_Boundary(hexabid, "Hexabid") {
     ContainerDb(dbAdapter, "auctions-adapter-out-db", "Spring Data JPA", "Implementuje port repozytorium aukcji")
     Container(kafkaAdapter, "auctions-adapter-out-kafka", "Spring Kafka", "Publikuje zdarzenia domenowe")
     Container(kycAdapter, "auctions-adapter-out-kyc", "Generated OpenAPI Client", "Implementuje port KYC")
-    Container(contract, "auctions-api-contract", "OpenAPI Generator", "Kontrakt wejściowy i generowane DTO/delegaty")
+    Container(contract, "hexabid-api-contract", "OpenAPI Generator", "Kontrakt wejściowy i generowane DTO/delegaty")
     Container(paymentCore, "auctions-payment-core", "Pure Java", "Modele płatności, konwerter walut, registry bramek")
     Container(paymentApi, "auctions-payment-api-contract", "OpenAPI Generator", "Kontrakt płatności")
     Container(payuAdapter, "auctions-payment-adapter-payu", "Generated Client", "Bramka PayU")
     Container(p24Adapter, "auctions-payment-adapter-p24", "Generated Client", "Bramka Przelewy24")
     Container(cryptoAdapter, "auctions-payment-adapter-crypto", "Spring Crypto", "Płatności kryptowalutowe")
-    Container(bootstrap, "auctions-bootstrap", "Spring Boot", "Composition root i konfiguracja runtime")
+    Container(bootstrap, "hexabid-bootstrap", "Spring Boot", "Composition root i konfiguracja runtime")
 }
 
 Rel(seller, rest, "Tworzy aukcje", "HTTPS/JSON")
@@ -269,7 +269,7 @@ SHOW_LEGEND()
 
 - `auctions-core` nie zna Springa, JPA, Kafki ani HTTP.
 - `auctions-auth-core` izoluje model użytkownika i port dostępu do aktualnej tożsamości od Spring Security.
-- `auctions-bootstrap` pełni rolę composition root i tworzy use case'y jako beany.
+- `hexabid-bootstrap` pełni rolę composition root i tworzy use case'y jako beany.
 - komunikacja REST i KYC jest contract-first, dzięki generatorom OpenAPI.
 - uwierzytelnianie odbywa się przez OAuth2/OpenID Connect z dostawcami Google i GitHub.
 - licytacja i powiadomienia aukcyjne są prowadzone przez WebSocket, a REST służy do zwykłych operacji i odczytów.
@@ -288,7 +288,7 @@ System wspiera dynamiczny wybór mechanizmu uwierzytelniania na etapie budowania
 
 === Składanie w czasie budowy (Maven Profiles)
 
-W module `auctions-bootstrap/pom.xml` zdefiniowano profile Maven, które warunkowo dołączają odpowiednie adaptery jako zależności:
+W module `hexabid-bootstrap/pom.xml` zdefiniowano profile Maven, które warunkowo dołączają odpowiednie adaptery jako zależności:
 
 * `auth-oauth` (aktywny domyślnie): Dołącza `auctions-adapter-in-auth-oauth`.
 * `auth-local`: Dołącza `auctions-adapter-in-auth-local`.
@@ -297,7 +297,7 @@ Dzięki temu, budując aplikację poleceniem `mvn clean package -P auth-local`, 
 
 === Automatyczna rejestracja (Spring Component Scanning)
 
-Aplikacja wykorzystuje mechanizm `scanBasePackages = "com.acme.auctions"`. Ponieważ oba adaptery (`oauth` i `local`) znajdują się w podpakietach tej ścieżki, Spring Boot automatycznie wykrywa i rejestruje:
+Aplikacja wykorzystuje mechanizm `scanBasePackages = "com.github.hexabid"`. Ponieważ oba adaptery (`oauth` i `local`) znajdują się w podpakietach tej ścieżki, Spring Boot automatycznie wykrywa i rejestruje:
 
 1. **Konfigurację Security**: Klasy oznaczone `@Configuration` (np. `LocalSecurityConfiguration` lub `OAuth2SecurityConfiguration`). 
 2. **Implementację Portów**: Klasy implementujące `CurrentUserProvider`.

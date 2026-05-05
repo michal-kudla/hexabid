@@ -8,6 +8,7 @@ import com.github.hexabid.auth.core.identityaccess.port.out.UserVerificationStat
 import com.github.hexabid.auth.core.identityaccess.usecase.CompositeCurrentUserProvider;
 import com.github.hexabid.auth.core.identityaccess.usecase.FindCurrentUserProfileService;
 import com.github.hexabid.core.auctioning.event.AuctionDomainEvent;
+import com.github.hexabid.core.auctioning.port.in.ActivateAuctionUseCase;
 import com.github.hexabid.core.auctioning.port.in.BrowseAuctionsUseCase;
 import com.github.hexabid.core.auctioning.port.in.CloseExpiredAuctionsUseCase;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionUseCase;
@@ -21,6 +22,7 @@ import com.github.hexabid.core.auctioning.port.out.AuctionRepository;
 import com.github.hexabid.core.auctioning.port.out.AuctionRuleEvaluator;
 import com.github.hexabid.core.auctioning.port.out.DocumentRepository;
 import com.github.hexabid.core.auctioning.port.out.KycClient;
+import com.github.hexabid.core.auctioning.usecase.ActivateAuctionService;
 import com.github.hexabid.core.auctioning.usecase.BrowseAuctionsService;
 import com.github.hexabid.core.auctioning.usecase.CloseExpiredAuctionsService;
 import com.github.hexabid.core.auctioning.usecase.CreateAuctionService;
@@ -53,6 +55,15 @@ class AuctioningConfiguration {
     @Bean
     CreateAuctionUseCase createAuctionUseCase(AuctionRepository repository, KycClient kycClient, Clock clock) {
         return new CreateAuctionService(repository, kycClient, clock);
+    }
+
+    @Bean
+    ActivateAuctionUseCase activateAuctionUseCase(
+            AuctionRepository repository,
+            AuctionEventPublisher eventPublisher,
+            Clock clock
+    ) {
+        return new ActivateAuctionService(repository, eventPublisher, clock);
     }
 
     @Bean

@@ -99,3 +99,60 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Testy integracyjne: `RulesEvaluationIT` (R1.1-R1.7 rules evaluation, R2.1-R2.2 document submission, R3.1-R3.2 security)
 - Testy e2e Playwright: `rules.spec.ts` (rules panel visibility, document form, settlement rules, status indicators)
 - Tagi: #rules #spa #rest-api #openapi #e2e #integration-tests
+
+## [2026-05-04] [IMPLEMENTATION] SPA E2E jako scenariusze biznesowe click-through
+- Dodano nowy zestaw Playwright: `hexabid-spa/e2e/business-flow.spec.ts` (market->details->pricing, sell flow, rules/documents)
+- Testy są "strict": brak aukcji demo lub brak krytycznego elementu UI powoduje fail (bez cichego pomijania scenariusza)
+- Włączono artefakty diagnostyczne Playwright na fail: trace + screenshot + video
+- Dodano przewodnik uruchamiania i zasad: `hexabid-spa/e2e/README.md`
+- Rozszerzono scenariusze o Product + Inventory (katalog/filtrowanie + formularz tworzenia partii) oraz step-level screenshot attachments
+- Link: [[decisions/2026-05-04-spa-e2e-business-flow]]
+- Tagi: #spa #e2e #playwright #business-flow #regresja
+
+## [2026-05-05] [VERIFICATION] Lokalna walidacja SPA E2E przez systemd backend
+- Zbudowano backend z profilem Maven `local`: `mvn -Plocal -DskipTests install`
+- Zmieniono user-service `hexabid-backend` z poprzedniego profilu developerskiego na `--spring.profiles.active=local` i zrestartowano przez `systemctl --user restart hexabid-backend`
+- Naprawiono konfigurację Playwright na `localhost:14200`, ponieważ lokalny Angular dev server słuchał na IPv6 loopback `::1`, a `127.0.0.1` dawał `ERR_CONNECTION_REFUSED`
+- Dostosowano business-flow E2E do aktualnego DOM SPA oraz jawnego stanu auth dla pricing bez sesji
+- Wynik: `npm run e2e:business` 4/4 pass, `npm run build` pass z istniejącymi ostrzeżeniami Angular compiler
+- Link: [[decisions/2026-05-04-spa-e2e-business-flow]]
+- Tagi: #spa #e2e #playwright #systemd #local-profile
+
+## [2026-05-05] [CONFIGURATION] Ujednolicenie lokalnych portów i nazw modułów
+- Usunięto tekstowe odniesienia do starych portów z konfiguracji, kontraktów, README i dokumentacji operacyjnej
+- Ustawiono lokalny backend jako `http://localhost:18080/hexabid`, SPA jako `http://localhost:14200`, WebSocket jako `ws://localhost:18080/hexabid/ws-auctions`
+- Zaktualizowano OpenAPI `servers.url`, utrzymywane runtime'y TypeScript, `contract:sync`, systemd guide i local payment mock URL
+- Wynik: `mvn -Plocal -DskipTests install`, `npm run build`, `systemctl --user restart hexabid-backend`, `npm run e2e:business` 4/4 pass
+- Link: [[decisions/2026-05-05-local-port-configuration]]
+- Tagi: #configuration #ports #local-profile #systemd #openapi
+
+## [2026-05-05] [FIX] Dev auth login flow i E2E regresji logowania
+- Naprawiono link wyboru użytkownika dev: `/login/dev` używa `/login/dev/select`, a nie callbacku `/login/oauth2/code/dev`
+- Endpoint wyboru zapisuje `OAuth2AuthenticatedUser` w `SecurityContext` sesji i przekierowuje do lokalnego SPA albo bezpiecznej ścieżki względnej
+- Po analizie HAR ustawiono `server.servlet.session.cookie.path=/`, żeby cookie sesji z backendu `/hexabid` było wysyłane do requestów SPA proxy `/api/me`
+- Dodano Playwright smoke `hexabid-spa/e2e/dev-auth.spec.ts` oraz script `npm run e2e:auth`; test odtwarza `/oauth2/authorization/dev` -> wybór konta -> dashboard
+- Zaktualizowano dokumentację E2E o uruchamianie backendu przez Maven profile + systemd service
+- Wynik: `mvn -Plocal -DskipTests install`, `systemctl --user restart hexabid-backend`, `npm run e2e:auth` 1/1 pass, `npm run e2e:business` 4/4 pass, `npm run build` pass
+- Link: [[decisions/2026-05-05-dev-auth-e2e]]
+- Tagi: #auth #dev-auth #oauth2 #e2e #playwright
+
+## [2026-05-05] [IMPLEMENTATION] Aktywacja szkicu aukcji i edukacyjne reguły UI
+- Dodano use case `ActivateAuctionUseCase` oraz REST `POST /api/auctions/{auctionId}/activate` dla sprzedającego aukcji
+- Aktywacja wykonuje przejście `DRAFT -> PUBLISHED -> IN_PROGRESS`, zapisuje aukcję i publikuje eventy cyklu życia
+- Naprawiono WebSocket publisher, aby eventy `AuctionPublishedEvent` i `AuctionStartedEvent` nie powodowały błędu REST jako "Unsupported event type"
+- UI szczegółów aukcji pokazuje panel uruchomienia szkicu dla sprzedającego oraz precyzyjne powody blokady licytacji
+- UI reguł i dokumentów wyjaśnia, że pełna płatność i oryginały dokumentów należą do rozliczenia po wygranej, a kopie mogą wystarczyć dla udziału/licytacji
+- Business E2E rozszerzono do 5 testów o scenariusz logowania sprzedającego dev, utworzenia szkicu i aktywacji aukcji
+- Wynik: `mvn -Plocal -DskipTests install`, `systemctl --user restart hexabid-backend`, `npm run e2e:auth` 1/1 pass, `npm run e2e:business` 5/5 pass, `npm run build` pass
+- Link: [[decisions/2026-05-05-auction-activation-rules-guidance]]
+- Tagi: #auction-lifecycle #rules #documents #settlement #spa #e2e
+
+## [2026-05-05] [FIX] WebSocket bidding używa sesji dev/OAuth2
+- Zdiagnozowano błąd z HAR i kanału WebSocket: po przelogowaniu REST widział użytkownika, ale handler STOMP odrzucał ofertę jako `UNAUTHENTICATED`
+- Przyczyna: handshake WebSocket zapisywał tylko principal typu `UserDetails`, a dev login używa `OAuth2User`; handler licytacji oczekiwał `Authentication` przez `@AuthenticationPrincipal`
+- Poprawiono handshake, aby zapisywał każde nieanonimowe `Authentication`, oraz resolver bidderów, aby mapował `OAuth2User` na domenowy `AuthenticatedUser`
+- Dodano zależność `spring-security-oauth2-core` do `hexabid-adapter-in-ws`
+- Rozszerzono business E2E: sprzedający tworzy i aktywuje aukcję, następnie test loguje `bidder-ola` i składa ofertę przez WebSocket
+- Wynik: `mvn -Plocal -DskipTests install`, `systemctl --user restart hexabid-backend`, `npm run e2e:business` 5/5 pass, `npm run e2e:auth` 1/1 pass, `npm run build` pass
+- Link: [[decisions/2026-05-05-auction-activation-rules-guidance]]
+- Tagi: #websocket #stomp #auth #dev-auth #e2e #bidding

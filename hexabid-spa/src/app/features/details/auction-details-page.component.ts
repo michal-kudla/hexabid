@@ -9,10 +9,11 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuctionDetailsFacade } from './auction-details.facade';
+import { SessionFacade } from '../../core/session/session.facade';
 import { RulesFacade } from '../rules/rules.facade';
 import { RulesPanelComponent } from '../rules/rules-panel.component';
 import { DocumentSubmitComponent } from '../rules/document-submit.component';
-import { DocumentType, DocumentStatus, RulePhase } from '../../data-access/generated/auction-contract';
+import { AuctionStatus, DocumentType, DocumentStatus, RulePhase } from '../../data-access/generated/auction-contract';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 
 @Component({
@@ -26,6 +27,7 @@ import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 export class AuctionDetailsPageComponent {
   readonly facade = inject(AuctionDetailsFacade);
   readonly rulesFacade = inject(RulesFacade);
+  readonly session = inject(SessionFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -67,5 +69,49 @@ export class AuctionDetailsPageComponent {
     if (auctionId) {
       void this.rulesFacade.submitDocument(auctionId, event.documentType, event.status);
     }
+  }
+
+  activateAuction(): void {
+    void this.facade.activateAuction();
+  }
+
+  canActivateAuction(): boolean {
+    const auction = this.facade.auction();
+    const profile = this.session.profile();
+    return !!auction && !!profile && auction.sellerId === profile.partyId && (
+      auction.status === AuctionStatus.DRAFT || auction.status === AuctionStatus.PUBLISHED
+    );
+  }
+
+  hasBiddingBlocks(): boolean {
+    return this.rulesFacade.evaluation()?.evaluations.some(
+      evaluation => evaluation.phase === RulePhase.BIDDING && evaluation.hasBlockingViolations
+    ) ?? false;
+  }
+
+  hasSettlementBlocks(): boolean {
+    return this.rulesFacade.evaluation()?.evaluations.some(
+      evaluation => evaluation.phase === RulePhase.SETTLEMENT && evaluation.hasBlockingViolations
+    ) ?? false;
+  }
+
+  bidDisabledReason(): string | null {
+    const auction = this.facade.auction();
+    if (!auction) {
+      return null;
+    }
+    if (auction.status === AuctionStatus.DRAFT || auction.status === AuctionStatus.PUBLISHED) {
+      return 'Ta aukcja jest jeszcze przygotowywana przez sprzedającego. Licytacja ruszy po publikacji i starcie aukcji.';
+    }
+    if (!auction.isOpen) {
+      return 'Ta aukcja nie przyjmuje teraz ofert, ponieważ nie jest w statusie aktywnym.';
+    }
+    if (auction.sellerId === this.session.profile()?.partyId) {
+      return 'Jesteś sprzedającym tej aukcji. Sprzedający nie może licytować własnej oferty.';
+    }
+    if (this.hasBiddingBlocks()) {
+      return 'Najpierw spełnij blokujące warunki licytacji, na przykład KYC albo wadium.';
+    }
+    return null;
   }
 }

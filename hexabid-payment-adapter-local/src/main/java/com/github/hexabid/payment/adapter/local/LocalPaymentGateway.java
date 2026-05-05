@@ -18,7 +18,7 @@ public class LocalPaymentGateway implements PaymentGateway {
         // Mocking a successful initiation with a link to a local simulation
         return new PaymentResponse(
                 PaymentStatus.PENDING,
-                Optional.of(URI.create("http://localhost:8080/dev-payment-mock?txId=" + UUID.randomUUID())),
+                Optional.of(URI.create("http://localhost:18080/hexabid/dev-payment-mock?txId=" + UUID.randomUUID())),
                 "LOCAL-" + UUID.randomUUID(),
                 null
         );

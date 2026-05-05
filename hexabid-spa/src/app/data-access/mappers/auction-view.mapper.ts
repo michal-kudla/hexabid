@@ -43,7 +43,39 @@ function relativeLabel(date: Date): string {
 }
 
 function statusLabel(status: AuctionStatus): string {
-  return status === AuctionStatus.IN_PROGRESS ? 'Aktywna' : 'Zamknięta';
+  switch (status) {
+    case AuctionStatus.DRAFT:
+      return 'Szkic';
+    case AuctionStatus.PUBLISHED:
+      return 'Opublikowana';
+    case AuctionStatus.IN_PROGRESS:
+      return 'Aktywna';
+    case AuctionStatus.PENDING_SETTLEMENT:
+      return 'Do rozliczenia';
+    case AuctionStatus.SETTLED:
+      return 'Rozliczona';
+    case AuctionStatus.FAILED_SETTLEMENT:
+      return 'Rozliczenie nieudane';
+    case AuctionStatus.REOFFERED:
+      return 'Wystawiona ponownie';
+    case AuctionStatus.CLOSED:
+      return 'Zamknięta';
+  }
+}
+
+function statusTone(status: AuctionStatus): AuctionSummaryVm['statusTone'] {
+  switch (status) {
+    case AuctionStatus.DRAFT:
+      return 'draft';
+    case AuctionStatus.PUBLISHED:
+      return 'published';
+    case AuctionStatus.IN_PROGRESS:
+      return 'open';
+    case AuctionStatus.PENDING_SETTLEMENT:
+      return 'settlement';
+    default:
+      return 'closed';
+  }
 }
 
 function bidderLabel(bidderId?: string | null): string {
@@ -69,7 +101,7 @@ export function toAuctionSummaryVm(item: AuctionListItemResponse): AuctionSummar
     timeLeftLabel: relativeLabel(endsAt),
     status: item.status,
     statusLabel: statusLabel(item.status),
-    statusTone: item.status === AuctionStatus.IN_PROGRESS ? 'open' : 'closed',
+    statusTone: statusTone(item.status),
     leadingBidderId: item.leadingBidderId ?? null
   };
 }

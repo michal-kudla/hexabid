@@ -2,7 +2,11 @@
   <article class="surface intro">
     <span class="kicker">Create Auction</span>
     <h1>Wystaw aukcję przez SPA</h1>
-    <p>Ten ekran korzysta z osobnej komendy formularza i adaptera HTTP. W kolejnych iteracjach można tu dodać drafty i upload plików.</p>
+    <p>
+      Formularz zapisuje szkic aukcji. Po utworzeniu przejdziesz do szczegółów, gdzie sprzedający może
+      uruchomić licytację. Pełna płatność i oryginały dokumentów nie są warunkiem startu aukcji; dotyczą
+      zwycięzcy na etapie rozliczenia.
+    </p>
   </article>
 
   <article class="surface form-card">
@@ -119,7 +123,7 @@
 
       <div class="wide actions">
         <button type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'Publikowanie...' : 'Opublikuj aukcję' }}
+          {{ submitting() ? 'Zapisywanie...' : 'Zapisz szkic aukcji' }}
         </button>
       </div>
     </form>

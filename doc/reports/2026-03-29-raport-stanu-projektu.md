@@ -211,17 +211,17 @@ Jeśli zrealizować plan P0 + P1, projekt może przejść z poziomu „dobre dem
 - `README.md`
 - `doc/architecture-c4.adoc`
 - `doc/user-guide.adoc`
-- `auctions-architecture-tests/src/test/java/com/acme/auctions/architecture/CoreArchitectureTest.java`
-- `auctions-api-contract/src/main/resources/openapi/auction-api.yaml`
-- `auctions-api-contract/src/main/resources/openapi/auth-api.yaml`
-- `auctions-api-contract/src/main/resources/openapi/payment-api.yaml`
-- `auctions-bootstrap/src/main/java/com/acme/auctions/bootstrap/AuctioningConfiguration.java`
-- `auctions-adapter-in-rest/src/main/java/com/acme/auctions/adapter/in/rest/RestAuctionApiDelegate.java`
-- `auctions-adapter-in-ws/src/main/java/com/acme/auctions/adapter/in/ws/AuctionBiddingWebSocketController.java`
-- `auctions-adapter-in-auth-oauth/src/main/java/com/acme/auctions/adapter/in/auth/oauth/OAuth2SecurityConfiguration.java`
-- `auctions-adapter-out-kyc/src/main/java/com/acme/auctions/adapter/out/kyc/GeneratedKycClientAdapter.java`
-- `auctions-payment-core/src/main/java/com/acme/auctions/payment/core/usecase/ProcessPaymentUseCase.java`
-- `auctions-payment-core/src/main/java/com/acme/auctions/payment/core/infrastructure/AuctionWonEventListener.java`
+- `hexabid-architecture-tests/src/test/java/com/github/hexabid/architecture/CoreArchitectureTest.java`
+- `hexabid-api-contract/src/main/resources/openapi/auction-api.yaml`
+- `hexabid-api-contract/src/main/resources/openapi/auth-api.yaml`
+- `hexabid-api-contract/src/main/resources/openapi/payment-api.yaml`
+- `hexabid-bootstrap/src/main/java/com/github/hexabid/bootstrap/AuctioningConfiguration.java`
+- `auctions-adapter-in-rest/src/main/java/com/github/hexabid/adapter/in/rest/RestAuctionApiDelegate.java`
+- `auctions-adapter-in-ws/src/main/java/com/github/hexabid/adapter/in/ws/AuctionBiddingWebSocketController.java`
+- `auctions-adapter-in-auth-oauth/src/main/java/com/github/hexabid/adapter/in/auth/oauth/OAuth2SecurityConfiguration.java`
+- `auctions-adapter-out-kyc/src/main/java/com/github/hexabid/adapter/out/kyc/GeneratedKycClientAdapter.java`
+- `auctions-payment-core/src/main/java/com/github/hexabid/payment/core/usecase/ProcessPaymentUseCase.java`
+- `auctions-payment-core/src/main/java/com/github/hexabid/payment/core/infrastructure/AuctionWonEventListener.java`
 
 ## 10) Źródła zewnętrzne (best practices / uznane standardy)
 
@@ -231,4 +231,3 @@ Jeśli zrealizować plan P0 + P1, projekt może przejść z poziomu „dobre dem
 4. The Twelve-Factor App (Config): https://12factor.net/config
 5. Model Context Protocol — Specification: https://modelcontextprotocol.io/specification
 6. Hexagonal Architecture (Alistair Cockburn): https://alistair.cockburn.us/hexagonal-architecture
-

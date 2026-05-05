@@ -11,14 +11,14 @@
   <section class="details-grid">
     <article class="surface spotlight">
       <div class="eyebrow">
-        <span class="badge" [class.badge-closed]="auction.statusTone === 'closed'">{{ auction.statusLabel }}</span>
+        <span class="badge" [class.badge-closed]="auction.statusTone !== 'open'">{{ auction.statusLabel }}</span>
         <span>{{ auction.endsAtLabel }}</span>
       </div>
 
       <h1>{{ auction.title }}</h1>
       <p class="lede">
-        Ekran szczegółów jest gotowy pod pracę z bieżącym API i real-time bidding. Kolejne iteracje mogą
-        rozszerzyć go o media, kategorię i wadium bez naruszania warstw.
+        Aukcja przechodzi przez przygotowanie, publikację, aktywną licytację i rozliczenie. Licytujący
+        składają oferty dopiero w statusie aktywnym; dokumenty i opłaty zależą od etapu reguł poniżej.
       </p>
 
       <dl class="metrics">
@@ -43,13 +43,27 @@
       <a [routerLink]="['/auction', auction.auctionId, 'pricing']" class="pricing-link">
         Zobacz kalkulację ceny &rarr;
       </a>
+
+      @if (canActivateAuction()) {
+        <div class="seller-activation">
+          <strong>To jest Twoja aukcja w przygotowaniu.</strong>
+          <p>
+            Utworzenie aukcji zapisuje szkic. Dopiero publikacja i start przełączają ją do statusu aktywnego,
+            w którym inni użytkownicy mogą licytować. Pełna płatność nie jest wymagana na starcie; dotyczy
+            wyłącznie zwycięzcy na etapie rozliczenia po zakończeniu aukcji.
+          </p>
+          <button type="button" (click)="activateAuction()" [disabled]="facade.activationSubmitting()">
+            {{ facade.activationSubmitting() ? 'Uruchamianie...' : 'Opublikuj i uruchom aukcję' }}
+          </button>
+        </div>
+      }
     </article>
 
     <aside class="surface bid-panel">
       <h2>Złóż ofertę</h2>
       <p>
-        Kanał STOMP jest zestawiany automatycznie po wejściu na ekran. Potwierdzenia i odrzucenia pojawiają się
-        poniżej w strumieniu aktywności.
+        Ofertę może złożyć zalogowany licytujący, który nie jest sprzedającym i spełnia reguły licytacji.
+        Kopie dokumentów pomagają wejść do aukcji, ale oryginały mogą być wymagane dopiero przy rozliczeniu.
       </p>
 
       <form [formGroup]="bidForm" (ngSubmit)="submitBid()" class="stack">
@@ -67,13 +81,13 @@
           </select>
         </label>
 
-        <button type="submit" [disabled]="facade.bidSubmitting() || !auction.isOpen">
+        <button type="submit" [disabled]="facade.bidSubmitting() || bidDisabledReason() !== null">
           {{ facade.bidSubmitting() ? 'Wysyłanie...' : 'Licytuj teraz' }}
         </button>
       </form>
 
-      @if (!auction.isOpen) {
-        <p class="hint">Ta aukcja jest zamknięta, więc formularz licytacji został zablokowany.</p>
+      @if (bidDisabledReason(); as reason) {
+        <p class="hint">{{ reason }}</p>
       }
     </aside>
   </section>
@@ -92,9 +106,14 @@
       } @else if (rulesFacade.evaluation(); as eval_) {
         <app-rules-panel [evaluations]="eval_.evaluations" />
 
-        @if (eval_.hasAnyBlockingViolations) {
+        @if (hasBiddingBlocks()) {
           <p class="hint blocking-hint">
-            Masz blokujące naruszenia reguł. Złóż wymagane dokumenty, aby móc licytować.
+            Masz blokujące warunki licytacji. Te blokady trzeba usunąć przed złożeniem oferty.
+          </p>
+        } @else if (hasSettlementBlocks()) {
+          <p class="hint settlement-hint">
+            Blokady w sekcji rozliczenia nie zatrzymują startu aukcji ani licytacji. Dotyczą zwycięzcy
+            po zakończeniu aukcji, gdy trzeba dostarczyć oryginały albo opłacić pełną kwotę.
           </p>
         }
       }

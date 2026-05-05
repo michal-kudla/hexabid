@@ -7,14 +7,18 @@ export default defineConfig({
     timeout: 5_000,
   },
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://127.0.0.1:14200',
-    trace: 'on-first-retry',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:14200',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run start -- --host 127.0.0.1 --port 14200',
+    command: 'npm run start -- --host localhost --port 14200',
     port: 14200,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
   projects: [
     {

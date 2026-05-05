@@ -20,7 +20,7 @@ export interface AuctionSummaryVm {
   timeLeftLabel: string;
   status: AuctionStatus;
   statusLabel: string;
-  statusTone: 'open' | 'closed';
+  statusTone: 'draft' | 'published' | 'open' | 'settlement' | 'closed';
   leadingBidderId?: string | null;
 }
 

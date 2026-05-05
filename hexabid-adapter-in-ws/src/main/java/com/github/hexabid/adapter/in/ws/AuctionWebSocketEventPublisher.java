@@ -57,6 +57,11 @@ public class AuctionWebSocketEventPublisher {
                     closedWithoutWinnerEvent.occurredAt().toString()
             );
         }
-        throw new IllegalArgumentException("Unsupported event type: " + event.getClass().getName());
+        return new AuctionEventWebSocketMessage(
+                event.type(),
+                event.auctionId().toString(),
+                Map.of(),
+                event.occurredAt().toString()
+        );
     }
 }

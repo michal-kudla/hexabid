@@ -36,7 +36,7 @@
       <p th:text="${user.description}"></p>
       <span class="badge" th:classappend="${user.verified} ? 'ok' : 'off'" th:text="${user.verified} ? 'KYC verified' : 'KYC blocked'"></span>
       <div class="actions">
-        <a class="button primary" th:href="@{/login/oauth2/code/dev(username=${user.username})}">Login as this user</a>
+        <a class="button primary" th:href="@{/login/dev/select(username=${user.username},redirect=${redirect})}">Login as this user</a>
       </div>
     </article>
   </section>
