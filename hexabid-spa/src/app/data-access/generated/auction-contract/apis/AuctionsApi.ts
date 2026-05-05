@@ -35,6 +35,11 @@ import type {
     WadiumResponse,
 } from '../models/index';
 
+export interface ActivateAuctionRequest {
+    auctionId: string;
+    xAPIVersion?: string;
+}
+
 export interface BrowseAuctionsRequest {
     xAPIVersion?: string;
     query?: string;
@@ -124,6 +129,57 @@ export interface SubmitDocumentOperationRequest {
  * 
  */
 export class AuctionsApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for activateAuction without sending the request
+     */
+    async activateAuctionRequestOpts(requestParameters: ActivateAuctionRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling activateAuction().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/activate`;
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * Moves an auction owned by the authenticated seller from DRAFT/PUBLISHED to IN_PROGRESS. This is the explicit hand-off from auction preparation to live bidding. 
+     * Publish and start a draft auction
+     */
+    async activateAuctionRaw(requestParameters: ActivateAuctionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
+        const requestOptions = await this.activateAuctionRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Moves an auction owned by the authenticated seller from DRAFT/PUBLISHED to IN_PROGRESS. This is the explicit hand-off from auction preparation to live bidding. 
+     * Publish and start a draft auction
+     */
+    async activateAuction(requestParameters: ActivateAuctionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuctionResponse> {
+        const response = await this.activateAuctionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for browseAuctions without sending the request

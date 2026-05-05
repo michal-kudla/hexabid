@@ -13,6 +13,9 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-04-17-pricing-architecture]] - Architektura ceny (wadium, VAT, akcyza, cło) oparta na archetypach M03+M04
 - [[decisions/2026-04-21-pricing-spa-frontend]] - Frontend SPA modułu pricing: kalkulacja ceny, wadium, konfiguracja
 - [[decisions/2026-05-04-spa-e2e-business-flow]] - Reprojekt E2E SPA na scenariusze biznesowe click-through
+- [[decisions/2026-05-05-local-port-configuration]] - Ujednolicenie lokalnych adresów backendu i SPA
+- [[decisions/2026-05-05-dev-auth-e2e]] - Dev auth jako jawny wybór użytkownika i scenariusz E2E
+- [[decisions/2026-05-05-auction-activation-rules-guidance]] - Aktywacja szkicu aukcji oraz rozdzielenie reguł licytacji i rozliczenia w UI
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
@@ -42,4 +45,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-04-21*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-05-05*

@@ -14,8 +14,8 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 
 import java.math.BigDecimal;
@@ -42,7 +42,7 @@ public class AuctionBiddingWebSocketController {
 
     @MessageMapping("/auctions/{auctionId}/bids")
     public void placeBid(@DestinationVariable UUID auctionId, PlaceBidWebSocketMessage message,
-                         @AuthenticationPrincipal Authentication authentication) {
+                         Authentication authentication) {
         AuthenticatedUser authenticatedUser = resolveUser(authentication);
         if (authenticatedUser == null) {
             bidRejectedCounter.increment();
@@ -92,6 +92,25 @@ public class AuctionBiddingWebSocketController {
             PartyId partyId = new PartyId("local:" + username);
             return new AuthenticatedUser(partyId, "local", username, username, username + "@example.com");
         }
+        if (authentication.getPrincipal() instanceof OAuth2User oAuth2User) {
+            String partyId = attribute(oAuth2User, "partyId");
+            String provider = attribute(oAuth2User, "provider");
+            String subject = attribute(oAuth2User, "subject");
+            String displayName = attribute(oAuth2User, "displayName");
+            String email = attribute(oAuth2User, "email");
+            if (partyId == null || provider == null || subject == null || displayName == null) {
+                return null;
+            }
+            return new AuthenticatedUser(new PartyId(partyId), provider, subject, displayName, email);
+        }
         return null;
+    }
+
+    private static String attribute(OAuth2User user, String name) {
+        Object value = user.getAttributes().get(name);
+        if (!(value instanceof String text) || text.isBlank()) {
+            return null;
+        }
+        return text;
     }
 }

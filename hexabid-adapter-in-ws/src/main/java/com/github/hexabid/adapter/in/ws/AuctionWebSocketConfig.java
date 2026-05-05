@@ -11,11 +11,11 @@ import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -66,7 +66,7 @@ public class AuctionWebSocketConfig implements WebSocketMessageBrokerConfigurer 
                                        WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication != null && authentication.isAuthenticated()
-                    && authentication.getPrincipal() instanceof UserDetails) {
+                    && !(authentication instanceof AnonymousAuthenticationToken)) {
                 attributes.put("SPRING_SECURITY_AUTHENTICATION", authentication);
                 return true;
             }

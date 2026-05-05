@@ -4,47 +4,48 @@ Wzorcowa aplikacja aukcyjna z architekturą heksagonalną, podejściem contract-
 
 ## Moduły
 
-- `auctions-core` - czysta domena i use case'y bez Springa/JPA, wraz ze wspólnymi archetypami biznesowymi jak `Party`, `Product` i `Lot`.
-- `auctions-auth-core` - model uwierzytelnionego użytkownika i port dostępu do aktualnej tożsamości, mapowanej na domenowe `PartyId`.
-- `auctions-api-contract` - kontrakt OpenAPI dla wejścia REST i generowane DTO/interfejsy.
-- `auctions-adapter-in-auth-oauth` - adapter Spring Security OAuth2/OpenID Connect z dostawcami Google i GitHub.
-- `auctions-adapter-in-rest` - implementacja wygenerowanego delegate REST.
-- `auctions-adapter-in-ws` - inbound WebSocket dla licytacji real-time.
-- `auctions-adapter-in-job` - scheduler zamykający przeterminowane aukcje.
-- `auctions-adapter-out-db` - adapter JPA implementujący port repozytorium.
-- `auctions-adapter-out-kafka` - publikacja zdarzeń domenowych do Kafki.
-- `auctions-adapter-out-kyc` - klient KYC wygenerowany z kontraktu OpenAPI.
-- `auctions-bootstrap` - composition root i uruchamialna aplikacja Spring Boot.
-- `auctions-architecture-tests` - reguły ArchUnit pilnujące granic architektury.
+- `hexabid-core` - czysta domena i use case'y bez Springa/JPA, wraz ze wspólnymi archetypami biznesowymi jak `Party`, `Product` i `Lot`.
+- `hexabid-auth-core` - model uwierzytelnionego użytkownika i port dostępu do aktualnej tożsamości, mapowanej na domenowe `PartyId`.
+- `hexabid-api-contract` - kontrakt OpenAPI dla wejścia REST i generowane DTO/interfejsy.
+- `hexabid-adapter-in-auth-oauth` - adapter Spring Security OAuth2/OpenID Connect z dostawcami Google i GitHub.
+- `hexabid-adapter-in-rest` - implementacja wygenerowanego delegate REST.
+- `hexabid-adapter-in-ws` - inbound WebSocket dla licytacji real-time.
+- `hexabid-adapter-in-job` - scheduler zamykający przeterminowane aukcje.
+- `hexabid-adapter-out-db` - adapter JPA implementujący port repozytorium.
+- `hexabid-adapter-out-kafka` - publikacja zdarzeń domenowych do Kafki.
+- `hexabid-adapter-out-kyc` - klient KYC wygenerowany z kontraktu OpenAPI.
+- `hexabid-bootstrap` - composition root i uruchamialna aplikacja Spring Boot.
+- `hexabid-architecture-tests` - reguły ArchUnit pilnujące granic architektury.
 
 ## Uruchomienie
 
 ```bash
 mvn clean verify
-mvn -f auctions-bootstrap/pom.xml spring-boot:run
+mvn -f hexabid-bootstrap/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
-REST startuje pod `http://localhost:18080`, WebSocket STOMP pod `ws://localhost:18080/ws-auctions`.
+REST startuje pod `http://localhost:18080/hexabid`, WebSocket STOMP pod `ws://localhost:18080/hexabid/ws-auctions`.
 
-### Profil developerski z danymi demo
+### Profil lokalny z danymi demo
 
-Profil `dev` zasila pustą bazę H2 przykładowymi aukcjami gotowymi do przeglądania w SPA.
+Profil `local` zasila pustą bazę H2 przykładowymi aukcjami gotowymi do przeglądania w SPA.
 
 Uruchomienie:
 
 ```bash
-mvn -f auctions-bootstrap/pom.xml spring-boot:run -Dspring-boot.run.profiles=dev
+mvn -Plocal -DskipTests install
+systemctl --user restart hexabid-backend
 ```
 
 W tym profilu:
 
 - seed danych jest włączony
 - publiczne `GET /api/auctions` i `GET /api/auctions/{id}` są dostępne do przeglądania rynku
-- dostępny jest developerski provider uwierzytelniania `dev`
+- frontend SPA działa pod `http://localhost:14200`
 
 Developer login:
 
-- otwórz `http://localhost:18080/dev-auth?redirect=http://localhost:14200/`
+- otwórz `http://localhost:18080/hexabid/login/dev`
 - wybierz jednego z użytkowników demo
 - po zalogowaniu możesz zmieniać użytkownika z poziomu tego samego ekranu lub z linku `Zmien usera` w SPA
 - użytkownicy oznaczeni jako `KYC blocked` pozwalają testować scenariusze negatywne
@@ -56,7 +57,7 @@ Aplikacja używa OAuth2 / OpenID Connect:
 - Google
 - GitHub
 
-Konfiguracja klientów jest w `auctions-bootstrap/src/main/resources/application.yaml` i korzysta ze zmiennych:
+Konfiguracja klientów jest w `hexabid-bootstrap/src/main/resources/application.yaml` i korzysta ze zmiennych:
 
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`

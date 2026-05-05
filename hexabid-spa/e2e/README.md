@@ -5,7 +5,7 @@ Scenariusze click-through GUI dla pełnych flow biznesowych.
 
 ## Podsumowanie (TLDR)
 - E2E testy odtwarzają realne "przeklikanie" aplikacji po większych zmianach.
-- Scenariusze pokrywają przekrojowo: produkt, inventory, aukcję, reguły i pricing.
+- Scenariusze pokrywają przekrojowo: logowanie dev, produkt, inventory, aukcję, reguły i pricing.
 - Brak kluczowych danych/ekranów kończy test błędem (bez cichego skipa).
 
 ## Tagi
@@ -18,6 +18,7 @@ Scenariusze click-through GUI dla pełnych flow biznesowych.
 3. `rynek -> szczegóły aukcji -> pricing` — krytyczny flow kupującego.
 4. `formularz wystawiania + pricing config` — krytyczny flow sprzedającego.
 5. `rules + document submit UI` — widoczność reguł i dokumentów po stronie GUI.
+6. `dev auth account picker` — wybór użytkownika dev z GUI kończy się aktywną sesją i profilem `/api/me`.
 
 ### Artefakty diagnostyczne
 - Na każdej awarii Playwright zapisuje trace/screenshot/video.
@@ -25,9 +26,11 @@ Scenariusze click-through GUI dla pełnych flow biznesowych.
 
 ### Jak uruchamiać lokalnie
 1. Backend (profile lokalne + seed data):
-   - `mvn -f hexabid-bootstrap/pom.xml spring-boot:run -Dspring-boot.run.profiles=local,local-auth,local-kyc,local-payment`
+   - `mvn -Plocal -DskipTests install`
+   - `systemctl --user restart hexabid-backend`
 2. Frontend + e2e:
    - `cd hexabid-spa`
+   - `npm run e2e:auth`
    - `npm run e2e:business`
 
 ### Debug

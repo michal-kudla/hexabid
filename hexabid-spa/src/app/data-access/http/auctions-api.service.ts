@@ -56,6 +56,24 @@ export class AuctionsApiService {
     );
   }
 
+  async activateAuction(auctionId: string): Promise<AuctionResponse> {
+    return this.execute(async () => {
+      const response = await fetch(`/api/auctions/${auctionId}/activate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'X-API-Version': '1'
+        }
+      });
+
+      if (!response.ok) {
+        throw new ResponseError(response, 'Auction activation failed');
+      }
+
+      return (await response.json()) as AuctionResponse;
+    }, 'Nie udało się opublikować i uruchomić aukcji.');
+  }
+
   async browseMyAuctions(options: {
     status?: AuctionStatus | '';
     sort?: AuctionSort;

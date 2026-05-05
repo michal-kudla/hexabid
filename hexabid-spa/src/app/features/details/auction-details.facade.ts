@@ -32,6 +32,7 @@ export class AuctionDetailsFacade {
   readonly auction = signal<AuctionDetailsVm | null>(null);
   readonly feed = signal<FeedItem[]>([]);
   readonly bidSubmitting = signal(false);
+  readonly activationSubmitting = signal(false);
 
   private currentAuctionId: string | null = null;
   private realtimeSession: AuctionRealtimeSession | null = null;
@@ -70,6 +71,40 @@ export class AuctionDetailsFacade {
 
     this.bidSubmitting.set(true);
     this.realtimeSession.placeBid({ amount, currency });
+  }
+
+  async activateAuction(): Promise<void> {
+    const auctionId = this.currentAuctionId;
+    if (!auctionId) {
+      return;
+    }
+
+    this.activationSubmitting.set(true);
+    this.error.set(null);
+
+    try {
+      const activated = toAuctionDetailsVm(await this.api.activateAuction(auctionId));
+      this.auction.set(activated);
+      this.feed.update((items) => [
+        {
+          title: 'Aukcja uruchomiona',
+          detail: 'Status zmienił się na aktywny. Od tej chwili inni użytkownicy mogą składać oferty.',
+          tone: 'success'
+        },
+        ...items
+      ]);
+    } catch (error) {
+      this.feed.update((items) => [
+        {
+          title: 'Nie udało się uruchomić aukcji',
+          detail: this.api.toMessage(error, 'Spróbuj ponownie po sprawdzeniu statusu i uprawnień sprzedającego.'),
+          tone: 'error'
+        },
+        ...items
+      ]);
+    } finally {
+      this.activationSubmitting.set(false);
+    }
   }
 
   async destroy(): Promise<void> {

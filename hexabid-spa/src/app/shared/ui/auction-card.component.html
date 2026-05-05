@@ -1,6 +1,6 @@
 <article class="card">
   <div class="card-top">
-    <span class="badge" [class.badge-closed]="auction().statusTone === 'closed'">{{ auction().statusLabel }}</span>
+    <span class="badge" [class.badge-closed]="auction().statusTone !== 'open'">{{ auction().statusLabel }}</span>
     <span class="card-time">{{ auction().timeLeftLabel }}</span>
   </div>
 

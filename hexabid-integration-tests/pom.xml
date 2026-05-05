@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>hexabid-integration-tests</artifactId>
-    <name>auctions-integration-tests</name>
+    <name>hexabid-integration-tests</name>
     <description>Black-box integration tests against running service via OpenAPI contract.</description>
 
     <dependencies>

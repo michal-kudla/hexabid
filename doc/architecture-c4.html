@@ -646,7 +646,7 @@ Zakres obejmuje:</p>
 <p><code>auctions-auth-core</code> izoluje model użytkownika i port dostępu do aktualnej tożsamości od Spring Security.</p>
 </li>
 <li>
-<p><code>auctions-bootstrap</code> pełni rolę composition root i tworzy use case&#8217;y jako beany.</p>
+<p><code>hexabid-bootstrap</code> pełni rolę composition root i tworzy use case&#8217;y jako beany.</p>
 </li>
 <li>
 <p>komunikacja REST i KYC jest contract-first, dzięki generatorom OpenAPI.</p>
@@ -698,7 +698,7 @@ Zakres obejmuje:</p>
 <div class="sect2">
 <h3 id="_składanie_w_czasie_budowy_maven_profiles">8.1. Składanie w czasie budowy (Maven Profiles)</h3>
 <div class="paragraph">
-<p>W module <code>auctions-bootstrap/pom.xml</code> zdefiniowano profile Maven, które warunkowo dołączają odpowiednie adaptery jako zależności:</p>
+<p>W module <code>hexabid-bootstrap/pom.xml</code> zdefiniowano profile Maven, które warunkowo dołączają odpowiednie adaptery jako zależności:</p>
 </div>
 <div class="ulist">
 <ul>
@@ -717,7 +717,7 @@ Zakres obejmuje:</p>
 <div class="sect2">
 <h3 id="_automatyczna_rejestracja_spring_component_scanning">8.2. Automatyczna rejestracja (Spring Component Scanning)</h3>
 <div class="paragraph">
-<p>Aplikacja wykorzystuje mechanizm <code>scanBasePackages = "com.acme.auctions"</code>. Ponieważ oba adaptery (<code>oauth</code> i <code>local</code>) znajdują się w podpakietach tej ścieżki, Spring Boot automatycznie wykrywa i rejestruje:</p>
+<p>Aplikacja wykorzystuje mechanizm <code>scanBasePackages = "com.github.hexabid"</code>. Ponieważ oba adaptery (<code>oauth</code> i <code>local</code>) znajdują się w podpakietach tej ścieżki, Spring Boot automatycznie wykrywa i rejestruje:</p>
 </div>
 <div class="olist arabic">
 <ol class="arabic">

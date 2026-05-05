@@ -252,7 +252,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/work/projects/github.com/michal-kudla/hexabid
-ExecStart=java -jar hexabid-bootstrap/target/hexabid-bootstrap-0.0.1-SNAPSHOT.jar --server.port=18080 --server.servlet.context-path=/hexabid --spring.profiles.active=dev
+ExecStart=java -jar hexabid-bootstrap/target/hexabid-bootstrap-0.0.1-SNAPSHOT.jar --server.port=18080 --server.servlet.context-path=/hexabid --spring.profiles.active=local
 Restart=no
 Environment=SPRING_OUTPUT_ANSI_ENABLED=NEVER
 

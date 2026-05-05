@@ -42,6 +42,30 @@
   border-color: var(--border);
 }
 
+.seller-activation {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+
+  strong {
+    display: block;
+    margin-bottom: var(--space-2);
+  }
+
+  p {
+    margin: 0 0 var(--space-3);
+    color: var(--ink-secondary);
+    line-height: var(--leading-relaxed);
+  }
+
+  button {
+    width: auto;
+    padding-inline: var(--space-5);
+  }
+}
+
 h1 {
   margin: var(--space-3) 0 var(--space-3);
   font: 700 clamp(1.8rem, 3.5vw, 2.8rem)/1.05 var(--font-display);
@@ -142,6 +166,16 @@ h1 {
   color: #991b1b;
   font-size: 0.82rem;
   border-left: 3px solid #dc3545;
+}
+
+.settlement-hint {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.82rem;
+  border-left: 3px solid #64748b;
 }
 
 .result-success {
