@@ -53,6 +53,11 @@
             </dependency>
             <dependency>
                 <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-statements</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.hexabid</groupId>
                 <artifactId>hexabid-core</artifactId>
                 <version>${project.version}</version>
             </dependency>

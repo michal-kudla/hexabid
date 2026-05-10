@@ -18,4 +18,16 @@ class CoreArchitectureTest {
                 )
                 .check(importedClasses);
     }
+
+    @Test
+    void statementsMustNotDependOnFrameworksOrPersistenceAnnotations() {
+        var importedClasses = new ClassFileImporter().importPackages("com.github.hexabid.statement");
+
+        noClasses().that().resideInAPackage("..statement..")
+                .should().accessClassesThat().resideInAnyPackage(
+                        "..org.springframework..",
+                        "..jakarta.persistence.."
+                )
+                .check(importedClasses);
+    }
 }

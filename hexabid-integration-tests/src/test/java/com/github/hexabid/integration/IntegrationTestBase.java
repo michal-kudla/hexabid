@@ -3,6 +3,7 @@ package com.github.hexabid.integration;
 import com.github.hexabid.contract.client.ApiClient;
 import com.github.hexabid.contract.client.api.AuctionsApi;
 import com.github.hexabid.contract.client.api.InventoryApi;
+import com.github.hexabid.contract.client.api.ParticipationApi;
 import com.github.hexabid.contract.client.api.ProductsApi;
 import com.github.hexabid.contract.client.model.*;
 import org.junit.jupiter.api.BeforeAll;
@@ -48,6 +49,8 @@ public abstract class IntegrationTestBase {
     public static ProductsApi sellerProductsApi;
     public static InventoryApi sellerInventoryApi;
     public static InventoryApi buyerInventoryApi;
+    public static ParticipationApi sellerParticipationApi;
+    public static ParticipationApi buyerParticipationApi;
 
     @BeforeAll
     public static void setupApiClients() {
@@ -59,6 +62,8 @@ public abstract class IntegrationTestBase {
         sellerProductsApi = new ProductsApi(sellerClient);
         sellerInventoryApi = new InventoryApi(sellerClient);
         buyerInventoryApi = new InventoryApi(buyerClient);
+        sellerParticipationApi = new ParticipationApi(sellerClient);
+        buyerParticipationApi = new ParticipationApi(buyerClient);
     }
 
     protected static ApiClient apiClientFor(String user, String pass) {

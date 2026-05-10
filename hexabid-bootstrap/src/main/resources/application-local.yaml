@@ -3,6 +3,14 @@ server:
   servlet:
     context-path: /hexabid
 
+openapi:
+  auctions:
+    base-path: /
+  auth:
+    base-path: /
+  payment:
+    base-path: /
+
 spring:
   jpa:
     show-sql: false

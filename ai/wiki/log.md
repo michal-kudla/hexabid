@@ -183,3 +183,32 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Uzasadniono rozdzielenie `StatementDefinition`, `ParticipationPolicyTemplate` i `StatementProgramInstance` przez analogie do archetypów Graphs, Party, Rules, Plan-vs-Execution, Ordering i Pricing
 - Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
 - Tagi: #statements #archetypes #graphs #party #rules #plan-vs-execution
+
+## [2026-05-10] [DESIGN] Kategorie aukcji, wymogi i pakiety kwalifikacyjne
+- Rozszerzono projekt o `QualificationProfile`: nazwany, wersjonowany pakiet wymagań dla kategorii, jurysdykcji, wartości i ryzyka aukcji
+- Rozdzielono `StatementRequirement` od `VerifiedFactRequirement`, `EvidenceRequirement` i `ExternalCheckRequirement`
+- Opisano przykłady profili: grunt w Polsce, lek/substancja kontrolowana, alkohol oraz udział w imieniu innego `PartyId`
+- Dodano model odpowiedzi z referencjami do stron: `PartyReference`, role reprezentowanego kupującego, beneficjenta, płatnika, odbiorcy, posiadacza licencji i specjalisty medycznego
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #qualification-profile #statements #party #requirements #category-policy
+
+## [2026-05-10] [IMPLEMENTATION] Moduł hexabid-statements — pełna implementacja z poprawkami
+- Zaimplementowano moduł domenowy `hexabid-statements` (bez Springa, bez JPA) z modelami: `StatementDefinition`, `StatementCode`, `StatementProgramInstance`, `ParticipationDecision`, `StatementDependencyGraph`, `ParticipationPolicyEvaluator`, `PolicyTemplateCatalog`
+- Trzy szablony polityki: `PUBLIC_CONSUMER_LIGHT_V1` (4 oświadczenia), `REGULATED_ASSET_BUYER_V1` (8 oświadczeń), `HIGH_VALUE_TENDER_V1` (11 oświadczeń)
+- Graf DAG z sortowaniem topologicznym, wykrywaniem cykli, reachability, dostępnością oświadczeń i kaskadowym odrzuceniem
+- 4 porty wejściowe: `StartStatementProgramUseCase`, `SubmitStatementAnswerUseCase`, `GetStatementProgramUseCase`, `GetParticipationDecisionUseCase`
+- REST adapter: `RestParticipationApiDelegate` z 4 endpointami Participation API
+- JPA adapter: `JpaStatementProgramInstanceRepositoryAdapter` z persystencją programów, odpowiedzi i decyzji
+- Naprawiono krytyczne bugi utraty danych w JPA adapterze: persystencja `violationType`, `decidedAt`, `blockedByPrerequisites`; czyszczenie answers przed save; `saveAndFlush` zamiast `save`; zastąpienie `default -> null` wyjątkiem
+- Naprawiono `StatementProgramInstance.markCompleted()` — prawidłowa obsługa `Pending` (pozostaje IN_PROGRESS) z użyciem `switch` zamiast `if-else`
+- Dodano defensywne kopie map sąsiedztwa w `StatementDependencyGraph`
+- Dodano `@Nullable` (jspecify) do view DTOs: `StatementStepView.answerValue`, `StatementProgramView.decision`, `ParticipationDecisionView.rootCause`, `ParticipationDecisionView.humanReason`
+- Dodano JavaDoc do wszystkich publicznych typów w module hexabid-statements (48 plików źródłowych)
+- Dodano JavaDoc do REST i DB adapterów
+- Testy jednostkowe: 14 pass (8 graph + 2 definition + 4 evaluator)
+- Testy integracyjne: 10 scenariuszy (SC1-SC10) w `StatementCollectionFlowIT`
+- Weryfikacja E2E: SC1 (admitted) i SC2 (rejected with cascade) potwierdzone curl-em
+- Frontend: wygenerowany ParticipationApi.ts z OpenAPI contract, `npm run build` pass
+- Architektura: `CoreArchitectureTest` sprawdza brak zależności `hexabid-statements` od Spring/JPA
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #statements #implementation #javadoc #bugfix #integration-tests #participation-decision

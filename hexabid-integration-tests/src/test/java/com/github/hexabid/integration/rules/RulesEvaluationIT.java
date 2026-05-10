@@ -2,7 +2,7 @@ package com.github.hexabid.integration.rules;
 
 import com.github.hexabid.contract.client.ApiClient;
 import com.github.hexabid.contract.client.api.AuctionsApi;
-import com.github.hexabid.contract.model.*;
+import com.github.hexabid.contract.client.model.*;
 import com.github.hexabid.integration.IntegrationTestBase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,7 +29,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.1 - Evaluate all rules for an auction returns evaluations per phase")
-        void shouldEvaluateAllRulesForAuction() {
+        void shouldEvaluateAllRulesForAuction() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules eval auction"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -46,7 +46,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.2 - Evaluate rules filtered by PARTICIPATION phase only")
-        void shouldFilterByParticipationPhase() {
+        void shouldFilterByParticipationPhase() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules participation"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -59,7 +59,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.3 - Evaluate rules filtered by BIDDING phase only")
-        void shouldFilterByBiddingPhase() {
+        void shouldFilterByBiddingPhase() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules bidding"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -72,7 +72,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.4 - Evaluate rules filtered by SETTLEMENT phase only")
-        void shouldFilterBySettlementPhase() {
+        void shouldFilterBySettlementPhase() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules settlement"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -85,7 +85,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.5 - Each rule violation has required fields")
-        void eachViolationHasRequiredFields() {
+        void eachViolationHasRequiredFields() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules fields check"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -106,7 +106,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.6 - Settlement phase has FULL_PAYMENT_SETTLEMENT rule")
-        void settlementPhaseHasFullPaymentRule() {
+        void settlementPhaseHasFullPaymentRule() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules settlement full payment"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -119,7 +119,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R1.7 - Bidding phase has KYC_VERIFIED_FOR_BIDDING rule")
-        void biddingPhaseHasKycRule() {
+        void biddingPhaseHasKycRule() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules bidding kyc"), API_VERSION);
 
             RuleEvaluationResponse evaluation = buyerAuctionsApi.evaluateAuctionRules(
@@ -137,34 +137,34 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R2.1 - Submit excise certificate copy")
-        void shouldSubmitExciseCertificateCopy() {
+        void shouldSubmitExciseCertificateCopy() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Doc submit excise"), API_VERSION);
 
-            var request = new com.github.hexabid.contract.model.SubmitDocumentRequest();
-            request.setDocumentType(com.github.hexabid.contract.model.DocumentType.EXCISE_CERTIFICATE);
-            request.setStatus(com.github.hexabid.contract.model.DocumentStatus.COPY);
+            var request = new SubmitDocumentRequest();
+            request.setDocumentType(DocumentType.EXCISE_CERTIFICATE);
+            request.setStatus(DocumentStatus.COPY);
 
             var response = buyerAuctionsApi.submitDocument(auction.getAuctionId(), request, API_VERSION);
 
             assertThat(response).isNotNull();
-            assertThat(response.getDocumentType()).isEqualTo(com.github.hexabid.contract.model.DocumentType.EXCISE_CERTIFICATE);
-            assertThat(response.getStatus()).isEqualTo(com.github.hexabid.contract.model.DocumentStatus.COPY);
+            assertThat(response.getDocumentType()).isEqualTo(DocumentType.EXCISE_CERTIFICATE);
+            assertThat(response.getStatus()).isEqualTo(DocumentStatus.COPY);
         }
 
         @Test
         @DisplayName("R2.2 - Submit customs exemption original")
-        void shouldSubmitCustomsExemptionOriginal() {
+        void shouldSubmitCustomsExemptionOriginal() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Doc submit customs"), API_VERSION);
 
-            var request = new com.github.hexabid.contract.model.SubmitDocumentRequest();
-            request.setDocumentType(com.github.hexabid.contract.model.DocumentType.CUSTOMS_EXEMPTION);
-            request.setStatus(com.github.hexabid.contract.model.DocumentStatus.ORIGINAL);
+            var request = new SubmitDocumentRequest();
+            request.setDocumentType(DocumentType.CUSTOMS_EXEMPTION);
+            request.setStatus(DocumentStatus.ORIGINAL);
 
             var response = buyerAuctionsApi.submitDocument(auction.getAuctionId(), request, API_VERSION);
 
             assertThat(response).isNotNull();
-            assertThat(response.getDocumentType()).isEqualTo(com.github.hexabid.contract.model.DocumentType.CUSTOMS_EXEMPTION);
-            assertThat(response.getStatus()).isEqualTo(com.github.hexabid.contract.model.DocumentStatus.ORIGINAL);
+            assertThat(response.getDocumentType()).isEqualTo(DocumentType.CUSTOMS_EXEMPTION);
+            assertThat(response.getStatus()).isEqualTo(DocumentStatus.ORIGINAL);
         }
     }
 
@@ -174,7 +174,7 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R3.1 - Unauthenticated rule evaluation returns 401")
-        void shouldRejectUnauthenticatedRuleEvaluation() {
+        void shouldRejectUnauthenticatedRuleEvaluation() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Rules security"), API_VERSION);
 
             ApiClient anonymousClient = anonymousApiClient();
@@ -189,15 +189,15 @@ class RulesEvaluationIT extends IntegrationTestBase {
 
         @Test
         @DisplayName("R3.2 - Unauthenticated document submission returns 401")
-        void shouldRejectUnauthenticatedDocumentSubmission() {
+        void shouldRejectUnauthenticatedDocumentSubmission() throws Exception {
             var auction = sellerAuctionsApi.createAuction(rulesAuctionRequest("Doc security"), API_VERSION);
 
             ApiClient anonymousClient = anonymousApiClient();
             AuctionsApi anonymousApi = new AuctionsApi(anonymousClient);
 
-            var request = new com.github.hexabid.contract.model.SubmitDocumentRequest();
-            request.setDocumentType(com.github.hexabid.contract.model.DocumentType.EXCISE_CERTIFICATE);
-            request.setStatus(com.github.hexabid.contract.model.DocumentStatus.COPY);
+            var request = new SubmitDocumentRequest();
+            request.setDocumentType(DocumentType.EXCISE_CERTIFICATE);
+            request.setStatus(DocumentStatus.COPY);
 
             try {
                 anonymousApi.submitDocument(auction.getAuctionId(), request, API_VERSION);

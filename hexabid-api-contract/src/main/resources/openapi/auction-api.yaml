@@ -8,6 +8,7 @@ tags:
   - name: Auctions
   - name: Products
   - name: Inventory
+  - name: Participation
 paths:
   /api/products:
     get:
@@ -648,6 +649,134 @@ paths:
           description: Authentication required
         '404':
           description: Auction not found
+  /api/auctions/{auctionId}/participation/program:
+    get:
+      operationId: getParticipationProgram
+      tags:
+        - Participation
+      summary: Get the statement program for the current candidate
+      description: |
+        Returns the current candidate's statement collection program for the given auction.
+        Includes available, completed, and blocked statements along with the participation decision.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statement program view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatementProgramView'
+        '401':
+          description: Authentication required
+        '404':
+          description: No program instance found
+    post:
+      operationId: startParticipationProgram
+      tags:
+        - Participation
+      summary: Start a statement collection program for the current candidate
+      description: |
+        Creates a new statement program instance for the authenticated candidate
+        on the given auction, using the specified policy template.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartParticipationProgramRequest'
+      responses:
+        '201':
+          description: Program started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatementProgramView'
+        '400':
+          description: Invalid request or template not found
+        '401':
+          description: Authentication required
+  /api/auctions/{auctionId}/participation/statements/{statementCode}/answers:
+    post:
+      operationId: submitStatementAnswer
+      tags:
+        - Participation
+      summary: Submit an answer to a statement
+      description: |
+        Submits an answer for a specific statement in the candidate's program.
+        If the answer is disqualifying, the program is immediately rejected
+        and dependent statements are cascaded.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: statementCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitStatementAnswerRequest'
+      responses:
+        '200':
+          description: Answer processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitStatementAnswerResponse'
+        '400':
+          description: Invalid answer or prerequisite not met
+        '401':
+          description: Authentication required
+        '404':
+          description: Program instance or statement not found
+  /api/auctions/{auctionId}/participation/decision:
+    get:
+      operationId: getParticipationDecision
+      tags:
+        - Participation
+      summary: Get the participation decision for the current candidate
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Participation decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationDecisionView'
+        '401':
+          description: Authentication required
+        '404':
+          description: No program instance found
   /api/me:
     get:
       operationId: getCurrentUserProfile
@@ -1444,3 +1573,128 @@ components:
           $ref: '#/components/schemas/DocumentType'
         status:
           $ref: '#/components/schemas/DocumentStatus'
+    StartParticipationProgramRequest:
+      type: object
+      required:
+        - templateName
+      properties:
+        templateName:
+          type: string
+          description: Name of the participation policy template to use
+          example: PUBLIC_CONSUMER_LIGHT_V1
+    SubmitStatementAnswerRequest:
+      type: object
+      required:
+        - answerValue
+      properties:
+        answerValue:
+          type: string
+          description: The candidate's answer value
+          example: "YES"
+    StatementStepView:
+      type: object
+      required:
+        - statementCode
+        - title
+        - question
+        - answerType
+        - order
+      properties:
+        statementCode:
+          type: string
+        title:
+          type: string
+        question:
+          type: string
+        answerType:
+          type: string
+          enum: [YES_NO, TEXT, SINGLE_CHOICE, MULTI_CHOICE, NUMERIC, DOCUMENT_UPLOAD]
+        order:
+          type: integer
+        stepLabel:
+          type: string
+        answerValue:
+          type: string
+    ParticipationDecisionView:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [PENDING, ADMITTED, ADMITTED_WITH_CONDITIONS, REJECTED]
+        rootCause:
+          type: string
+        humanReason:
+          type: string
+        missingStatements:
+          type: array
+          items:
+            type: string
+        cascadedStatements:
+          type: array
+          items:
+            type: string
+        conditions:
+          type: array
+          items:
+            type: string
+    StatementProgramView:
+      type: object
+      required:
+        - programInstanceId
+        - auctionId
+        - candidateId
+        - templateName
+        - templateVersion
+        - status
+        - availableStatements
+        - completedStatements
+        - blockedStatements
+      properties:
+        programInstanceId:
+          type: string
+          format: uuid
+        auctionId:
+          type: string
+          format: uuid
+        candidateId:
+          type: string
+        templateName:
+          type: string
+        templateVersion:
+          type: integer
+        status:
+          type: string
+          enum: [IN_PROGRESS, COMPLETED, REJECTED, CANCELLED]
+        availableStatements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementStepView'
+        completedStatements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementStepView'
+        blockedStatements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementStepView'
+        decision:
+          $ref: '#/components/schemas/ParticipationDecisionView'
+    SubmitStatementAnswerResponse:
+      type: object
+      required:
+        - resultType
+        - program
+      properties:
+        resultType:
+          type: string
+          enum: [ACCEPTED, REJECTED, PREREQUISITE_NOT_MET]
+        reason:
+          type: string
+        missingPrerequisites:
+          type: array
+          items:
+            type: string
+        program:
+          $ref: '#/components/schemas/StatementProgramView'

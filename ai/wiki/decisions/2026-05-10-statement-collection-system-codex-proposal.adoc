@@ -772,6 +772,273 @@ Nie mieszać trzech poziomów:
 To pozwala ponownie używać tych samych oświadczeń w wielu politykach, bez wpychania warunków aukcyjnych do definicji oświadczenia.
 Zgodnie z archetypami `party` i `rules`, jedno oświadczenie może dotyczyć innej strony niż zalogowany użytkownik, a jego ocena może zależeć od relacji, roli, zakresu działania i kontekstu aukcji.
 
+== Kategorie, wymogi i pakiety kwalifikacyjne
+
+System powinien obsługiwać nazwane zestawy konfiguracji, które łączą kategorię przedmiotu, etap procesu, wymagania weryfikacyjne, wymagane oświadczenia i relacje Party.
+To nie powinno być dopisywane jako kolejne pola w `Auction`.
+Właściwym modelem jest wersjonowany pakiet kwalifikacyjny, który może być składany z wielu mniejszych definicji.
+
+[source,java]
+----
+public record QualificationProfile(
+        QualificationProfileId id,
+        String name,
+        QualificationProfileVersion version,
+        List<CategorySelector> appliesTo,
+        List<QualificationStage> stages,
+        List<RequirementDefinition> requirements,
+        List<StatementDefinitionRef> requiredStatements,
+        List<PartyRelationRequirement> partyRelationRequirements,
+        DecisionPolicy decisionPolicy
+) {}
+
+public record CategorySelector(
+        ProductCategoryCode category,
+        Optional<ProductFeaturePredicate> featurePredicate,
+        Optional<Jurisdiction> jurisdiction
+) {}
+
+public record QualificationStage(
+        StageCode code,
+        String label,
+        StagePurpose purpose,
+        List<RequirementRef> requirements,
+        List<StatementDefinitionRef> statements
+) {}
+----
+
+Przykładowe profile:
+
+[cols="1,2,3"]
+|===
+| Profil | Kiedy działa | Sens biznesowy
+
+| `LAND_BUYER_PL_V1`
+| Sprzedaż gruntu w Polsce.
+| Kupujący musi być rezydentem albo mieć zezwolenie właściwego ministra. Samo oświadczenie nie wystarcza, jeśli polityka wymaga dokumentu albo zewnętrznej weryfikacji.
+
+| `MEDICINAL_PRODUCT_BUYER_V1`
+| Lek, substancja kontrolowana, marihuana medyczna.
+| Kupujący albo podmiot, w imieniu którego działa, musi mieć uprawnienie medyczne, farmaceutyczne albo koncesję.
+
+| `ALCOHOL_BUYER_V1`
+| Alkohol.
+| Wiek 18+ jest twardym wymogiem weryfikacyjnym. Oświadczenie "mam 18 lat" nie powinno dopuszczać do aukcji bez zweryfikowanego użytkownika.
+
+| `REPRESENTED_BUYER_V1`
+| Użytkownik przystępuje w imieniu innej osoby albo firmy.
+| Oświadczenie musi wskazać `PartyId` reprezentowanego podmiotu, rolę, podstawę umocowania i dokument pełnomocnictwa.
+|===
+
+=== Rozdzielenie oświadczeń od wymogów
+
+Subtelna granica jest kluczowa:
+
+* `StatementDefinition` - kandydat coś deklaruje, np. "nie jestem w konflikcie interesów".
+* `RequirementDefinition` - system wymaga spełnienia warunku, np. "wiek zweryfikowany >= 18".
+* `EvidenceRequirement` - system wymaga dowodu, np. skan zezwolenia, numer licencji, zaświadczenie albo wynik integracji z rejestrem.
+* `VerificationRequirement` - system wymaga wyniku procesu zaufanego, np. KYC, age verification, sprawdzenie list sankcyjnych, sprawdzenie licencji.
+
+[source,java]
+----
+public sealed interface QualificationItem
+        permits StatementRequirement, VerifiedFactRequirement, EvidenceRequirement, ExternalCheckRequirement {
+}
+
+public record StatementRequirement(
+        StatementDefinitionRef statement,
+        StatementScope requiredScope,
+        RequirementSeverity severity
+) implements QualificationItem {}
+
+public record VerifiedFactRequirement(
+        VerifiedFactType factType,
+        FactPredicate predicate,
+        StatementScope requiredScope,
+        RequirementSeverity severity
+) implements QualificationItem {}
+
+public record EvidenceRequirement(
+        EvidenceType evidenceType,
+        EvidenceOriginality originality,
+        StatementScope requiredScope,
+        RequirementSeverity severity
+) implements QualificationItem {}
+
+public record ExternalCheckRequirement(
+        ExternalCheckType checkType,
+        CheckProvider provider,
+        StatementScope requiredScope,
+        RequirementSeverity severity
+) implements QualificationItem {}
+----
+
+Przykład alkoholu:
+
+[source,text]
+----
+ALCOHOL_BUYER_V1:
+  stage IDENTITY:
+    requirement VERIFIED_AGE >= 18
+    requirement KYC_LEVEL >= BASIC
+  stage PARTICIPATION:
+    statement TERMS_ACCEPTANCE
+----
+
+To celowo nie zawiera oświadczenia `I_AM_18`.
+Wymagany jest zweryfikowany fakt, a nie deklaracja.
+
+Przykład gruntu:
+
+[source,text]
+----
+LAND_BUYER_PL_V1:
+  stage IDENTITY:
+    requirement KYC_LEVEL >= BASIC
+    statement BUYER_ACTING_ON_OWN_BEHALF_OR_FOR_PARTY
+  stage ELIGIBILITY:
+    anyOf:
+      - requirement RESIDENCY_STATUS == POLISH_OR_EEA_RESIDENT
+      - evidence MINISTER_PERMIT_COPY
+  stage COMMITMENT:
+    statement LAND_PURCHASE_LEGAL_CONSEQUENCES_ACCEPTANCE
+----
+
+Przykład leku albo marihuany medycznej:
+
+[source,text]
+----
+MEDICINAL_PRODUCT_BUYER_V1:
+  stage PARTY_SCOPE:
+    statement ACTING_AS_MEDICAL_PROFESSIONAL_OR_ENTITY_REPRESENTATIVE
+    optionalPartyReference representedPartyId
+  stage ELIGIBILITY:
+    anyOf:
+      - externalCheck MEDICAL_PROFESSION_REGISTER_ACTIVE for applicant
+      - externalCheck PHARMACY_LICENSE_ACTIVE for representedParty
+      - evidence CONTROLLED_SUBSTANCE_PERMIT
+  stage COMMITMENT:
+    statement CONTROLLED_PRODUCT_HANDLING_RESPONSIBILITY
+----
+
+=== Parametryzowane pakiety wymagań
+
+Nazwane profile powinny pozwalać na parametryzację, żeby nie mnożyć szablonów dla każdego wariantu.
+
+[source,java]
+----
+public record QualificationProfileParameter<T>(
+        String name,
+        Class<T> type,
+        T defaultValue,
+        ParameterConstraint<T> constraint
+) {}
+
+public record BoundQualificationProfile(
+        QualificationProfileId profileId,
+        QualificationProfileVersion version,
+        Map<String, Object> parameters
+) {}
+----
+
+Przykłady parametrów:
+
+* `minAge = 18` dla alkoholu.
+* `acceptedResidencies = [PL, EEA]` dla gruntu.
+* `permitOriginality = COPY_ALLOWED` albo `ORIGINAL_REQUIRED`.
+* `medicalLicenseRequiredFor = APPLICANT_OR_REPRESENTED_PARTY`.
+* `kycLevel = BASIC | ENHANCED`.
+* `sanctionsCheckDepth = APPLICANT_ONLY | APPLICANT_AND_BENEFICIAL_OWNERS`.
+
+=== Oświadczenia z referencją do Party
+
+Oświadczenie może zawierać referencję do osoby albo organizacji, której dotyczy udział w aukcji.
+To powinno być modelowane jawnie, bo w przeciwnym razie system nie rozróżni:
+
+* użytkownika klikającego w UI,
+* kupującego ekonomicznego,
+* reprezentowanej firmy,
+* beneficjenta rzeczywistego,
+* pełnomocnika,
+* płatnika,
+* odbiorcy przedmiotu aukcji.
+
+[source,java]
+----
+public record StatementAnswer(
+        StatementAnswerId id,
+        ParticipationApplicationId applicationId,
+        StatementCode statementCode,
+        StatementScope scope,
+        AnswerPayload payload,
+        List<PartyReference> referencedParties,
+        Instant submittedAt
+) {}
+
+public record PartyReference(
+        PartyId partyId,
+        PartyReferenceRole role,
+        Optional<PartyRelationshipId> relationshipId,
+        Optional<EvidenceId> authorityEvidenceId
+) {}
+
+public enum PartyReferenceRole {
+    APPLICANT,
+    REPRESENTED_BUYER,
+    BENEFICIAL_OWNER,
+    AUTHORIZED_REPRESENTATIVE,
+    PAYER,
+    RECEIVER,
+    LICENSE_HOLDER,
+    MEDICAL_PROFESSIONAL
+}
+----
+
+Wtedy oświadczenie "działam w imieniu spółki X" nie jest tekstem w polu.
+Jest faktem domenowym: użytkownik wskazał `PartyId`, rolę `REPRESENTED_BUYER`, relację umocowania i dowód.
+
+=== Kompozycja profili dla aukcji
+
+Aukcja może mieć więcej niż jeden profil kwalifikacyjny.
+Silnik powinien materializować je do jednego programu, usuwać duplikaty, wykrywać sprzeczności i zachować wyjaśnienie pochodzenia każdego wymogu.
+
+[source,java]
+----
+public record AuctionQualificationConfiguration(
+        AuctionId auctionId,
+        List<BoundQualificationProfile> profiles,
+        ConflictResolutionPolicy conflictResolutionPolicy
+) {}
+
+public record MaterializedQualificationProgram(
+        AuctionId auctionId,
+        List<QualificationSource> sources,
+        StatementProgramGraph graph,
+        List<QualificationItem> items,
+        DecisionPolicy decisionPolicy
+) {}
+----
+
+Przykład złożenia:
+
+[source,text]
+----
+Auction category: LAND
+Jurisdiction: PL
+Profiles:
+  - BASE_AUCTION_PARTICIPATION_V1
+  - LAND_BUYER_PL_V1
+  - HIGH_VALUE_AML_V1(minAmount = 100000 EUR)
+
+Materialized program:
+  - KYC_LEVEL >= ENHANCED                 from HIGH_VALUE_AML_V1
+  - residency or minister permit          from LAND_BUYER_PL_V1
+  - source of funds                       from HIGH_VALUE_AML_V1
+  - terms acceptance                      from BASE_AUCTION_PARTICIPATION_V1
+----
+
+To jest docelowy punkt konfiguracji dla administratora: nie edytuje grafu ręcznie przy każdej aukcji, tylko podpina nazwane, wersjonowane profile pod kategorię, jurysdykcję, wartość i ryzyko.
+
 == Ryzyka i zabezpieczenia
 
 [cols="1,3,3"]

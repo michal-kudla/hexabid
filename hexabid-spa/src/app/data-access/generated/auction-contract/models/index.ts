@@ -847,6 +847,61 @@ export interface Money {
 /**
  * 
  * @export
+ * @interface ParticipationDecisionView
+ */
+export interface ParticipationDecisionView {
+    /**
+     * 
+     * @type {ParticipationDecisionViewStatusEnum}
+     * @memberof ParticipationDecisionView
+     */
+    status: ParticipationDecisionViewStatusEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ParticipationDecisionView
+     */
+    rootCause?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ParticipationDecisionView
+     */
+    humanReason?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ParticipationDecisionView
+     */
+    missingStatements?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ParticipationDecisionView
+     */
+    cascadedStatements?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ParticipationDecisionView
+     */
+    conditions?: Array<string>;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum ParticipationDecisionViewStatusEnum {
+    PENDING = 'PENDING',
+    ADMITTED = 'ADMITTED',
+    ADMITTED_WITH_CONDITIONS = 'ADMITTED_WITH_CONDITIONS',
+    REJECTED = 'REJECTED'
+}
+
+/**
+ * 
+ * @export
  * @interface PricingConfig
  */
 export interface PricingConfig {
@@ -1137,6 +1192,161 @@ export enum SellingMode {
 /**
  * 
  * @export
+ * @interface StartParticipationProgramRequest
+ */
+export interface StartParticipationProgramRequest {
+    /**
+     * Name of the participation policy template to use
+     * @type {string}
+     * @memberof StartParticipationProgramRequest
+     */
+    templateName: string;
+}
+/**
+ * 
+ * @export
+ * @interface StatementProgramView
+ */
+export interface StatementProgramView {
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    programInstanceId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    auctionId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    candidateId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    templateName: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatementProgramView
+     */
+    templateVersion: number;
+    /**
+     * 
+     * @type {StatementProgramViewStatusEnum}
+     * @memberof StatementProgramView
+     */
+    status: StatementProgramViewStatusEnum;
+    /**
+     * 
+     * @type {Array<StatementStepView>}
+     * @memberof StatementProgramView
+     */
+    availableStatements: Array<StatementStepView>;
+    /**
+     * 
+     * @type {Array<StatementStepView>}
+     * @memberof StatementProgramView
+     */
+    completedStatements: Array<StatementStepView>;
+    /**
+     * 
+     * @type {Array<StatementStepView>}
+     * @memberof StatementProgramView
+     */
+    blockedStatements: Array<StatementStepView>;
+    /**
+     * 
+     * @type {ParticipationDecisionView}
+     * @memberof StatementProgramView
+     */
+    decision?: ParticipationDecisionView;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum StatementProgramViewStatusEnum {
+    IN_PROGRESS = 'IN_PROGRESS',
+    COMPLETED = 'COMPLETED',
+    REJECTED = 'REJECTED',
+    CANCELLED = 'CANCELLED'
+}
+
+/**
+ * 
+ * @export
+ * @interface StatementStepView
+ */
+export interface StatementStepView {
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    statementCode: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    title: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    question: string;
+    /**
+     * 
+     * @type {StatementStepViewAnswerTypeEnum}
+     * @memberof StatementStepView
+     */
+    answerType: StatementStepViewAnswerTypeEnum;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatementStepView
+     */
+    order: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    stepLabel?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    answerValue?: string;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum StatementStepViewAnswerTypeEnum {
+    YES_NO = 'YES_NO',
+    TEXT = 'TEXT',
+    SINGLE_CHOICE = 'SINGLE_CHOICE',
+    MULTI_CHOICE = 'MULTI_CHOICE',
+    NUMERIC = 'NUMERIC',
+    DOCUMENT_UPLOAD = 'DOCUMENT_UPLOAD'
+}
+
+/**
+ * 
+ * @export
  * @interface SubmitDocumentRequest
  */
 export interface SubmitDocumentRequest {
@@ -1175,6 +1385,61 @@ export interface SubmitDocumentResponse {
     status: DocumentStatus;
 }
 
+
+/**
+ * 
+ * @export
+ * @interface SubmitStatementAnswerRequest
+ */
+export interface SubmitStatementAnswerRequest {
+    /**
+     * The candidate's answer value
+     * @type {string}
+     * @memberof SubmitStatementAnswerRequest
+     */
+    answerValue: string;
+}
+/**
+ * 
+ * @export
+ * @interface SubmitStatementAnswerResponse
+ */
+export interface SubmitStatementAnswerResponse {
+    /**
+     * 
+     * @type {SubmitStatementAnswerResponseResultTypeEnum}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    resultType: SubmitStatementAnswerResponseResultTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    reason?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    missingPrerequisites?: Array<string>;
+    /**
+     * 
+     * @type {StatementProgramView}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    program: StatementProgramView;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum SubmitStatementAnswerResponseResultTypeEnum {
+    ACCEPTED = 'ACCEPTED',
+    REJECTED = 'REJECTED',
+    PREREQUISITE_NOT_MET = 'PREREQUISITE_NOT_MET'
+}
 
 /**
  * 

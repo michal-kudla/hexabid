@@ -23,6 +23,7 @@
         <module name="hexabid-bootstrap" />
         <module name="hexabid-api-contract" />
         <module name="hexabid-payment-core" />
+        <module name="hexabid-statements" />
         <module name="hexabid-auth-core" />
         <module name="hexabid-payment-adapter-crypto" />
         <module name="hexabid-rules-adapter" />
@@ -112,6 +113,7 @@
       <module name="hexabid-quantity" options="-parameters" />
       <module name="hexabid-rules" options="-parameters" />
       <module name="hexabid-rules-adapter" options="-parameters" />
+      <module name="hexabid-statements" options="-parameters" />
       <module name="inventory" options="-parameters" />
       <module name="product" options="-parameters" />
       <module name="quantity" options="-parameters" />
