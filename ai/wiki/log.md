@@ -156,3 +156,30 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Wynik: `mvn -Plocal -DskipTests install`, `systemctl --user restart hexabid-backend`, `npm run e2e:business` 5/5 pass, `npm run e2e:auth` 1/1 pass, `npm run build` pass
 - Link: [[decisions/2026-05-05-auction-activation-rules-guidance]]
 - Tagi: #websocket #stomp #auth #dev-auth #e2e #bidding
+
+## [2026-05-09] [DESIGN] System Zbierania Oświadczeń — DAG, szablony aukcji, kaskadowe odrzucenie
+- Projekt modułu `hexabid-statements` oparty na algorytmach grafowych (DAG, sortowanie topologiczne, domknięcie przechodnie)
+- 4 typy aukcji jako szablony oświadczeń: ENGLISH_ASCENDING (5), SEALED_BID_TENDER (16), RESTRICTED_TENDER (16 dwuetapowo), DUTCH_DESCENDING (3)
+- 16 typów oświadczeń w 4 fazach: TOŻSAMOŚĆ → KWALIFIKACJA → ZDOLNOŚĆ → ZOBOWIĄZANIE
+- Graf zależności DAG z kaskadowym odrzuceniem (reachability index)
+- Decyzja o przystąpieniu: PARTICIPATION_GRANTED / REJECTED / PENDING
+- REST API: 7 endpointów, integracja z hexabid-core, hexabid-rules, hexabid-pricing
+- Link: [[decisions/2026-05-09-statement-collection-system]]
+- Tagi: #statements #dag #auction-types #templates #cascade-rejection #participation-decision
+
+## [2026-05-10] [DESIGN] Alternatywna propozycja systemu zbierania oświadczeń
+- Dodano osobny dokument AsciiDoc z propozycją Codex: `ai/wiki/decisions/2026-05-10-statement-collection-system-codex-proposal.adoc`
+- Kluczowa decyzja: rozdzielić `AuctionFormat` od `ParticipationPolicyTemplate`, aby mechanika aukcji nie wymuszała jednego zestawu compliance
+- Zaproponowano moduł `hexabid-statements`, graf DAG z warunkowymi krawędziami, reachability index, decyzje `ADMITTED`, `REJECTED`, `PENDING`, `ADMITTED_WITH_CONDITIONS`
+- Rozszerzono katalog oświadczeń o AML/sankcje, beneficjenta rzeczywistego, konflikt interesów, zmowę, źródło środków, licencje sektorowe, eksport, data room i zdolność środowiskową
+- Opisano pięć typów polityk aukcyjnych, natychmiastowe odrzucenie po odpowiedzi dyskwalifikującej oraz integrację z `hexabid-rules`
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #statements #policy-template #graphs #rules #participation-decision
+
+## [2026-05-10] [DESIGN] Weryfikacja systemu oświadczeń z archetypami oprogramowania
+- Przejrzano lokalne materiały `.local/archetypyoprogramowania/`, transkrypcje `.local/archetypyoprogramowania/txt/` oraz źródła `/work/projects/github.com/archetypy-oprogramowania/archetypes/`
+- Doprecyzowano, że graf jest mechanizmem planowania, ścieżki użytkownika i wyjaśniania wpływu, a nie całym modelem domenowym
+- Wprowadzono korekty projektowe: `ParticipationApplication`, `StatementProgramGraph`, `StatementScope`, `StatementExecutionDelta`, `RejectionImpactZone`
+- Uzasadniono rozdzielenie `StatementDefinition`, `ParticipationPolicyTemplate` i `StatementProgramInstance` przez analogie do archetypów Graphs, Party, Rules, Plan-vs-Execution, Ordering i Pricing
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #statements #archetypes #graphs #party #rules #plan-vs-execution

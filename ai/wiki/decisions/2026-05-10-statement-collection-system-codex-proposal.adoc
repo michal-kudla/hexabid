@@ -1,0 +1,825 @@
+= ADR: System zbierania oświadczeń kandydatów do aukcji - propozycja Codex
+:toc: macro
+:toclevels: 3
+:sectnums:
+
+toc::[]
+
+== Tytuł
+
+System zbierania oświadczeń kandydatów do aukcji oparty o graf zależności, szablony kwalifikacji i wyjaśnialną decyzję o dopuszczeniu.
+
+== Podsumowanie (TLDR)
+
+Nie rekomenduję modelować wymagań oświadczeń jako prostego pola `auctionType`.
+Typ aukcji powinien opisywać mechanikę sprzedaży, a osobny, wersjonowany `ParticipationPolicyTemplate` powinien opisywać zestaw oświadczeń, kroki zbierania, zależności, naruszenia i decyzję dopuszczającą.
+
+Proponowany system:
+
+* używa archetypu `Graphs` do modelowania zależności między oświadczeniami jako DAG,
+* używa archetypu `Rules` do oceny odpowiedzi, dokumentów, progów i naruszeń,
+* używa archetypu `Party` do powiązania kandydatów, pełnomocników, beneficjentów rzeczywistych i podwykonawców,
+* używa archetypu `Plan vs Execution` do porównania wymaganego programu oświadczeń z realnie złożonymi deklaracjami,
+* rozdziela `AuctionFormat` od `ParticipationPolicyTemplate`,
+* daje natychmiastową decyzję negatywną, jeśli kandydat wybierze odpowiedź dyskwalifikującą,
+* generuje `ParticipationDecision`: `ADMITTED`, `REJECTED`, `PENDING`, `ADMITTED_WITH_CONDITIONS`.
+
+== Tagi
+
+#statements #oswiadczenia #auction-types #policy-template #graphs #rules #eligibility #participation-decision #hexagonal-architecture #explainable-decision
+
+== Kontekst
+
+W Hexabid istnieją już elementy podobne do oświadczeń: dokumenty, reguły aukcyjne, KYC, wadium i fazy `PARTICIPATION`, `BIDDING`, `SETTLEMENT`.
+To jednak nadal nie rozwiązuje problemu biznesowego: kandydat powinien przejść przez kierowany proces deklaracji, w którym część odpowiedzi może natychmiast wykluczyć go z udziału.
+
+Przykład: jeśli kandydat w przetargu publicznym oświadczy, że jest powiązany kapitałowo ze sprzedającym, system nie powinien wymagać od niego kolejnych oświadczeń o finansowaniu czy podwykonawcach. Powinien natychmiast wygenerować decyzję odmowną i powiadomienie.
+
+== Ocena poprzedniej propozycji
+
+Poprzednia propozycja idzie w dobrym kierunku, bo używa DAG, sortowania topologicznego i szablonów typów aukcji. Ja proponuję jednak mocniejsze rozdzielenie pojęć:
+
+* `AuctionFormat` - mechanika aukcji: angielska, holenderska, sealed bid, przetarg ograniczony.
+* `ParticipationPolicyTemplate` - program dopuszczenia: jakie oświadczenia, w jakiej kolejności, jakie dowody, jakie naruszenia i jaka decyzja.
+* `StatementProgramInstance` - konkretna instancja programu dla aukcji i kandydata.
+
+Dzięki temu ta sama aukcja angielska może mieć prostą ścieżkę konsumencką albo rygorystyczną ścieżkę AML/sankcyjną. Mechanika licytacji nie powinna wymuszać jednego zestawu compliance.
+
+== Decyzja projektowa
+
+=== Rozdzielić format aukcji od polityki dopuszczenia
+
+[source,java]
+----
+public record AuctionAdmissionProfile(
+        AuctionFormat format,
+        ParticipationPolicyTemplateId policyTemplateId,
+        PolicyTemplateVersion policyTemplateVersion
+) {}
+
+public enum AuctionFormat {
+    ENGLISH_ASCENDING,
+    DUTCH_DESCENDING,
+    SEALED_BID,
+    RESTRICTED_TENDER,
+    MULTI_LOT_COMBINATORIAL
+}
+----
+
+`AuctionFormat` odpowiada na pytanie: "jak przebiega oferta?".
+`ParticipationPolicyTemplate` odpowiada na pytanie: "kto może wziąć udział i dlaczego?".
+
+=== Dodać moduł `hexabid-statements`
+
+Moduł powinien być domenowy, bez Springa i bez JPA:
+
+....
+hexabid-statements
+├── model
+│   ├── StatementDefinition
+│   ├── StatementAnswer
+│   ├── StatementProgram
+│   ├── StatementProgramInstance
+│   ├── StatementDependencyGraph
+│   ├── StatementViolation
+│   ├── ParticipationDecision
+│   └── ParticipationPolicyTemplate
+├── graph
+│   ├── TopologicalStatementPlanner
+│   ├── ReachabilityIndex
+│   ├── CycleDetector
+│   └── ConditionalEdgeEvaluator
+├── policy
+│   ├── ParticipationPolicyEvaluator
+│   ├── ViolationClassifier
+│   └── DecisionExplainer
+└── port
+    ├── in
+    └── out
+....
+
+Adaptery:
+
+* `hexabid-statements-adapter-in-rest` - REST dla wizardów oświadczeń.
+* `hexabid-statements-adapter-out-db` - zapis odpowiedzi i decyzji.
+* `hexabid-statements-adapter-out-notification` - powiadomienia o odrzuceniu i brakach.
+* integracja z `hexabid-rules-adapter` - reguły faz `PARTICIPATION` i `BIDDING` konsumują decyzję dopuszczenia.
+
+== Model domenowy
+
+=== StatementDefinition
+
+Definicja oświadczenia jest wersjonowana i nie przechowuje odpowiedzi.
+
+[source,java]
+----
+public record StatementDefinition(
+        StatementCode code,
+        StatementCategory category,
+        String title,
+        String question,
+        AnswerType answerType,
+        StatementSeverity severity,
+        EvidenceRequirement evidenceRequirement,
+        List<DisqualifyingAnswer> disqualifyingAnswers,
+        List<StatementViolationDefinition> possibleViolations
+) {}
+----
+
+=== StatementProgram
+
+Program to graf oświadczeń z krokami i warunkami przejścia.
+
+[source,java]
+----
+public record StatementProgram(
+        ParticipationPolicyTemplateId templateId,
+        PolicyTemplateVersion version,
+        DirectedAcyclicGraph<StatementCode, StatementDependency> graph,
+        List<StatementStep> steps,
+        DecisionPolicy decisionPolicy
+) {}
+----
+
+=== ParticipationDecision
+
+[source,java]
+----
+public sealed interface ParticipationDecision {
+    record Admitted(PartyId candidateId, AuctionId auctionId, Instant decidedAt)
+            implements ParticipationDecision {}
+
+    record AdmittedWithConditions(
+            PartyId candidateId,
+            AuctionId auctionId,
+            List<Condition> conditions,
+            Instant decidedAt
+    ) implements ParticipationDecision {}
+
+    record Pending(
+            PartyId candidateId,
+            AuctionId auctionId,
+            List<StatementCode> missingStatements,
+            List<StatementCode> blockedByPrerequisites
+    ) implements ParticipationDecision {}
+
+    record Rejected(
+            PartyId candidateId,
+            AuctionId auctionId,
+            StatementCode rootCause,
+            StatementViolation violation,
+            List<StatementCode> cascadedStatements,
+            String humanReason,
+            Instant decidedAt
+    ) implements ParticipationDecision {}
+}
+----
+
+== Katalog oświadczeń
+
+Poniżej moja propozycja szerokiego katalogu. Nie wszystkie oświadczenia trafiają do każdego szablonu.
+
+[cols="1,1,3,2"]
+|===
+| Kod | Kategoria | Sens biznesowy | Typowe naruszenie
+
+| `LEGAL_CAPACITY`
+| Tożsamość
+| Kandydat ma zdolność do czynności prawnych albo działa przez poprawnego pełnomocnika.
+| `MISSING_AUTHORITY`
+
+| `BENEFICIAL_OWNER_DISCLOSURE`
+| Tożsamość
+| Ujawniono beneficjenta rzeczywistego i strukturę właścicielską.
+| `HIDDEN_BENEFICIAL_OWNER`
+
+| `SANCTIONS_CLEARANCE`
+| Compliance
+| Kandydat, właściciele i pełnomocnicy nie są na listach sankcyjnych.
+| `SANCTIONED_PARTY`
+
+| `PEP_DISCLOSURE`
+| Compliance
+| Kandydat ujawnił status osoby politycznie eksponowanej.
+| `UNDISCLOSED_PEP`
+
+| `NO_CONFLICT_OF_INTEREST`
+| Compliance
+| Brak relacji z organizatorem, rzeczoznawcą, sprzedającym albo komisją.
+| `CONFLICT_OF_INTEREST`
+
+| `NO_COLLUSION`
+| Compliance
+| Kandydat nie uzgadniał ofert z innymi kandydatami.
+| `BID_RIGGING_RISK`
+
+| `SOURCE_OF_FUNDS`
+| Finansowanie
+| Kandydat wskazał legalne źródło środków na zakup.
+| `UNVERIFIED_FUNDS`
+
+| `PAYMENT_READINESS`
+| Finansowanie
+| Kandydat potwierdził możliwość zapłaty w terminie.
+| `INSUFFICIENT_LIQUIDITY`
+
+| `BID_BOND_ACCEPTANCE`
+| Finansowanie
+| Kandydat akceptuje wadium, blokadę środków albo gwarancję.
+| `BID_BOND_MISSING`
+
+| `TAX_RESIDENCY`
+| Podatki
+| Kandydat podaje rezydencję podatkową i numer podatkowy.
+| `TAX_DATA_MISMATCH`
+
+| `EXPORT_CONTROL_ELIGIBILITY`
+| Regulacyjne
+| Kandydat może nabyć towar objęty kontrolą eksportu.
+| `EXPORT_RESTRICTED_BUYER`
+
+| `SECTOR_LICENSE`
+| Regulacyjne
+| Kandydat ma licencję branżową, np. odpady, broń, energia, farmacja.
+| `LICENSE_EXPIRED`
+
+| `SITE_VISIT_ACKNOWLEDGEMENT`
+| Wiedza o przedmiocie
+| Kandydat potwierdza oględziny albo rezygnację z oględzin.
+| `INSPECTION_NOT_CONFIRMED`
+
+| `DATA_ROOM_CONFIDENTIALITY`
+| Poufność
+| Kandydat przyjmuje poufność danych z data room.
+| `CONFIDENTIALITY_REFUSED`
+
+| `INSIDER_INFORMATION_ABSENCE`
+| Uczciwość
+| Kandydat nie posiada niejawnych informacji dających przewagę.
+| `INSIDER_INFORMATION_RISK`
+
+| `SUBCONTRACTOR_DISCLOSURE`
+| Wykonanie
+| Kandydat ujawnia podwykonawców albo operatorów logistycznych.
+| `UNDECLARED_SUBCONTRACTOR`
+
+| `ENVIRONMENTAL_HANDLING_CAPACITY`
+| Wykonanie
+| Kandydat potrafi legalnie odebrać, przewieźć albo zutylizować przedmiot.
+| `ENVIRONMENTAL_NON_COMPLIANCE`
+
+| `TERMS_ACCEPTANCE`
+| Zobowiązanie
+| Finalna akceptacja regulaminu, opłat, terminów i konsekwencji.
+| `TERMS_REFUSED`
+|===
+
+== Typy naruszeń
+
+Naruszenie nie jest tylko statusem `false`. To klasyfikowany fakt, który ma skutek decyzyjny.
+
+[cols="1,2,2"]
+|===
+| Naruszenie | Znaczenie | Skutek domyślny
+
+| `FATAL_DECLARATION`
+| Kandydat sam wybrał odpowiedź wykluczającą, np. "jestem na liście sankcyjnej".
+| natychmiastowe `REJECTED`
+
+| `CONTRADICTORY_DECLARATION`
+| Oświadczenia są logicznie sprzeczne, np. brak podwykonawców, ale licencja należy do podwykonawcy.
+| `PENDING_REVIEW` albo `REJECTED`
+
+| `MISSING_PREREQUISITE`
+| Kandydat próbuje złożyć oświadczenie zależne bez wcześniejszego fundamentu.
+| blokada kroku
+
+| `EXPIRED_EVIDENCE`
+| Dowód wspierający oświadczenie wygasł.
+| `PENDING`, jeśli można uzupełnić
+
+| `EXTERNAL_ADVERSE_HIT`
+| System zewnętrzny zwrócił trafienie sankcyjne, AML, KRS, CEIDG, VIES.
+| natychmiastowe `REJECTED` albo ręczny review
+
+| `LATE_SUBMISSION`
+| Oświadczenie złożone po terminie kroku.
+| zależne od szablonu
+
+| `MATERIAL_CHANGE_NOT_DECLARED`
+| Kandydat nie zaktualizował oświadczeń po zmianie faktów.
+| `REJECTED` i audyt
+
+| `SIGNATURE_INVALID`
+| Podpis elektroniczny, pełnomocnictwo albo pieczęć organizacji są nieważne.
+| `PENDING` albo `REJECTED`
+|===
+
+== Algorytmy grafowe
+
+=== Graf zależności
+
+Węzeł to `StatementCode`.
+Krawędź `A -> B` oznacza: "B można zadać albo ocenić dopiero po A".
+
+Przykładowy rdzeń grafu:
+
+....
+LEGAL_CAPACITY
+  ├── BENEFICIAL_OWNER_DISCLOSURE
+  │     ├── SANCTIONS_CLEARANCE
+  │     │     ├── SOURCE_OF_FUNDS
+  │     │     │     ├── PAYMENT_READINESS
+  │     │     │     └── BID_BOND_ACCEPTANCE
+  │     │     └── EXPORT_CONTROL_ELIGIBILITY
+  │     └── PEP_DISCLOSURE
+  │           └── NO_CONFLICT_OF_INTEREST
+  ├── TAX_RESIDENCY
+  │     └── SOURCE_OF_FUNDS
+  └── DATA_ROOM_CONFIDENTIALITY
+        ├── SITE_VISIT_ACKNOWLEDGEMENT
+        └── INSIDER_INFORMATION_ABSENCE
+
+SECTOR_LICENSE
+  ├── ENVIRONMENTAL_HANDLING_CAPACITY
+  └── SUBCONTRACTOR_DISCLOSURE
+
+NO_CONFLICT_OF_INTEREST
+  ├── NO_COLLUSION
+  └── TERMS_ACCEPTANCE
+
+BID_BOND_ACCEPTANCE
+  └── TERMS_ACCEPTANCE
+....
+
+=== Sortowanie topologiczne
+
+System używa topological sort do wyliczenia kolejności pytań. Nie pokazujemy kandydatowi pytań, które są zależne od odpowiedzi jeszcze niezłożonych albo już dyskwalifikujących.
+
+=== Domknięcie przechodnie
+
+Po odrzuceniu węzła `SANCTIONS_CLEARANCE` system wylicza wszystkie zależne węzły:
+
+....
+SANCTIONS_CLEARANCE
+  -> SOURCE_OF_FUNDS
+  -> PAYMENT_READINESS
+  -> BID_BOND_ACCEPTANCE
+  -> EXPORT_CONTROL_ELIGIBILITY
+  -> TERMS_ACCEPTANCE
+....
+
+Te węzły dostają status `CANCELLED_BY_REJECTION`, a kandydat dostaje jedno powiadomienie z przyczyną pierwotną, nie lawinę mylących błędów.
+
+=== Warunkowe krawędzie
+
+Niektóre zależności są aktywne tylko przy odpowiedzi albo atrybucie aukcji.
+
+[source,java]
+----
+public record StatementDependency(
+        StatementCode from,
+        StatementCode to,
+        DependencyKind kind,
+        Optional<ActivationCondition> condition
+) {}
+----
+
+Przykłady:
+
+* jeśli `assetCategory = EXPORT_CONTROLLED`, aktywuj `EXPORT_CONTROL_ELIGIBILITY`,
+* jeśli `candidateType = COMPANY`, aktywuj `BENEFICIAL_OWNER_DISCLOSURE`,
+* jeśli `lot.requiresLicensedHandling = true`, aktywuj `SECTOR_LICENSE`,
+* jeśli `auction.value > 100_000 PLN`, aktywuj `SOURCE_OF_FUNDS`.
+
+== Kroki zbierania oświadczeń
+
+Proponuję cztery kroki, bo dobrze mapują się na UX i decyzje:
+
+[cols="1,2,3,2"]
+|===
+| Krok | Nazwa | Cel | Przykładowe oświadczenia
+
+| 1
+| Profil i umocowanie
+| Ustalić, kto jest kandydatem i kto może go reprezentować.
+| `LEGAL_CAPACITY`, `BENEFICIAL_OWNER_DISCLOSURE`, `TAX_RESIDENCY`
+
+| 2
+| Wykluczenia twarde
+| Szybko odsiać kandydatów niedopuszczalnych.
+| `SANCTIONS_CLEARANCE`, `NO_CONFLICT_OF_INTEREST`, `NO_COLLUSION`, `PEP_DISCLOSURE`
+
+| 3
+| Zdolność wykonania i finansowanie
+| Sprawdzić, czy kandydat może zapłacić i legalnie odebrać przedmiot.
+| `SOURCE_OF_FUNDS`, `PAYMENT_READINESS`, `SECTOR_LICENSE`, `ENVIRONMENTAL_HANDLING_CAPACITY`
+
+| 4
+| Zobowiązanie końcowe
+| Zebrać finalną akceptację zasad przed dopuszczeniem do licytacji.
+| `BID_BOND_ACCEPTANCE`, `DATA_ROOM_CONFIDENTIALITY`, `TERMS_ACCEPTANCE`
+|===
+
+Po każdym kroku uruchamiana jest ocena częściowa. Jeśli pojawi się naruszenie typu `FATAL_DECLARATION`, system nie czeka na krok 4.
+
+== Typy aukcji i szablony polityk
+
+=== Typ 1: Aukcja publiczna konsumencka
+
+`AuctionFormat = ENGLISH_ASCENDING`
+
+`ParticipationPolicyTemplate = PUBLIC_CONSUMER_LIGHT_V1`
+
+Minimalna ścieżka dla aktywów niskiego ryzyka.
+
+[cols="1,2"]
+|===
+| Wymagane oświadczenia | `LEGAL_CAPACITY`, `SANCTIONS_CLEARANCE`, `PAYMENT_READINESS`, `TERMS_ACCEPTANCE`
+| Typowe naruszenia | `SANCTIONED_PARTY`, `TERMS_REFUSED`, `INSUFFICIENT_LIQUIDITY`
+| Decyzja | Automatyczna, bez ręcznego review
+|===
+
+Kandydat może być odrzucony w kroku 2, zanim system pyta o płatność i regulamin.
+
+=== Typ 2: Aukcja majątku regulowanego
+
+`AuctionFormat = ENGLISH_ASCENDING` albo `DUTCH_DESCENDING`
+
+`ParticipationPolicyTemplate = REGULATED_ASSET_BUYER_V1`
+
+Dla alkoholu, paliw, odpadów, urządzeń specjalistycznych, eksportu kontrolowanego.
+
+[cols="1,2"]
+|===
+| Wymagane oświadczenia | `LEGAL_CAPACITY`, `BENEFICIAL_OWNER_DISCLOSURE`, `SANCTIONS_CLEARANCE`, `EXPORT_CONTROL_ELIGIBILITY`, `SECTOR_LICENSE`, `ENVIRONMENTAL_HANDLING_CAPACITY`, `PAYMENT_READINESS`, `TERMS_ACCEPTANCE`
+| Typowe naruszenia | `EXPORT_RESTRICTED_BUYER`, `LICENSE_EXPIRED`, `ENVIRONMENTAL_NON_COMPLIANCE`, `SANCTIONED_PARTY`
+| Decyzja | Automatyczna dla braku licencji/sankcji, review dla niejednoznacznych dowodów
+|===
+
+To jest dobry przykład, dlaczego `auctionType` nie wystarczy. Aukcja angielska może być zwykła albo regulowana.
+
+=== Typ 3: Przetarg zamknięty wysokiej wartości
+
+`AuctionFormat = SEALED_BID`
+
+`ParticipationPolicyTemplate = HIGH_VALUE_TENDER_V1`
+
+Dla nieruchomości, floty, maszyn, pakietów przedsiębiorstwa.
+
+[cols="1,2"]
+|===
+| Wymagane oświadczenia | `LEGAL_CAPACITY`, `BENEFICIAL_OWNER_DISCLOSURE`, `PEP_DISCLOSURE`, `SANCTIONS_CLEARANCE`, `NO_CONFLICT_OF_INTEREST`, `NO_COLLUSION`, `SOURCE_OF_FUNDS`, `BID_BOND_ACCEPTANCE`, `DATA_ROOM_CONFIDENTIALITY`, `INSIDER_INFORMATION_ABSENCE`, `TERMS_ACCEPTANCE`
+| Typowe naruszenia | `CONFLICT_OF_INTEREST`, `BID_RIGGING_RISK`, `UNVERIFIED_FUNDS`, `CONFIDENTIALITY_REFUSED`, `INSIDER_INFORMATION_RISK`
+| Decyzja | Automatyczna dla sankcji/konfliktu; committee review dla PEP i source of funds
+|===
+
+=== Typ 4: Przetarg ograniczony z prekwalifikacją
+
+`AuctionFormat = RESTRICTED_TENDER`
+
+`ParticipationPolicyTemplate = TWO_STAGE_QUALIFIED_BUYER_V1`
+
+Dwa etapy:
+
+* etap A: dopuszczenie do data room,
+* etap B: dopuszczenie do złożenia oferty.
+
+[cols="1,2"]
+|===
+| Etap A | `LEGAL_CAPACITY`, `BENEFICIAL_OWNER_DISCLOSURE`, `SANCTIONS_CLEARANCE`, `DATA_ROOM_CONFIDENTIALITY`, `NO_CONFLICT_OF_INTEREST`
+| Etap B | `SOURCE_OF_FUNDS`, `SECTOR_LICENSE`, `SUBCONTRACTOR_DISCLOSURE`, `NO_COLLUSION`, `BID_BOND_ACCEPTANCE`, `TERMS_ACCEPTANCE`
+| Typowe naruszenia | `CONFIDENTIALITY_REFUSED`, `HIDDEN_BENEFICIAL_OWNER`, `UNDECLARED_SUBCONTRACTOR`, `BID_RIGGING_RISK`
+| Decyzja | Dwie decyzje: `DATA_ROOM_GRANTED` i `PARTICIPATION_GRANTED`
+|===
+
+=== Typ 5: Aukcja kombinatoryczna wielu lotów
+
+`AuctionFormat = MULTI_LOT_COMBINATORIAL`
+
+`ParticipationPolicyTemplate = PACKAGE_CAPABILITY_V1`
+
+Dla aukcji, w których kandydat może licytować zestawy lotów, a zdolność wykonania zależy od kombinacji.
+
+[cols="1,2"]
+|===
+| Wymagane oświadczenia | `LEGAL_CAPACITY`, `SANCTIONS_CLEARANCE`, `SOURCE_OF_FUNDS`, `PAYMENT_READINESS`, `SECTOR_LICENSE`, `ENVIRONMENTAL_HANDLING_CAPACITY`, `SUBCONTRACTOR_DISCLOSURE`, `TERMS_ACCEPTANCE`
+| Typowe naruszenia | `INSUFFICIENT_LIQUIDITY`, `LICENSE_SCOPE_TOO_NARROW`, `CAPACITY_EXCEEDED_BY_PACKAGE`, `UNDECLARED_SUBCONTRACTOR`
+| Decyzja | Zależna od zakresu lotów; kandydat może być dopuszczony do lotów A+B, ale nie do A+B+C
+|===
+
+Ten typ korzysta z archetypu grafowego nie tylko dla oświadczeń, ale także dla relacji lotów i ograniczeń pakietowych.
+
+== Natychmiastowe odrzucenie i powiadomienia
+
+=== Reguła
+
+Jeśli kandydat złoży odpowiedź oznaczoną jako `disqualifying`, system:
+
+. zapisuje odpowiedź jako audit event,
+. klasyfikuje naruszenie,
+. oblicza zależne oświadczenia przez reachability,
+. zamyka instancję programu statusem `REJECTED`,
+. publikuje `ParticipationRejectedEvent`,
+. wysyła powiadomienie do kandydata,
+. blokuje dalsze kroki UI poza ekranem odwołania lub korekty, jeśli szablon dopuszcza korektę.
+
+=== Przykład komunikatu
+
+....
+Nie możesz wziąć udziału w tej aukcji.
+
+Powód: oświadczenie "Brak konfliktu interesów" zostało odrzucone.
+Zaznaczono odpowiedź: "Jestem powiązany kapitałowo ze sprzedającym".
+
+Skutek: dalsze oświadczenia dotyczące finansowania, wadium i akceptacji regulaminu
+nie są już wymagane, ponieważ decyzja o dopuszczeniu jest negatywna.
+
+Możesz złożyć wyjaśnienie do organizatora do 2026-05-12 18:00.
+....
+
+== Decyzja o przystąpieniu do aukcji
+
+Decision policy powinna być jawna i wyjaśnialna.
+
+[cols="1,3"]
+|===
+| Status | Znaczenie
+
+| `PENDING`
+| Brakuje oświadczeń albo dowodów; kandydat jeszcze nie jest dopuszczony.
+
+| `ADMITTED`
+| Wszystkie blokujące oświadczenia i warunki są spełnione.
+
+| `ADMITTED_WITH_CONDITIONS`
+| Kandydat może przystąpić, ale musi spełnić warunek przed ofertą finalną, np. dosłać oryginał dokumentu.
+
+| `REJECTED`
+| Istnieje blokujące naruszenie albo odpowiedź dyskwalifikująca.
+|===
+
+Ważne: `ADMITTED_WITH_CONDITIONS` nie może być nadużywany. Dla sankcji, konfliktu interesów, odmowy regulaminu i braku zdolności prawnej decyzja powinna być zawsze `REJECTED`.
+
+== Integracja z istniejącym Hexabid
+
+=== Z `hexabid-core`
+
+`Auction` powinien dostać odniesienie do profilu dopuszczenia:
+
+[source,java]
+----
+public record AuctionAdmissionRequirement(
+        AuctionFormat format,
+        ParticipationPolicyTemplateId templateId,
+        PolicyTemplateVersion version
+) {}
+----
+
+Nie musi znać szczegółów wszystkich oświadczeń. Do licytacji wystarczy pytanie:
+
+[source,java]
+----
+ParticipationDecision decision = participationPort.decisionFor(auctionId, bidderId);
+----
+
+=== Z `hexabid-rules`
+
+Do istniejącej fazy `BIDDING` dodać regułę:
+
+....
+PARTICIPATION_DECISION_GRANTED
+  blocking
+  satisfied when participationDecision in [ADMITTED, ADMITTED_WITH_CONDITIONS]
+....
+
+=== Z dokumentami
+
+Oświadczenie i dokument to różne rzeczy:
+
+* oświadczenie: "nie jestem powiązany ze sprzedającym",
+* dokument: załącznik, podpis, KRS, pełnomocnictwo, potwierdzenie przelewu.
+
+Dokument może wspierać oświadczenie, ale nie powinien go zastępować.
+
+=== Z UI
+
+UI powinno być wizardem sterowanym grafem:
+
+* pokazuje tylko dostępne węzły,
+* ukrywa pytania zależne od niespełnionych prerekwizytów,
+* po odpowiedzi dyskwalifikującej zatrzymuje proces,
+* wyświetla "dlaczego" i "co dalej",
+* pozwala wrócić do edytowalnych oświadczeń tylko przed deadline i tylko jeśli polityka to dopuszcza.
+
+== API szkicowe
+
+[source,http]
+----
+GET  /api/auctions/{auctionId}/participation/program
+POST /api/auctions/{auctionId}/participation/statements/{statementCode}/answers
+GET  /api/auctions/{auctionId}/participation/decision
+GET  /api/auctions/{auctionId}/participation/graph
+POST /api/auctions/{auctionId}/participation/review-requests
+----
+
+`GET /program` zwraca tylko widok dla aktualnego kandydata, nie cały graf administracyjny.
+
+== Zdarzenia domenowe
+
+[cols="1,3"]
+|===
+| Event | Kiedy
+
+| `StatementProgramStarted`
+| Kandydat rozpoczyna kwalifikację do aukcji.
+
+| `StatementAnswerSubmitted`
+| Kandydat składa odpowiedź.
+
+| `StatementViolationDetected`
+| Odpowiedź albo system zewnętrzny wykrywa naruszenie.
+
+| `StatementCascadeCancelled`
+| System zamyka zależne oświadczenia po odrzuceniu prerekwizytu.
+
+| `ParticipationDecisionMade`
+| Zapada `ADMITTED`, `PENDING`, `ADMITTED_WITH_CONDITIONS` albo `REJECTED`.
+
+| `ParticipationRejected`
+| Wysłanie natychmiastowego powiadomienia o braku możliwości udziału.
+|===
+
+== Minimalny algorytm
+
+[source,text]
+----
+submitAnswer(candidate, auction, statement, answer):
+  instance = loadProgramInstance(candidate, auction)
+  graph = loadTemplate(instance.templateId, instance.version).materialize(auction, candidate)
+
+  if !graph.isReachableNow(statement, instance.answers):
+      rejectCommand(MISSING_PREREQUISITE)
+
+  result = evaluate(statement, answer, instance.context)
+  saveAnswer(answer, result)
+
+  if result.isDisqualifying:
+      affected = graph.reachableFrom(statement)
+      cancelPendingStatements(affected)
+      decision = Rejected(rootCause = statement, cascadedStatements = affected)
+      saveDecision(decision)
+      publish(ParticipationRejectedEvent(decision))
+      return decision
+
+  nextAvailable = graph.availableAfter(instance.answers + answer)
+  decision = evaluateDecision(instance, graph)
+  saveDecision(decision)
+  return StatementProgress(nextAvailable, decision)
+----
+
+== Weryfikacja z archetypami oprogramowania
+
+Przejrzano lokalne materiały z `.local/archetypyoprogramowania/`, transkrypcje z `.local/archetypyoprogramowania/txt/` oraz repo źródłowe `/work/projects/github.com/archetypy-oprogramowania/archetypes/`.
+Wniosek: pierwotna propozycja jest zgodna kierunkowo, ale powinna używać kilku archetypów naraz.
+Sam DAG jest zbyt ubogim językiem dla procesu kwalifikacji do aukcji.
+
+[cols="1,3,3"]
+|===
+| Archetyp | Wniosek | Korekta w projekcie oświadczeń
+
+| `graphs/scheduling`
+| Przykładowy `Process` buduje DAG kroków i wylicza `Schedule` przez porządek topologiczny.
+| Graf powinien planować kroki programu, a nie tylko pojedyncze pytania. Nazwa domenowa powinna iść w stronę `StatementProgramGraph` oraz `StatementSchedule`.
+
+| `graphs/userjourney`
+| `UserJourney` modeluje stan bieżący, warunki przejścia i możliwe ścieżki osiągnięcia celu.
+| Wizard oświadczeń powinien być ścieżką użytkownika do celu `ADMITTED`, `PENDING_REVIEW` albo `REJECTED`, z możliwością wskazania najkrótszej poprawnej ścieżki.
+
+| `graphs/influence`
+| `InfluenceMap` łączy różne źródła wpływu w jeden graf oddziaływań.
+| Kaskadowe odrzucenie to nie tylko `reachableFrom(statement)`, ale strefa wpływu naruszenia: `RejectionImpactZone`, która tłumaczy, które kroki, role i decyzje zostały unieważnione.
+
+| `party`
+| `PartyRelationship`, `PartyRoleDefiningPolicy` i `CapabilityRequirement` pokazują, że wymagania zależą od roli, relacji i zdolności strony.
+| Oświadczenia muszą mieć `StatementScope`: kandydat, pełnomocnik, beneficjent rzeczywisty, podwykonawca, płatnik, odbiorca albo konkretna relacja między nimi.
+
+| `rules`
+| Reguły są wyrażeniami nad kontekstem, a nie warunkami rozrzuconymi po kontrolerach.
+| Odpowiedzi i dokumenty powinny być faktami w `StatementContext`; decyzję wylicza `ParticipationPolicyEvaluator` z reguł, progów i naruszeń.
+
+| `planvsexecution`
+| Plan i wykonanie są porównywane przez delta analysis: dopasowane, brakujące, nadmiarowe albo spóźnione elementy.
+| `ParticipationPolicyTemplate` jest planem, a `StatementProgramInstance` wykonaniem. Decyzja powinna zawierać `StatementExecutionDelta`.
+
+| `ordering`
+| Zamówienie jest deklaracją intencji z rolami stron, zakresem, snapshotem warunków i odpowiedzialności.
+| Przystąpienie do aukcji warto modelować jako `ParticipationApplication`: formalny wniosek o udział, pinowany do wersji szablonu i warunków aukcji.
+
+| `pricing`
+| Kompozyt ceny deklaruje zależności między komponentami, a pojedynczy komponent nie powinien znać wszystkich zależności.
+| `StatementDefinition` nie powinno wiedzieć, w jakich aukcjach i po czym występuje. Zależności należą do `ParticipationPolicyTemplate`.
+|===
+
+=== Skorygowany model po analizie archetypów
+
+[source,java]
+----
+public record ParticipationApplication(
+        ParticipationApplicationId id,
+        AuctionId auctionId,
+        PartyId applicantId,
+        AuctionFormat auctionFormat,
+        ParticipationPolicyTemplateId templateId,
+        PolicyTemplateVersion templateVersion,
+        ApplicationStatus status
+) {}
+
+public record StatementProgramGraph(
+        Set<StatementStep> steps,
+        Set<StatementTransition> transitions,
+        Set<StatementInfluence> influences
+) {}
+
+public record StatementScope(
+        ScopeType type,
+        PartyId partyId,
+        PartyRole role,
+        Optional<PartyRelationshipId> relationshipId
+) {}
+
+public record StatementExecutionDelta(
+        List<StatementStep> completed,
+        List<StatementStep> missing,
+        List<StatementStep> blocked,
+        List<StatementStep> corrected,
+        List<UnexpectedStatementAnswer> unexpected
+) {}
+----
+
+Najważniejsza zmiana po przeglądzie archetypów: kandydat nie "wypełnia grafu oświadczeń".
+Kandydat składa `ParticipationApplication`, a system prowadzi go przez `StatementProgram`.
+Graf jest mechanizmem planowania, wyjaśniania wpływu i optymalizacji ścieżki, ale nie powinien być jedynym modelem domenowym.
+
+=== Zasada projektowa wynikająca z archetypów
+
+Nie mieszać trzech poziomów:
+
+* `StatementDefinition` - znaczenie pojedynczego oświadczenia.
+* `ParticipationPolicyTemplate` - kompozycja oświadczeń, kroków, zależności, reguł i wymaganych ról.
+* `StatementProgramInstance` - rzeczywisty przebieg konkretnego kandydata w konkretnej aukcji.
+
+To pozwala ponownie używać tych samych oświadczeń w wielu politykach, bez wpychania warunków aukcyjnych do definicji oświadczenia.
+Zgodnie z archetypami `party` i `rules`, jedno oświadczenie może dotyczyć innej strony niż zalogowany użytkownik, a jego ocena może zależeć od relacji, roli, zakresu działania i kontekstu aukcji.
+
+== Ryzyka i zabezpieczenia
+
+[cols="1,3,3"]
+|===
+| Ryzyko | Objaw | Zabezpieczenie
+
+| Nadmierna złożoność grafu
+| Administrator nie rozumie, dlaczego pytanie się pojawiło.
+| Wymagany `DecisionExplainer`, wizualizacja grafu, testy szablonów.
+
+| Cykle w konfiguracji
+| Kandydat nie może przejść dalej.
+| `CycleDetector` przy publikacji szablonu.
+
+| Zmiana szablonu w trakcie aukcji
+| Kandydaci dostają różne warunki.
+| Wersjonowanie; aukcja pinowana do konkretnej wersji.
+
+| Zbyt wczesne odrzucenie
+| Kandydat nie ma możliwości korekty literówki.
+| Rozróżnić `FATAL_DECLARATION` od `CORRECTABLE_DEFECT`.
+
+| Nadużycie `ADMITTED_WITH_CONDITIONS`
+| Kandydaci bez realnej kwalifikacji wchodzą do aukcji.
+| Lista naruszeń nigdy niedopuszczalnych warunkowo.
+|===
+
+== Rekomendowana kolejność implementacji
+
+. Dodać `hexabid-statements` z modelem `StatementDefinition`, `StatementProgram`, `ParticipationDecision`.
+. Zaimplementować `StatementDependencyGraph`, `CycleDetector`, topological sort i reachability.
+. Dodać statyczne szablony `PUBLIC_CONSUMER_LIGHT_V1`, `REGULATED_ASSET_BUYER_V1`, `HIGH_VALUE_TENDER_V1`.
+. Dodać port `ParticipationDecisionPort` konsumowany przez `PlaceBidService` albo `AuctionRuleEvaluator`.
+. Dodać REST dla wizardu oświadczeń.
+. Dodać UI "Dopuszczenie do aukcji" przed formularzem licytacji.
+. Rozszerzyć E2E: kandydat odrzucony natychmiast po konflikcie interesów; kandydat dopuszczony po poprawnej ścieżce.
+
+== Konkluzja
+
+Najważniejsza decyzja architektoniczna: typ aukcji nie powinien być samym szablonem oświadczeń.
+Mechanika aukcji i polityka dopuszczenia powinny być dwoma osobnymi, jawnie wersjonowanymi pojęciami.
+
+Takie rozwiązanie pozwala kreatywnie modelować wiele rodzajów aukcji i wiele poziomów compliance bez mnożenia enumów, wyjątków i warunków w `Auction`.
+Graf zależności daje dobrą podstawę do UX, testów, wyjaśnialności decyzji i natychmiastowego odrzucenia kandydatów, którzy sami złożyli oświadczenie wykluczające.
+
+== Powiązania
+
+* [[2026-05-09-statement-collection-system.adoc]]
+* [[2026-05-05-auction-activation-rules-guidance.md]]
+* [[2026-04-17-pricing-architecture.md]]
+* [[../plan-system-regul.adoc]]

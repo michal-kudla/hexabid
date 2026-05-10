@@ -1,0 +1,618 @@
+= Analiza Hexabid vs Archetypy Oprogramowania
+
+Autor: Analiza AI |
+Data: 2026-04-27 |
+Wersja: 1.0
+
+---
+
+== Wprowadzenie
+
+Niniejszy dokument analizuje implementację projektu **Hexabid** (aplikacja aukcyjna z architekturą heksagonalną)
+względem wzorców teoretycznych z kursu **Archetypy Oprogramowania** (Bartłomiej Słota, Jakub Pilimon, Sławomir Sobótka).
+
+Dla każdego archetypu odpowiadamy na pytania:
+
+1. **Co jest zaimplementowane** z archetypu i czy niesie wartość dodaną?
+2. **Co brakuje** z archetypu i czy to uszkodzenie czy świadoma decyzja domenowa?
+3. **Co jest wprowadzone niepotrzebnie** -- over-engineering bez uzasadnienia biznesowego?
+4. **Jaka jest wartość edukacyjna** danej decyzji projektowej?
+
+[NOTE]
+====
+Archetypy Oprogramowania to kurs i repozytorium referencyjne (`archetypy-oprogramowania/archetypes/`)
+zawierające 10 modułów domenowych: `common`, `quantity`, `product`, `inventory`, `party`,
+`pricing`, `ordering`, `accounting`, `rules`, `graphs`, `planvsexecution`.
+====
+
+
+== Archetyp Ilości (Quantity)
+
+*Hexabid: `hexabid-quantity` | Archetyp: `quantity`*
+
+=== Zaimplementowane z archetypu
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`Unit` (record: symbol + name) |Podstawa type-safe ilości |✅ Dobra
+|`Quantity` (record: amount + Unit) |Immutable VO z walidacją jednostek |✅ Dobra
+|Statyczne fabryki (`Unit.pieces()`, `Unit.kilograms()`, itd.) |Czytelność kodu |✅ Dobra
+|`Quantity.add()`, `Quantity.subtract()` |Arytmetyka z walidacją jednostek |✅ Dobra
+|Brak zależności od Spring/JPA |Czysty Java, testowalność |✅ Dobra
+|`Quantity.compareTo()` -- poprawna implementacja |Lepsza niż w archetypie (stub `return 0`) |⭐ Lepsza niż archetyp
+|===
+
+=== Braki względem archetypu
+
+[cols="3,3,2"]
+|===
+|Brakujący element |Konsekwencja |Uzasadnienie braku
+
+|`Money` (klasa opakowująca JavaMoney/Moneta) |Inne moduły tworzą własne `Price` (hexabid-core) i `Money` (hexabid-pricing) |❌ **Błąd projektowy** -- dublowanie koncepcji monetarnych
+|`Percentage` (record z `add()`, `subtract()`, `multiply()`) |Brak reużywalnego typu procentowego; `VatRate` i `ExciseRate` w pricing reimplementują tę logikę |❌ **Błąd projektowy** -- naruszenie DRY
+|`Preconditions` (z `common`) |Surowe `Objects.requireNonNull` + `if/throw` -- mniej DRY |⚠️ Dopuszczalne, ale mniej eleganckie
+|`Unit.accounts()` |Brak |✅ Słuszne -- aukcje nie potrzebują jednostek kontowych
+|===
+
+=== Wprowadzone niepotrzebnie
+
+Brak -- moduł jest szczupły i adekwatny do domeny.
+
+=== Wnioski
+
+.Główny problem: **rozszczepienie koncepcji monetarnych** na trzy niezależne implementacje:
+* `hexabid-quantity` -- brak `Money`
+* `hexabid-core` -- `Price` (prosty record `BigDecimal amount, String currency`)
+* `hexabid-pricing` -- `Money` (92 linie, własna implementacja bez JavaMoney)
+
+To jest najpoważniejszy problem strukturalny. Archetyp rozwiązuje go poprzez **jeden autorytatywny moduł `quantity`**
+z `Money` opartym o JavaMoney/Moneta, który jest współdzielony przez `pricing`, `ordering`, `accounting`.
+
+.Wartość edukacyjna: Wzorzec **Value Object z type-safe unit enforcement** jest wzorcowo pokazany.
+Problem z `Money` jest paradoksalnie świetnym materiałem edukacyjnym -- ilustruje konsekwencje naruszenia zasady
+"jeden autorytatywny model jednej koncepcji".
+
+
+== Archetyp Produktu (Product)
+
+*Hexabid: `hexabid-product` | Archetyp: `product` | Transkrypcje: M02L01--M02S02*
+
+=== Zaimplementowane z archetypu
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`Product` (sealed interface) → `ProductType` + `PackageType` |Composite Pattern -- produkty i pakiety to ten sam typ |✅ Wzorcowe
+|`ProductTrackingStrategy` (UNIQUE, INDIVIDUALLY_TRACKED, BATCH_TRACKED, IDENTICAL) |Separacja śledzenia od definicji |✅ Wzorcowe
+|`ProductFeatureType` + `ProductFeatureInstance` |Typ/Instance dla cech |✅ Dobra
+|`FeatureValueConstraint` (sealed: AllowedValues, NumericRange, DecimalRange, DateRange, Regex, Unconstrained) |Kompozytowe ograniczenia na cechy |⚠️ Częściowo -- patrz uwagi
+|`ApplicabilityConstraint` (sealed: AlwaysTrue, AttributeBased, And/Or/Not) |Specification Pattern -- kompozytowe reguły zastosowania |✅ Dobra
+|`SelectionRule` (sealed: IsSubsetOf, Conditional, And/Or/Not) |Reguły selekcji pakietów |✅ Dobra
+|`CatalogEntry` z `Validity` |Oferta komercyjna z czasową ważnością |✅ Dobra
+|`SerialNumber` (sealed: VIN, IMEI, Textual) |Polimorficzna identyfikacja |⚠️ Marginalna wartość -- patrz uwagi
+|`ProductIdentifier` (sealed: UUID, GTIN) |Polimorficzna identyfikacja biznesowa |✅ Dobra
+|`ProductBuilder` z `ProductTypeBuilder` / `PackageTypeBuilder` |Fluent API |✅ Dobra
+|`ProductFacade` |Pojedynczy punkt wejścia |⚠️ Problem god-class -- patrz uwagi
+|===
+
+=== Braki względem archetypu
+
+[cols="3,3,2"]
+|===
+|Brakujący element |Konsekwencja |Uzasadnienie braku
+
+|`ProductInstance` / `PackageInstance` |Przeniesione do inventory -- rozbicie agregatu |⚠️ Dopuszczalne ale zmienia semantykę
+|`ProductRelationships` (UPGRADABLE_TO, SUBSTITUTED_BY, itd.) |Brak relacji między produktami |❌ Istotne -- cross-sell, upgrade, zamienniki
+|`ProductCatalog` (CQRS: AddToOffer, DiscontinueProduct, SearchCatalogCriteria) |Brak zaawansowanego wyszukiwania i dyskontynuacji |⚠️ Może poczekać
+|`ProductViews` (view DTOs) |Zwracanie obiektów domenowych zamiast widoków |❌ Nieszczelność abstrakcji
+|`ProductTypeRepository` (interface) |`ConcurrentHashMap` wewnątrz facade -- brak portu |❌ Naruszenie hexagonal
+|CQRS Commands/Queries (typed DTOs) |Surowe obiekty domenowe jako parametry |⚠️ Dopuszczalne na tym etapie
+|`Result` monad z operacji |Rzucanie wyjątków |⚠️ Dopuszczalne ale mniej funkcyjne
+|Mandatory vs Optional features |Płaska lista cech bez podziału |❌ Utrata ważnej semantyki
+|`ProductRelationshipDefiningPolicy` |Brak polityki dla relacji |❌ Brak zabezpieczenia reguł biznesowych
+|===
+
+=== Wprowadzone niepotrzebnie
+
+[cols="3,3"]
+|===
+|Element |Uzasadnienie niepotrzebności
+
+|`NumericRangeConstraint` + `DecimalRangeConstraint` |Obie walidują `Number` przez `BigDecimal` -- duplikat.
+Jeden typ (`NumericRangeConstraint`) wystarczy na oba przypadki.
+To wygląda jak bezrefleksyjne skopiowanie z archetypu bez konsolidacji.
+
+|`VinSerialNumber` / `ImeiSerialNumber` |Oba sprawdzają tylko "nie blank".
+Brak faktycznej walidacji checksum VIN/IMEI.
+Architekturalnie poprawne (sealed interface), ale implementacje dodają zero wartości
+nad `TextualSerialNumber` z typem jako pole.
+
+|Pełne DSL `SelectionRule` (And/Or/Not/Conditional) dla pakietów |W domenie aukcyjnej pakiety to margines.
+Aukcje to głównie pojedyncze przedmioty (loty).
+Pełne DSL reguł selekcji to over-engineering na ten moment.
+|===
+
+=== Wartość edukacyjna
+
+* **Composite Pattern** (`Product` → `ProductType`/`PackageType`) jest pokazany wzorcowo -- to najlepszy przykład w kodzie.
+* **Specification Pattern** (`ApplicabilityConstraint`) jest czysty i kompozytywny.
+* Problem god-class w `ProductFacade` (4 ConcurrentHashMap) jest dobrym case study na SRP.
+* Brak `ProductRelationships` jest doskonałym punktem startowym do dyskusji:
+  "Kiedy relacje między produktami stają się niezbędne?" (odpowiedź: przy cross-sell, upgrade, kompatybilność).
+
+
+== Archetyp Inwentarza (Inventory)
+
+*Hexabid: `hexabid-inventory` | Archetyp: `inventory`*
+
+=== Zaimplementowane z archetypu
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`InventoryEntry` (Aggregate Root) |Product → Instances |✅ Podstawa
+|`InventoryFacade` |Pojedynczy punkt wejścia |✅ Dobra
+|`Instance` (interface) + `ProductInstance` |Polimorficzne instancje |✅ Dobra
+|`ProductInstance.unique()`, `.batched()`, `.identical()` |Fabryki zgodne z TrackingStrategy |✅ Dobra
+|===
+
+=== Braki względem archetypu -- **KRYTYCZNE**
+
+[cols="3,3,2"]
+|===
+|Brakujący element |Konsekwencja |Istotność
+
+|**Availability subsystem** (`AvailabilityFacade`, `ResourceAvailability`, `Blockade`, `LockRequest`) |Brak możliwości rezerwacji/lockowania zasobów |❌ KRYTYCZNE
+|**Reservation subsystem** (`ReservationFacade`, `Reservation`, `WaitList`, `WaitListSelectionPolicy`) |Brak rezerwacji z cyklem życia |❌ KRYTYCZNE
+|`Instance → ResourceId` mapping |Brak powiązania instancji z dostępnością |❌ Ważne
+|`ProductDefinitionValidator` |Brak walidacji instancji przeciw ProductType |⚠️ Ważne
+|`InstanceBuilder` (fluent) |Brak wygodnego API tworzenia |⚠️ Drobne
+|`InstanceCriteria` (query) |Brak zaawansowanego wyszukiwania |⚠️ Drobne
+|`InstanceRepository` (interface) |Instancje trzymane wewnątrz agregatu |⚠️ Skalowalność
+|===
+
+=== Ocena
+
+Moduł inventory w Hexabid jest **drastycznie niedopracowany** względem archetypu.
+Bez availability i reservation subsystem nie może obsłużyć podstawowych workflow aukcyjnych:
+
+* "Zarezerwuj ten przedmiot na czas trwania aukcji"
+* "Zablokuj ten zasób podczas licytacji"
+* "Zarządzaj kolejką oczekujących"
+
+To jest **największa luka implementacyjna** w całym projekcie.
+
+=== Wartość edukacyjna
+
+Porównanie Hexabid-inventory z archetypem-inventory jest idealnym materiałem do nauki:
+"Co się dzieje, gdy moduł ma strukturę ale nie ma zachowania?"
+Odpowiedź: staje się CRUD-ową powłoką nad mapą w pamięci.
+
+
+== Archetyp Party (Tożsamość)
+
+*Hexabid: `hexabid-core` (Party), `hexabid-auth-core` | Archetyp: `party` | Transkrypcje: M07L01--M07S02*
+
+=== Zaimplementowane z archetypu
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`PartyId` jako uniwersalny identyfikator tożsamości |Stabilne centrum modelu |OK Kluczowe
+|`PartyRole` enum (BUYER, SELLER) |Minimalne role jako dane, nie hierarchia klas |OK Zgodne z archetypem
+|`AuthenticatedUser` z `PartyId` |Tożsamość oddzielona od autentykacji |OK Dobra
+|`CurrentUserProvider` (port-out) z wieloma implementacjami |Composite + Strategy |OK Dobra
+|`CompositeCurrentUserProvider` |Pierwszy ktory rozpozna -- composite list |OK Dobra
+|`PartyId` jako cross-context correlation key |Spójna tożsamość między bounded contexts |OK Wzorcowe
+|===
+
+=== Braki wzgledem archetypu
+
+[cols="3,3,2"]
+|===
+|Brakujacy element |Konsekwencja |Uzasadnienie braku
+
+|Hierarchia `Party` -> `Person` / `Organization` |Brak rozróżnienia typow podmiotow |X Ważne -- aukcje maja osoby fizyczne i firmy
+|`RegisteredIdentifier` (PESEL, NIP, Passport) |Brak identyfikatorów biznesowych |X Ważne dla KYC i faktur
+|`PartyRelationship` (autonomiczny agregat) |Brak relacji między podmiotami |WARN Dopuszczalne na wczesnym etapie
+|`Capability` / `OperatingScope` |Brak deklaracji kompetencji |WARN Marginalne dla aukcji
+|`Address` (osobny agregat) |Brak modelu adresów |WARN Dopuszczalne na wczesnym etapie
+|`RegisteredIdentifierDefiningPolicy` / `PartyRoleDefiningPolicy` |Brak polityki walidacji |X Ważne
+|Event sourcing (lightweight) w Party |Brak historii zmian |WARN Dopuszczalne na wczesnym etapie
+|===
+
+=== Wprowadzone niepotrzebnie
+
+[cols="3,2"]
+|===
+|Element |Uzasadnienie
+
+|`PartyId` oparty na `String` (nie UUID) |`PartyId("google:subject123")` to w praktyce klucz złożony z delimitem `:` -- jesli separator wystąpi w subiekcie, parsowanie sie zepsuje. Archetyp używa UUID jako stabilnego technicznego ID + oddzielne RegisteredIdentifiers.
+|===
+
+=== Wartość edukacyjna
+
+* `PartyId` jako **cross-bounded-context correlation key** jest wzorcowe -- to core insight z M07L09.
+* Brak hierarchii Person/Organization to doskonały punkt do dyskusji: "Kiedy `Party` jako plaski record przestaje wystarczać?"
+* `CompositeCurrentUserProvider` jest czysta implementacja wzorca Composite List -- bez Springa, co kontrastuje z `PaymentGatewayRegistry` (@Component).
+
+
+== Archetyp Wyceny (Pricing / Valuation)
+
+*Hexabid: `hexabid-pricing` | Archetyp: `pricing` | Transkrypcje: M03L01--M03_ZP*
+
+=== Zaimplementowane z archetypu
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`PriceCalculator` (Strategy) + 4 implementacje |Wymienne algorytmy cenowe |OK Dobra
+|`SimpleFixedCalculator` |Stała oplata |OK Dobra
+|`PercentageCalculator` |Procent od bazy |OK Dobra
+|`PerUnitCalculator` |Cena jednostkowa x ilość |OK Dobra
+|`TieredMarginalCalculator` |Cena progowa |WARN Nazwa myląca -- patrz uwagi
+|`PricingComponent` (Composite: Simple + Composite) |Drzewo komponentów cenowych |OK Dobra
+|`ComponentResult` (leaf + composite) |Reprezentacja wyniku |OK Dobra
+|`SimplePriceComponent` z `parameterMappings` |Mapowanie zależności między komponentami |OK Dobra
+|`CompositePriceComponent` z forward-only dependency chaining |Dzieci karmią sie nawzajem wynikami |OK Świetne
+|`AuctionPricingFacade` |Orkiestracja obliczeń |OK Dobra
+|`PricingContext` (Builder z opcjonalnymi polami) |Kontekst obliczeń |OK Dobra
+|`Wadium` (sealed: FixedWadium, PercentageWadium) |Domain-specific VO |OK Świetne -- unikalne dla aukcji
+|`VatRate`, `ExciseRate`, `CustomsDutyRate` |Podatki jako VO |OK Dobra
+|Imperatywna sciezka `calculate()` + komponentówa `calculateWithComponentTree()` |Dwa podejścia w jednym module |OK Świetne -- edukacyjne porównanie
+|===
+
+=== Braki wzgledem archetypu
+
+[cols="3,3,2"]
+|===
+|Brakujacy element |Konsekwencja |Uzasadnienie braku
+
+|**Interpretation** (TOTAL / UNIT / MARGINAL) + Adaptery |Brak konwersji między perspektywami ceny |X Ważne -- M03L04 to kluczowa lekcja
+|**Temporal Versioning** (`Validity`, `definedAt`, wersje komponentów) |Brak historii cen -- zmiana = mutacja |X KRYTYCZNE -- M03L06 to fundamentalny wzorzec
+|**Applicability rules** w komponentach |Warunki stosowania wadium, promocji |X Ważne -- M03L08
+|`ProductScope` (powiązanie komponentu z produktem) |Brak powiazania cennik-produkt |WARN Dopuszczalne -- `PricingContext` to częściowo rozwiązuje
+|Więcej Kalkulatorow (ContinuousLinearTime, DailyIncrement, DiscretePoints, StepFunction) |Brak zaawansowanych funkcji |WARN Dopuszczalne dla MVP
+|`Percentage` z modulu `quantity` |`VatRate`, `ExciseRate` reimplementują te sama logike |X Wynik braku `Percentage` w quantity
+|===
+
+=== Wprowadzone niepotrzebnie
+
+[cols="3,3"]
+|===
+|Element |Uzasadnienie niepotrzebności
+
+|`VatRate.EXEMPT = null` |To nie jest Null Object -- to dosłownie `null` przypisany do statycznej referencji. Każdy konsument musi uzyc `Optional` przez `maybeVatRate()`, co jest nieintuicyjne. Lepsze: `VatRate.EXEMPT` jako specjalna instancja z `rate=0` i dodatkowym polem `exempt=true`, lub po prostu brak stałej -- `Optional<VatRate>` wystarczy.
+
+|`ExciseRate` (PERCENTAGE + PER_UNIT) |Per-unit excise jest blednie obsłużone w `calculateWithComponentTree()` (zawsze tworzy `PercentageCalculator` -- bug!). Jesli per-unit excise nie jest potrzebne, ten typ komplikuje niepotrzebnie. Jesli jest -- jest zbugowany.
+|===
+
+=== Problemy implementacyjne
+
+. **`TieredMarginalCalculator` nie jest marginal** -- aplikuje jedna cene jednostkowa do calej ilośći (według progu), zamiast cennika przedziałowego (każdy przedział ma swoja stawkę). Nazwa jest myląca.
+
+. **`PercentageWadium.calculate(Money base)` ignoruje `base`** -- używa `referencePrice` z pola. To jest leaky abstraction: interfejs sugeruje zależność od bazy, ale implementacja ja ignoruje.
+
+. **`AuctionPricingFacade.createExciseCalculator()` -- bug** -- Zawsze tworzy `PercentageCalculator` nawet gdy `ExciseRate` jest `PER_UNIT`. Test E2E4 pokrywa tylko sciezke imperatywna.
+
+=== Wartość edukacyjna
+
+* Dwie ścieżki obliczeń (imperatywna + komponentówa) to **najlepszy material edukacyjny w projekcie** -- pokazuje dokladnie te sama logike biznesowa w dwoch stylach architektonicznych.
+* Forward-only dependency chaining w `CompositePriceComponent` to wzorcowy przyklad.
+* Brak temporal versioning jest doskonałym punktem do dyskusji: "Co sie dzieje z cenami w lutym, gdy zmienisz cennik w styczniu?"
+
+
+== Archetyp Księgowości (Accounting)
+
+*Hexabid: `hexabid-payment-core` (częściowo) | Archetyp: `accounting`*
+
+=== Zaimplementowane z archetypu
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`Account` (AccountId, ownerId: PartyId, currency) |Konto powiązane z Party |OK Podstawa
+|`AccountingEntry` (EntryType: DEBIT/CREDIT) |Podwojna księgowość -- prymityw |OK Podstawa
+|`AccountingTransaction` (grupuje entries) |Transakcja ksiegowa |WARN Stub -- `isBalanced()` zawsze `true`
+|`CurrencyConverter` + `SimpleCurrencyConverter` |Konwersja walut |WARN Demo -- hardcoded rates
+|===
+
+=== Braki wzgledem archetypu -- **KRYTYCZNE**
+
+[cols="3,3,2"]
+|===
+|Brakujacy element |Konsekwencja |Istotnosc
+
+|**Balansowanie transakcji** (suma DEBIT = suma CREDIT) |`isBalanced()` to stub |X KRYTYCZNE
+|**Posting Rules** (`PostingRule`, `ConfigurablePostingRule`, `PostingRulesFacade`) |Brak regul księgowania |X KRYTYCZNE -- serce archetypu
+|**TransactionBuilder** (fluent: `.debitFrom()`, `.creditTo()`) |Brak wygodnego API tworzenia transakcji |X Ważne
+|**ProjectionAccount** (CQRS read) |Brak wirtualnych kont projekcji |WARN Ważne
+|**Optimistic Locking** na Account |Brak `Version` |X Ważne
+|**AccountingFacade** |Brak dedykowanej fasady |X Ważne
+|**Event-driven posting** (AccountingEvent -> PostingRule -> Transaction) |Brak reakcji na zdarzenia |X KRYTYCZNE
+|===
+
+=== Wprowadzone niepotrzebnie -- naruszenia hexagonal
+
+[cols="3,3"]
+|===
+|Element |Uzasadnienie
+
+|`AuctionWonEventListener` z `@Component` + `@EventListener` w **core** |Spring annotation w module domenowym = naruszenie hexagonal. Ten listener powinien byc w adapterze wejściowym (np. `hexabid-payment-adapter-in-event`).
+
+|`PaymentGatewayRegistry` z `@Component` w **core/infrastructure** |Kolejny wyciek Springa do core. Auth-core robi to lepiej (`CompositeCurrentUserProvider` bez Springa).
+|===
+
+=== Ocena
+
+Modul platnosci/księgowośći jest **szkieletem bez mięsa**.
+Model danych istnieje (Account, Entry, Transaction), ale:
+
+* `isBalanced()` to stub
+* Posting Rules nie istnieją
+* Event-driven posting nie istnieje
+* `ProcessPaymentUseCase` tworzy entries ale ich nie persistuje
+* Spring annotations wyciekają do core
+
+To jest **druga największa luka** po inventory.
+
+
+== Archetyp Regul (Rules / Scoring)
+
+*Hexabid: brak dedykowanego modulu | Archetyp: `rules` | Transkrypcje: M04L01--M04L07*
+
+=== Stan implementacji
+
+Hexabid **nie ma dedykowanego modulu regul**. Logika decyzyjna jest rozproszona:
+
+* **KYC verification** -- `KycClient.isVerified(PartyId)` -- proste sprawdzenie tak/nie
+* **Bidding rules** -- w `Auction.placeBid()` -- hardcoded if-y
+* **Pricing applicability** -- brak -- `AuctionPricingFacade` nie ma warunkow stosowania
+* **Discount rules** -- brak
+
+=== Braki wzgledem archetypu
+
+[cols="3,3,2"]
+|===
+|Brakujacy element |Konsekwencja |Uzasadnienie braku
+
+|**AST + Algebra** (Expression tree z wymiennym Algebra) |Brak konfigurowalnego silnika regul |WARN Dopuszczalne -- aukcje maja prostsze reguly
+|**Specification Pattern** (kompozytowe predykaty) |Logika decyzyjna zakodowana w if-ach |X Ważne -- Auction.placeBid() to seria if-ow
+|**Chain of Responsibility** (modyfikatory ofert) |Brak modyfikatorow cenowych |WARN Dopuszczalne -- wadium to jedyne obiekcje
+|**Event-based scoring** |Brak punktacji klientow |WARN Dopuszczalne na wczesnym etapie
+|===
+
+=== Wartość edukacyjna
+
+M04 uczy **trzech stref logiki** (stable / closures / factory). Hexabid jest w całości w strefie "stable" -- reguly sa zakodowane na sztywno. To jest doskonały punkt wyjścia do dyskusji: "Kiedy reguly biznesowe staja sie na tyle dynamiczne, ze potrzebuja silnika?"
+
+
+== Archetyp Grafów (Graphs)
+
+*Hexabid: brak | Archetyp: `graphs` | Transkrypcje: M05L01--M05L10*
+
+=== Stan implementacji
+
+Hexabid nie ma żadnego modulu grafowego.
+
+=== Ocena: Słuszny brak
+
+W domenie aukcyjnej grafy sa rzadko potrzebne. Mozliwe zastosowania:
+
+* **User journey** -- ścieżki klienta od przeglądania do kupna (M05L04)
+* **Scheduling** -- planowanie kolejności aukcji z zależnościami (M05L06)
+* **Influence zones** -- rzadko aplikowalne w aukcjach
+
+Brak modulu grafowego jest **świadoma i słuszna decyzja domenowa**.
+
+=== Wartość edukacyjna
+
+M05 uczy rozpoznawać "ukryte grafy" w systemie. W Hexabid graf moze sie pojawić przy planowaniu aukcji wieloprzedmiotówych lub modelowaniu ścieżek licytacji -- ale na ten moment jest to premature.
+
+
+== Domena Aukcyjna (Auctioning Core)
+
+*Hexabid: `hexabid-core` | Brak bezpośredniego archetypu (kompozycja: Ordering + Party + Pricing)*
+
+=== Zaimplementowane
+
+|===
+|Wzorzec |Wartość dodana |Ocena
+
+|`Auction` (Aggregate Root) z lifecycle OPEN -> CLOSED |Jasny stan i reguly przejścia |OK Dobra
+|`Bid` (Value Object: bidderId, amount, placedAt) |Czysty VO |OK Dobra
+|`PlaceBidDecision` (result z eventem) |Domain Event as Return Value -- agregat nie zalezy od publishera |OK Świetne
+|Sealed result types (`PlaceBidResult`, `CreateAuctionResult`, `AuctionDetailsResult`) |Exhaustive pattern matching |OK Świetne
+|`Lot` (bridge do Inventory) |Explicit domain relationship |OK Dobra
+|CQRS (AuctionReadModel vs AuctionRepository) |Separacja odczytu od zapisu |OK Dobra
+|Cursor-based pagination |Produkcyjna paginacja |OK Dobra
+|Optimistic concurrency control |Bezpieczna współbieżność |OK Dobra
+|KYC jako Anti-Corruption Layer (`KycClient` port-out) |Domena nie zna szczegółów weryfikacji |OK Dobra
+|`@NullMarked` (jspecify) na każdym pakiecie |Explicit null-safety bez Optionala wszędzie |OK Dobra
+|Domain exceptions hierarchy |Czytelne błędy domenowe |OK Dobra
+|===
+
+=== Braki i problemy
+
+[cols="3,3,2"]
+|===
+|Problem |Konsekwencja |Istotnosc
+
+|Brak stanu `PENDING` / `CANCELLED` / `SUSPENDED` |Aukcja jest od razu OPEN -- brak draft mode |WARN Dopuszczalne ale ograniczające
+|`Lot.singleProductDraft()` -- dummy link do inventory |Brak prawdziwego połączenia aukcji z inwentarzem |X Ważne
+|`Lot.reservePrice` nie jest egzekwowane w `Auction.placeBid()` |Rezerwacja cenowa jest w modelu ale nie działa |X Bug domenowy
+|Brak proxy/max-bid system |Angielska aukcja z ręcznym podbijaniem |WARN Dopuszczalne dla MVP
+|`Price` (BigDecimal amount + String currency) zamiast `Money` z quantity |Trzecia implementacja koncepcji monetarnej |X Dublowanie
+|===
+
+=== Wprowadzone niepotrzebnie
+
+[cols="3,2"]
+|===
+|Element |Uzasadnienie
+
+|`SellingMode` enum (WHOLE, DIVISIBLE, DIVISIBLE_ONLY) na `Lot` |Brak żadnego zachowania związanego z tym enumem. `Auction.placeBid()` nie sprawdza SellingMode. To jest martwy kod -- koncepcyjnie poprawny, ale bez wartosci behawioralnej.
+|===
+
+
+== Warstwa Adapterow -- Jakość Hexagonal
+
+=== Adapter wejściowy REST
+
+|===
+|Aspekt |Ocena
+
+|Delegate pattern (implements generated interfaces) |OK Dobra
+|Dedicated mapper (`RestAuctionContractMapper`) |OK Dobra
+|API versioning via `ApiVersionHeaderFilter` |OK Dobra
+|Exception handler -> ProblemDetail |OK Dobra
+|**God class** `RestAuctionApiDelegate` (357 linii) |X SRP violation
+|**In-memory state** (`auctionPricingConfigs`, `auctionWadiumDeposits`) |X Business state w adapterze
+|**Port-out injection** (`CurrentUserProvider`) |X Naruszenie kierunku portu
+|Inline mapping w innych delegate'ach |WARN Niespójność
+|===
+
+=== Adapter WebSocket/STOMP
+
+|===
+|Aspekt |Ocena
+
+|STOMP config, topic channels |OK Dobra
+|Controller -> PlaceBidUseCase |OK Dobra
+|Duplicated event mapping (vs Kafka) |WARN DRY violation
+|Nie-bean (`AuctionWebSocketEventPublisher`) |WARN Niespójność
+|===
+
+=== Adapter Scheduler (ExpiredAuctions)
+
+|===
+|Aspekt |Ocena
+
+|Thin adapter -> CloseExpiredAuctionsUseCase |OK Wzorcowe
+|Micrometer counters |OK Dobra
+|Konfigurowalny delay |OK Dobra
+|===
+
+=== Adapter wyjściowy DB (JPA/Hibernate)
+
+|===
+|Aspekt |Ocena
+
+|CQRS: JPA write + JDBC read |OK Dobra
+|Keyset pagination z base64 cursor |OK Produkcja
+|Optimistic locking (AuctionConcurrencyConflictException) |OK Dobra
+|**AuctionJpaEntity importuje domain enum** (`AuctionStatus`) |X **KRYTYCZNE** -- naruszenie hexagonal
+|FetchType.EAGER na bids |WARN Wydajność
+|Always-new-entity on save (no merge) |WARN Niepotrzebne DELETE+INSERT
+|===
+
+=== Adapter Kafka
+
+|===
+|Aspekt |Ocena
+
+|Configurable topics |OK Dobra
+|Nie implementuje portu bezposrednio |WARN Manual wiring
+|Duplicated event mapping (vs WebSocket) |WARN DRY violation
+|===
+
+=== Adapter KYC
+
+|===
+|Aspekt |Ocena
+
+|OpenAPI-generated client |OK Dobra
+|Hand-rolled retry + circuit breaker |WARN Thread-safety issues
+|`@Primary` na dev adapter |WARN Profile-conditional lepszy
+|===
+
+=== Architektura testow (ArchUnit)
+
+|===
+|Aspekt |Ocena
+
+|Pojedyncza regula: core -> no Spring/JPA |OK Kluczowa
+|Brak regul na adapter direction (in->core, core->out) |X Brak
+|Brak regul na adapter->adapter coupling |X Brak
+|Brak regul na domain enum leak do JPA |X Brak -- pozwala na bug z AuctionStatus
+|===
+
+
+== Podsumowanie -- Macierz Oceny
+
+[cols="2,2,2,2,2"]
+|===
+|Archetyp |Zaimplementowane |Braki krytyczne |Over-engineering |Wartość edukacyjna
+
+|Quantity |4/5 |Money, Percentage |Brak |5/5
+
+|Product |4/5 |Relationships, Repository |NumericRange/DecimalRange dup, VIN/IMEI stub, SelectionRule DSL |4/5
+
+|Inventory |2/5 |Availability, Reservation |Brak |5/5
+
+|Party |3/5 |Person/Organization, RegisteredId |PartyId(String) |4/5
+
+|Pricing |4/5 |Interpretation, Temporal Versioning, Applicability |VatRate.EXEMPT=null, ExciseRate PER_UNIT bug |5/5
+
+|Accounting |1/5 |Posting Rules, Balance, Event-driven |Spring leak in core |3/5
+
+|Rules |1/5 |AST+Algebra, Specification, Chain |Brak modulu |3/5
+
+|Graphs |1/5 |Słuszny brak |N/A |2/5
+
+|Auctioning Core |4/5 |Reserve price enforcement, Lot-inventory link |SellingMode enum (martwy kod) |5/5
+|===
+
+
+== Rekomendacje Priorytetyzowane
+
+=== Krytyczne (napraw teraz)
+
+. **Ujednolicenie `Money`** -- przenieść do `hexabid-quantity`, usunąć `Price` z core i `Money` z pricing. Archetyp ma to rozwiązać przez JavaMoney/Moneta.
+
+. **Dodać Availability subsystem do inventory** -- bez tego aukcje nie moga rezerwować przedmiotów.
+
+. **Naprawić AuctionJpaEntity importujący domain enum** -- dodac mapper enum w adapterze DB.
+
+. **Wydzielić Spring annotations z payment-core** -- `AuctionWonEventListener` i `PaymentGatewayRegistry` nie powinny byc w core.
+
+=== Ważne (napraw w następnym sprincie)
+
+. **Dodać `Percentage` do quantity** -- usunąć duplikację z VatRate/ExciseRate.
+
+. **Egzekwować `Lot.reservePrice`** w `Auction.placeBid()` -- to jest bug domenowy.
+
+. **Dodać ProductRelationships** -- cross-sell i upgrade to kluczowe dla platform aukcyjnych.
+
+. **Dodać Temporal Versioning do pricing** -- bez tego zmiana cennika nadpisuje historię.
+
+. **Dodać Interpretation (TOTAL/UNIT/MARGINAL)** do pricing -- to jest kluczowa lekcja z M03L04.
+
+. **Dodać reguly ArchUnit** -- adapter direction, adapter coupling, domain enum leak.
+
+=== Dopuszczalne (kiedy domenowe potrzeby dorosną)
+
+. Person/Organization hierarchy w Party
+
+. RegisteredIdentifier (PESEL, NIP)
+
+. Reservation subsystem w inventory
+
+. Rules/Scoring module
+
+. Draft mode dla aukcji (PENDING -> OPEN)
+
+. Proxy/max-bid system
+
+. Graph module (user journey)
+
+=== Do usunięcia (over-engineering)
+
+. `NumericRangeConstraint` lub `DecimalRangeConstraint` -- z konsolidacja
+
+. `VinSerialNumber` / `ImeiSerialNumber` -- zastąpić `TextualSerialNumber` z typem
+
+. `SellingMode` enum na `Lot` -- martwy kod
+
+. `VatRate.EXEMPT = null` -- antywzorzec Null Object
