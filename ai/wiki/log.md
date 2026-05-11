@@ -245,3 +245,15 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - `npm run build` pass
 - Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
 - Tagi: #statements #participation-center #spa #angular #e2e #qualification-task
+
+## [2026-05-11] [IMPLEMENTATION] Faza 2 — bezpieczne blokowanie licytacji przez ParticipationDecision
+- Wydzielono `AuctionBidPanelComponent` z formularzem oferty i logiką blokowania
+- Panel ma 5 trybów: `bid` (formularz), `qualification-needed` (CTA do ParticipationCenter), `rejected` (odmowa bez formularza), `seller` (info), `inactive` (aukcja nieaktywna)
+- Gdy `ParticipationDecision` = REJECTED — formularz licytacji jest całkowicie ukryty, widoczny komunikat odrzucenia z przyczyną
+- Gdy brak decyzji lub status inny niż ADMITTED — widoczny CTA "Rozpocznij dopuszczenie w Centrum dopuszczenia powyżej"
+- Gdy ADMITTED_WITH_CONDITIONS — widoczny formularz z ostrzeżeniem o warunkach
+- Rules panel zachowany jako dodatkowy warunek (hasBiddingBlocks nadal blokuje submit)
+- E2E rozszerzone o testy Fazy 2: qualification CTA, rejected message bez formularza, bid form unlock
+- `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #statements #bid-panel #participation-decision #spa #angular #e2e
