@@ -212,3 +212,25 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Architektura: `CoreArchitectureTest` sprawdza brak zależności `hexabid-statements` od Spring/JPA
 - Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
 - Tagi: #statements #implementation #javadoc #bugfix #integration-tests #participation-decision
+
+## [2026-05-10] [DESIGN] Projekt UX oświadczeń i szablonów kwalifikacji w Hexabid SPA
+- Kompleksowa analiza obecnego stanu frontend (ParticipationApi wygenerowany ale nieużywany, płaski formularz tworzenia aukcji, brak ścieżki kwalifikacji licytanta)
+- Projekt wizarda tworzenia aukcji: 4 kroki (Podstawy → Format i kwalifikacja → Konfiguracja ceny → Podsumowanie) zamiast płaskiego formularza
+- Projekt ParticipationGate: bramka kwalifikacji na stronie szczegółów aukcji, 5 stanów (NOT_STARTED / IN_PROGRESS / ADMITTED / REJECTED / PENDING)
+- Projekt StatementWizard: DAG-driven UI sterowany z backendu, grupowanie oświadczeń po krokach, ostrzeżenia przy odpowiedziach dyskwalifikujących, ekran odrzucenia z kaskadą
+- Nowe komponenty: ParticipationGateComponent, StatementWizardComponent, StatementStepCardComponent, RejectionScreenComponent, FormatAdmissionStepComponent
+- Nowy data-access layer: participation-api.models.ts, participation-view.mapper.ts, participation-api.service.ts
+- Integracja: ParticipationGate na AuctionDetailsPage, Rules panel linkuje do kwalifikacji, bid panel warunkowy na podstawie decision status
+- Wymagane zmiany backend: dodanie auctionFormat i participationPolicyTemplate do CreateAuctionRequest, dodanie participationPolicyTemplate do AuctionResponse
+- Plan implementacji: 5 faz (data-access → participation → wizard tworzenia → backend API → integracja i polish)
+- Link: [[decisions/2026-05-10-statements-ux-design]]
+- Tagi: #statements #ux #wizard #participation #frontend #angular #dag-driven-ui
+
+## [2026-05-11] [DESIGN] Propozycja Codex dla UI/UX kwalifikacji i oświadczeń w SPA
+- Dodano osobny dokument AsciiDoc `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- Zweryfikowano aktualny frontend: `ParticipationApi` jest wygenerowany, `/sell` pozostaje płaskim formularzem, a `AuctionResponse`/`CreateAuctionRequest` nie niosą profilu kwalifikacyjnego aukcji
+- Zaproponowano `Auction Setup Studio` dla sprzedającego i `Participation Center` dla licytanta jako procesy nadrzędne wobec prostego statement wizard
+- Wprowadzono docelowy model UI `QualificationTaskVm`, który rozróżnia `STATEMENT`, `VERIFIED_FACT`, `EVIDENCE`, `EXTERNAL_CHECK` i `PARTY_REFERENCE`
+- Opisano plan wdrożenia w 5 fazach: most do obecnego backendu, blokowanie licytacji decyzją, kreator aukcji MVP, kontrakt profili kwalifikacyjnych, pełny UX wymogów
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #statements #ux #frontend #qualification-profile #participation-center #auction-setup
