@@ -257,3 +257,18 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - `npm run build` pass
 - Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
 - Tagi: #statements #bid-panel #participation-decision #spa #angular #e2e
+
+## [2026-05-11] [IMPLEMENTATION] Faza 3 — Kreator aukcji MVP (Auction Setup Studio)
+- Zastąpiono płaski formularz `/sell` kreatorem krokowym `AuctionSetupPageComponent` w `features/setup/`
+- 4 kroki: Przedmiot i kategoria → Kwalifikacja licytantów → Cena i zabezpieczenia → Podsumowanie
+- Krok 1: wybór kategorii (8 typów), jurysdykcji, tytuł, cena, termin; panel "Wykryte wymagania"
+- Krok 2: wybór profilu kwalifikacyjnego z tymczasowego katalogu (3 profile: PUBLIC_CONSUMER_LIGHT_V1, REGULATED_ASSET_BUYER_V1, HIGH_VALUE_TENDER_V1); podgląd ścieżki licytanta
+- Krok 3: konfiguracja PricingConfig (wadium, VAT, akcyza, cło) — przeniesione z dawnego `/sell`
+- Krok 4: podsumowanie z pełnym przeglądem konfiguracji, ścieżką licytanta, informacją o profilu eksperymentalnym
+- Nawigacja: step tabs (klikalne), przyciski Wstecz/Dalej/Zapisz szkic
+- Nowy plik: `data-access/contracts/qualification-profile.models.ts` z katalogiem profili, labelami, funkcjami `profilesForCategory()`, `recommendedProfile()`
+- Route `/sell` kieruje do `AuctionSetupPageComponent`; stary `AuctionCreatePageComponent` zachowany w `features/create/`
+- E2E: `e2e/auction-setup.spec.ts` — 8 testów (ładowanie, kategoria, profile, bidder preview, pricing, review, nawigacja, pełen flow z logowaniem)
+- `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #auction-setup #wizard #qualification-profile #spa #angular #e2e #sell

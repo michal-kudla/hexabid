@@ -28,8 +28,8 @@ export const routes: Routes = [
       {
         path: 'sell',
         loadComponent: () =>
-          import('./features/create/auction-create-page.component').then(
-            (m) => m.AuctionCreatePageComponent
+          import('./features/setup/auction-setup-page.component').then(
+            (m) => m.AuctionSetupPageComponent
           )
       },
       {
