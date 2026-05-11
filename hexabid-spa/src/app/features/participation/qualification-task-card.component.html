@@ -1,0 +1,57 @@
+@let t = task(); @let isYesNo = t.answerType === 'YES_NO'; @let isText = t.answerType === 'TEXT';
+
+<article class="task-card" [class]="statusClass()">
+  <div class="task-header">
+    <span class="task-status-icon">{{ statusIcon() }}</span>
+    <strong class="task-title">{{ t.title }}</strong>
+    <span class="task-severity" [class.severity-blocking]="t.severity === 'BLOCKING'">
+      {{ t.severity === 'BLOCKING' ? 'Wymagane' : 'Opcjonalne' }}
+    </span>
+  </div>
+
+  <p class="task-question">{{ t.question }}</p>
+
+  @if (t.status === 'COMPLETED') {
+    <p class="task-answer">Twoja odpowiedź: {{ t.answerValue }}</p>
+  } @else if (t.status === 'BLOCKED') {
+    <p class="task-blocked-hint">To zadanie jest zablokowane. Najpierw ukończ poprzednie kroki.</p>
+  } @else if (t.status === 'AVAILABLE') {
+    @if (isYesNo) {
+      <div class="answer-options">
+        <button type="button" class="answer-btn answer-yes" (click)="onYesNoSelect('YES')" [disabled]="submitting()">
+          Tak
+        </button>
+        <button type="button" class="answer-btn answer-no" (click)="onYesNoSelect('NO')" [disabled]="submitting()">
+          Nie
+        </button>
+      </div>
+    } @else if (isText) {
+      <div class="answer-text">
+        <input
+          type="text"
+          #textInput
+          placeholder="Wpisz odpowiedź..."
+          [disabled]="submitting()"
+          (keydown.enter)="onTextSubmit(textInput)"
+        />
+        <button type="button" (click)="onTextSubmit(textInput)" [disabled]="submitting()">
+          Wyślij
+        </button>
+      </div>
+    } @else {
+      <p class="task-type-hint">Typ odpowiedzi: {{ t.answerType }}</p>
+    }
+
+    @if (confirmingDestructive) {
+      <div class="destructive-warning">
+        <p>Ta odpowiedź spowoduje odmowę dopuszczenia do aukcji.</p>
+        <div class="destructive-actions">
+          <button type="button" class="btn-cancel" (click)="cancelDestructive()">Zmień odpowiedź</button>
+          <button type="button" class="btn-confirm-destructive" (click)="confirmDestructive()" [disabled]="submitting()">
+            Potwierdzam odpowiedź
+          </button>
+        </div>
+      </div>
+    }
+  }
+</article>

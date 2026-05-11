@@ -8,6 +8,8 @@
     actionHref="/"
   />
 } @else if (facade.auction(); as auction) {
+  <app-participation-center [auctionId]="auction.auctionId" />
+
   <section class="details-grid">
     <article class="surface spotlight">
       <div class="eyebrow">

@@ -234,3 +234,14 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Opisano plan wdrożenia w 5 fazach: most do obecnego backendu, blokowanie licytacji decyzją, kreator aukcji MVP, kontrakt profili kwalifikacyjnych, pełny UX wymogów
 - Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
 - Tagi: #statements #ux #frontend #qualification-profile #participation-center #auction-setup
+
+## [2026-05-11] [IMPLEMENTATION] Faza 1 Participation Center — most do backendu oświadczeń
+- Zaimplementowano Fazę 1 planu z `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- Nowe pliki data-access: `participation-api.models.ts` (QualificationTaskVm, QualificationProgramVm, ParticipationDecisionVm, SubmitAnswerResultVm), `participation-view.mapper.ts` (mapowanie StatementProgramView → QualificationProgramVm), `participation-api.service.ts` (ParticipationApiService wrapping generated ParticipationApi)
+- Nowy feature: `features/participation/` z `ParticipationFacade`, `ParticipationCenterComponent`, `QualificationTaskCardComponent`
+- Integracja ze stroną aukcji: ParticipationCenterComponent nad panelem licytacji, bidDisabledReason() uwzględnia ParticipationDecision
+- Centrum dopuszczenia: status programu, pasek postępu, mapa zadań, formularze odpowiedzi (YES_NO, TEXT), ostrzeżenie przy odpowiedziach dyskwalifikujących, panel decyzji
+- E2E: `participation.spec.ts` — 5 testów (centrum widoczne, start programu, zadania, blokada licytacji, odpowiedzi pozytywne)
+- `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #statements #participation-center #spa #angular #e2e #qualification-task

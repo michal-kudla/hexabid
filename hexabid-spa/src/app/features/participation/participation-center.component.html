@@ -1,0 +1,86 @@
+@let program = facade.program(); @let decision = facade.decision();
+
+<section class="participation-center surface">
+  <div class="section-heading">
+    <h2>Centrum dopuszczenia</h2>
+    @if (facade.loading()) {
+      <span class="meta">Ładowanie...</span>
+    }
+  </div>
+
+  @if (facade.error()) {
+    <p class="error-message">{{ facade.error() }}</p>
+  }
+
+  @if (!program && !facade.loading()) {
+    <div class="not-started">
+      <p>Ta aukcja wymaga dopuszczenia przed licytacją. Musisz przejść przez program oświadczeń, aby móc składać oferty.</p>
+      <button type="button" class="btn-start" (click)="onStartProgram()">
+        Rozpocznij dopuszczenie
+      </button>
+    </div>
+  }
+
+  @if (program; as prog) {
+    <div class="program-status">
+      <div class="status-row">
+        <span class="status-label">Status:</span>
+        <span class="status-value" [class.status-in-progress]="prog.status === 'IN_PROGRESS'" [class.status-completed]="prog.status === 'COMPLETED'" [class.status-rejected]="prog.status === 'REJECTED'">
+          {{ prog.headline }}
+        </span>
+      </div>
+      <div class="progress-row">
+        <span class="progress-text">{{ prog.completedCount }} z {{ prog.totalCount }} zadań</span>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="prog.progressPercent"></div>
+        </div>
+      </div>
+    </div>
+
+    @if (decision; as dec) {
+      <div class="decision-panel" [class.decision-admitted]="dec.status === 'ADMITTED'" [class.decision-admitted-conditions]="dec.status === 'ADMITTED_WITH_CONDITIONS'" [class.decision-rejected]="dec.status === 'REJECTED'" [class.decision-pending]="dec.status === 'PENDING'">
+        <strong>{{ dec.statusLabel }}</strong>
+        @if (dec.humanReason) {
+          <p>{{ dec.humanReason }}</p>
+        }
+        @if (dec.missingStatements.length) {
+          <p class="decision-detail">Brakujące oświadczenia: {{ dec.missingStatements.join(', ') }}</p>
+        }
+        @if (dec.cascadedStatements.length) {
+          <p class="decision-detail">Oświadczenia objęte kaskadą: {{ dec.cascadedStatements.join(', ') }}</p>
+        }
+        @if (dec.conditions.length) {
+          <p class="decision-detail">Warunki: {{ dec.conditions.join(', ') }}</p>
+        }
+        @if (dec.status === 'PENDING') {
+          <button type="button" class="btn-refresh" (click)="onRefreshDecision()">
+            Odśwież status
+          </button>
+        }
+      </div>
+    }
+
+    @if (prog.status === 'REJECTED') {
+      <div class="rejection-explanation">
+        <p>Twoje dopuszczenie zostało odrzucone. Przyczyna: {{ decision?.rootCause ?? decision?.humanReason ?? 'odpowiedź dyskwalifikująca' }}.</p>
+        <p>Nie możesz składać ofert w tej aukcji.</p>
+      </div>
+    } @else {
+      <div class="tasks-list">
+        @for (task of prog.tasks; track task.code) {
+          <app-qualification-task-card
+            [task]="task"
+            [submitting]="facade.answerSubmitting()"
+            (answerSubmit)="onAnswerSubmit($event)"
+          />
+        }
+      </div>
+
+      @if (prog.status === 'IN_PROGRESS') {
+        <button type="button" class="btn-refresh" (click)="onRefreshProgram()">
+          Odśwież program
+        </button>
+      }
+    }
+  }
+</section>

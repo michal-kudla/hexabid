@@ -11,22 +11,25 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuctionDetailsFacade } from './auction-details.facade';
 import { SessionFacade } from '../../core/session/session.facade';
 import { RulesFacade } from '../rules/rules.facade';
+import { ParticipationFacade } from '../participation/participation.facade';
 import { RulesPanelComponent } from '../rules/rules-panel.component';
 import { DocumentSubmitComponent } from '../rules/document-submit.component';
+import { ParticipationCenterComponent } from '../participation/participation-center.component';
 import { AuctionStatus, DocumentType, DocumentStatus, RulePhase } from '../../data-access/generated/auction-contract';
 import { EmptyStateComponent } from '../../shared/ui/empty-state.component';
 
 @Component({
   selector: 'app-auction-details-page',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent, RulesPanelComponent, DocumentSubmitComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, EmptyStateComponent, RulesPanelComponent, DocumentSubmitComponent, ParticipationCenterComponent],
   templateUrl: './auction-details-page.component.html',
   styleUrl: './auction-details-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AuctionDetailsFacade, RulesFacade]
+  providers: [AuctionDetailsFacade, RulesFacade, ParticipationFacade]
 })
 export class AuctionDetailsPageComponent {
   readonly facade = inject(AuctionDetailsFacade);
   readonly rulesFacade = inject(RulesFacade);
+  readonly participationFacade = inject(ParticipationFacade);
   readonly session = inject(SessionFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -45,6 +48,7 @@ export class AuctionDetailsPageComponent {
       if (auctionId) {
         void this.facade.loadAuction(auctionId);
         void this.rulesFacade.evaluateRules(auctionId);
+        void this.participationFacade.loadProgram(auctionId);
       }
     });
 
@@ -108,6 +112,13 @@ export class AuctionDetailsPageComponent {
     }
     if (auction.sellerId === this.session.profile()?.partyId) {
       return 'Jesteś sprzedającym tej aukcji. Sprzedający nie może licytować własnej oferty.';
+    }
+    const participation = this.participationFacade.decision();
+    if (participation && participation.status === 'REJECTED') {
+      return 'Twoje dopuszczenie zostało odrzucone. Nie możesz licytować tej aukcji.';
+    }
+    if (participation && participation.status !== 'ADMITTED' && participation.status !== 'ADMITTED_WITH_CONDITIONS') {
+      return 'Najpierw ukończ proces dopuszczenia, aby móc licytować.';
     }
     if (this.hasBiddingBlocks()) {
       return 'Najpierw spełnij blokujące warunki licytacji, na przykład KYC albo wadium.';
