@@ -23,7 +23,8 @@ final class AuctionViews {
                 auction.endsAt(),
                 auction.status(),
                 leader,
-                auction.biddingHistory().stream().map(AuctionViews::from).toList()
+                auction.biddingHistory().stream().map(AuctionViews::from).toList(),
+                auction.participationPolicyTemplate()
         );
     }
 

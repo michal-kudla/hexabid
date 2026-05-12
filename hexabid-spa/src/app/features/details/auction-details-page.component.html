@@ -8,7 +8,7 @@
     actionHref="/"
   />
 } @else if (facade.auction(); as auction) {
-  <app-participation-center [auctionId]="auction.auctionId" />
+  <app-participation-center [auctionId]="auction.auctionId" [qualificationSummary]="auction.qualificationSummary" />
 
   <section class="details-grid">
     <article class="surface spotlight">

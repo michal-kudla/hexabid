@@ -7,6 +7,9 @@ import com.github.hexabid.contract.model.StartParticipationProgramRequest;
 import com.github.hexabid.contract.model.StatementProgramView;
 import com.github.hexabid.contract.model.SubmitStatementAnswerRequest;
 import com.github.hexabid.contract.model.SubmitStatementAnswerResponse;
+import com.github.hexabid.core.auctioning.model.AuctionId;
+import com.github.hexabid.core.auctioning.port.in.AuctionDetailsResult;
+import com.github.hexabid.core.auctioning.port.in.FindAuctionDetailsUseCase;
 import com.github.hexabid.statement.port.in.GetParticipationDecisionQuery;
 import com.github.hexabid.statement.port.in.GetStatementProgramQuery;
 import com.github.hexabid.statement.port.in.StartStatementProgramCommand;
@@ -36,6 +39,7 @@ public class RestParticipationApiDelegate implements ParticipationApiDelegate {
     private final SubmitStatementAnswerUseCase submitStatementAnswerUseCase;
     private final GetStatementProgramUseCase getStatementProgramUseCase;
     private final GetParticipationDecisionUseCase getParticipationDecisionUseCase;
+    private final FindAuctionDetailsUseCase findAuctionDetailsUseCase;
     private final CurrentUserProvider currentUserProvider;
 
     public RestParticipationApiDelegate(
@@ -43,12 +47,14 @@ public class RestParticipationApiDelegate implements ParticipationApiDelegate {
             SubmitStatementAnswerUseCase submitStatementAnswerUseCase,
             GetStatementProgramUseCase getStatementProgramUseCase,
             GetParticipationDecisionUseCase getParticipationDecisionUseCase,
+            FindAuctionDetailsUseCase findAuctionDetailsUseCase,
             CurrentUserProvider currentUserProvider
     ) {
         this.startStatementProgramUseCase = startStatementProgramUseCase;
         this.submitStatementAnswerUseCase = submitStatementAnswerUseCase;
         this.getStatementProgramUseCase = getStatementProgramUseCase;
         this.getParticipationDecisionUseCase = getParticipationDecisionUseCase;
+        this.findAuctionDetailsUseCase = findAuctionDetailsUseCase;
         this.currentUserProvider = currentUserProvider;
     }
 
@@ -97,13 +103,29 @@ public class RestParticipationApiDelegate implements ParticipationApiDelegate {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
+        String templateName = startParticipationProgramRequest.getTemplateName();
+        if (templateName == null || templateName.isBlank()) {
+            templateName = resolveTemplateFromAuction(auctionId);
+            if (templateName == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+        }
+
         com.github.hexabid.statement.port.in.StatementProgramView view =
                 startStatementProgramUseCase.startProgram(new StartStatementProgramCommand(
                         auctionId,
                         authenticatedUser.partyId().value(),
-                        startParticipationProgramRequest.getTemplateName()
+                        templateName
                 ));
         return ResponseEntity.status(HttpStatus.CREATED).body(toContractView(view));
+    }
+
+    private String resolveTemplateFromAuction(UUID auctionId) {
+        AuctionDetailsResult result = findAuctionDetailsUseCase.findAuctionDetails(new AuctionId(auctionId));
+        if (result instanceof AuctionDetailsResult.AuctionFound found) {
+            return found.auction().participationPolicyTemplate();
+        }
+        return null;
     }
 
     /**

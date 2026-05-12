@@ -45,7 +45,7 @@ export class ParticipationFacade {
     }
   }
 
-  async startProgram(auctionId: string, templateName: string): Promise<void> {
+  async startProgram(auctionId: string, templateName?: string): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     this.currentAuctionId = auctionId;

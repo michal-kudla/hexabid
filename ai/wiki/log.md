@@ -272,3 +272,22 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - `npm run build` pass
 - Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
 - Tagi: #auction-setup #wizard #qualification-profile #spa #angular #e2e #sell
+
+## [2026-05-12] [IMPLEMENTATION] Faza 4 — Kontrakt profili kwalifikacyjnych i automatyczne dopasowanie
+- Zaimplementowano Fazę 4 planu z `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- **Backend: `RestQualificationApiDelegate`** — implementacja `GET /api/qualification-profiles`, zwraca katalog z `PolicyTemplateCatalog` (3 profile z labelami, opisami, taskCount, estimatedMinutes, abandonmentRisk, recommended)
+- **Backend: `RestParticipationApiDelegate`** — gdy `templateName` nie jest przekazany w `StartParticipationProgramRequest`, delegat rozwiązuje profil z aukcji przez `FindAuctionDetailsUseCase`; licytant nie musi wybierać szablonu
+- **Backend: `RestAuctionContractMapper`** — dodano `templateLabel` do `AuctionQualificationSummary` w odpowiedzi
+- **Frontend: `qualification-profile-api.service.ts`** — nowy serwis opakowujący wygenerowany `QualificationApi`
+- **Frontend: `qualification-profile.models.ts`** — zaktualizowano katalog profili (zgodny z backendowymi `StatementCode` zamiast fikcyjnych kodów), dodano `profileByTemplateName()` i `mapApiRiskToRisk()`
+- **Frontend: `auction-api.models.ts`** — dodano `QualificationSummaryVm` i pole `qualificationSummary` w `AuctionDetailsVm`
+- **Frontend: `auction-view.mapper.ts`** — mapowanie `AuctionResponse.qualificationSummary` do `QualificationSummaryVm`
+- **Frontend: `AuctionSetupPageComponent`** — ładuje profile z API w `constructor()`, wysyła `participationPolicyTemplate` przy tworzeniu aukcji; usunięto notatkę eksperymentalną, zastąpiono komunikatem o automatycznym przypisaniu profilu
+- **Frontend: `ParticipationApiService`** — `startProgram()` akceptuje opcjonalny `templateName` (gdy brak, backend używa profilu aukcji)
+- **Frontend: `ParticipationFacade`** — `startProgram()` akceptuje opcjonalny `templateName`
+- **Frontend: `ParticipationCenterComponent`** — przyjmuje input `[qualificationSummary]`, pokazuje label profilu i taskCount przed rozpoczęciem programu, nie hardcoduje już szablonu
+- **Frontend: `auction-details-page.component.html`** — przekazuje `[qualificationSummary]="auction.qualificationSummary"` do participation center
+- E2E: `e2e/qualification-profile.spec.ts` — 5 testów (API catalog, tworzenie aukcji z profilem, start programu bez templateName, SPA profile assignment note, participation center z qualification summary)
+- `mvn clean verify -Plocal -DskipTests` pass, `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #qualification-profile #api-contract #participation #spa #angular #e2e #phase4

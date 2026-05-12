@@ -25,11 +25,11 @@ export class ParticipationApiService {
     );
   }
 
-  async startProgram(auctionId: string, templateName: string): Promise<StatementProgramView> {
+  async startProgram(auctionId: string, templateName?: string): Promise<StatementProgramView> {
     return this.execute(
       () => this.client.startParticipationProgram({
         auctionId,
-        startParticipationProgramRequest: { templateName }
+        startParticipationProgramRequest: templateName ? { templateName } : {}
       }),
       'Nie udało się rozpocząć programu dopuszczenia.'
     );

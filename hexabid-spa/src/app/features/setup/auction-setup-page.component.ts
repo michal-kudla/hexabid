@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuctionsApiService } from '../../data-access/http/auctions-api.service';
+import { QualificationProfileApiService } from '../../data-access/http/qualification-profile-api.service';
 import { WadiumStrategy, PricingConfigExciseTypeEnum } from '../../data-access/generated/auction-contract';
 import type { CreateAuctionRequest, PricingConfig, Money } from '../../data-access/generated/auction-contract';
 import {
@@ -14,7 +15,9 @@ import {
   riskLabel,
   profilesForCategory,
   recommendedProfile,
-  QUALIFICATION_PROFILE_CATALOG
+  profileByTemplateName,
+  QUALIFICATION_PROFILE_CATALOG,
+  mapApiRiskToRisk
 } from '../../data-access/contracts/qualification-profile.models';
 
 type SetupStep = 'subject' | 'qualification' | 'pricing' | 'review';
@@ -29,9 +32,11 @@ type SetupStep = 'subject' | 'qualification' | 'pricing' | 'review';
 export class AuctionSetupPageComponent {
   private readonly router = inject(Router);
   private readonly api = inject(AuctionsApiService);
+  private readonly profileApi = inject(QualificationProfileApiService);
 
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
+  readonly profilesLoading = signal(false);
 
   readonly steps: SetupStep[] = ['subject', 'qualification', 'pricing', 'review'];
   readonly currentStep = signal<SetupStep>('subject');
@@ -72,6 +77,28 @@ export class AuctionSetupPageComponent {
     isImported: new FormControl(false, { nonNullable: true }),
     customsDutyRate: new FormControl('', { nonNullable: true })
   });
+
+  constructor() {
+    this.loadProfilesFromApi();
+  }
+
+  private async loadProfilesFromApi(): Promise<void> {
+    this.profilesLoading.set(true);
+    try {
+      const response = await this.profileApi.browseProfiles();
+      if (response.items.length > 0) {
+        const apiItem = response.items[0];
+        const match = profileByTemplateName(apiItem.templateName);
+        if (match) {
+          this.selectedProfile.set(match);
+        }
+      }
+    } catch {
+      // fallback to hardcoded catalog - already set as default
+    } finally {
+      this.profilesLoading.set(false);
+    }
+  }
 
   stepIndex(): number {
     return this.steps.indexOf(this.currentStep());
@@ -145,7 +172,8 @@ export class AuctionSetupPageComponent {
           amount: sv.amount,
           currency: sv.currency
         } as Money,
-        endsAt: new Date(sv.endsAt).toISOString()
+        endsAt: new Date(sv.endsAt).toISOString(),
+        participationPolicyTemplate: this.selectedProfile().templateName
       };
 
       if (this.showPricing()) {

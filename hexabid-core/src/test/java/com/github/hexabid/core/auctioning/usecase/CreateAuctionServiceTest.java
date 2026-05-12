@@ -38,7 +38,8 @@ class CreateAuctionServiceTest {
                 new PartyId("seller-1"),
                 "Painting",
                 new Price(new BigDecimal("300.00"), "PLN"),
-                now.plusSeconds(3600)
+                now.plusSeconds(3600),
+                null
         ));
         CreateAuctionResult.AuctionCreationRejected rejected = assertInstanceOf(CreateAuctionResult.AuctionCreationRejected.class, result);
 
@@ -57,7 +58,8 @@ class CreateAuctionServiceTest {
                 new PartyId("seller-1"),
                 "Painting",
                 new Price(new BigDecimal("300.00"), "PLN"),
-                now.plusSeconds(3600)
+                now.plusSeconds(3600),
+                null
         ));
         CreateAuctionResult.AuctionCreated created = assertInstanceOf(CreateAuctionResult.AuctionCreated.class, result);
 

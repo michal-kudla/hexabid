@@ -1,3 +1,5 @@
+import { QualificationProfileSummaryAbandonmentRiskEnum } from '../generated/auction-contract';
+
 export type AuctionCategory =
   | 'GENERAL'
   | 'LAND'
@@ -46,10 +48,10 @@ export const QUALIFICATION_PROFILE_CATALOG: QualificationProfileEntry[] = [
     estimatedMinutes: '2-3',
     abandonmentRisk: 'low',
     tasks: [
-      { code: 'ACTING_AS_SELF', title: 'Działam we własnym imieniu', question: 'Czy działasz we własnym imieniu, a nie w imieniu innego podmiotu?', answerType: 'YES_NO' },
-      { code: 'ADULT_CONFIRMATION', title: 'Pełnoletność', question: 'Czy masz ukończone 18 lat?', answerType: 'YES_NO' },
-      { code: 'RESIDENCY_DECLARATION', title: 'Deklaracja rezydencji', question: 'Czy jesteś rezydentem Polski lub EEA?', answerType: 'YES_NO' },
-      { code: 'TERMS_ACCEPTANCE', title: 'Akceptacja warunków', question: 'Czy akceptujesz warunki aukcji?', answerType: 'YES_NO' }
+      { code: 'LEGAL_CAPACITY', title: 'Zdolność do czynności prawnych', question: 'Czy masz zdolność do czynności prawnych lub działasz przez poprawnego pełnomocnika?', answerType: 'YES_NO' },
+      { code: 'SANCTIONS_CLEARANCE', title: 'Brak na listach sankcyjnych', question: 'Czy jesteś wolny od wpisów na listy sankcyjne?', answerType: 'YES_NO' },
+      { code: 'PAYMENT_READINESS', title: 'Gotowość płatnicza', question: 'Czy potwierdzasz możliwość zapłaty w terminie?', answerType: 'YES_NO' },
+      { code: 'TERMS_ACCEPTANCE', title: 'Akceptacja regulaminu', question: 'Czy akceptujesz regulamin aukcji, opłaty, terminy i konsekwencje?', answerType: 'YES_NO' }
     ]
   },
   {
@@ -65,14 +67,14 @@ export const QUALIFICATION_PROFILE_CATALOG: QualificationProfileEntry[] = [
     estimatedMinutes: '5-8',
     abandonmentRisk: 'medium',
     tasks: [
-      { code: 'ACTING_AS_SELF', title: 'Działam we własnym imieniu', question: 'Czy działasz we własnym imieniu?', answerType: 'YES_NO' },
-      { code: 'ADULT_CONFIRMATION', title: 'Pełnoletność', question: 'Czy masz ukończone 18 lat?', answerType: 'YES_NO' },
-      { code: 'RESIDENCY_DECLARATION', title: 'Deklaracja rezydencji', question: 'Czy jesteś rezydentem PL/EEA?', answerType: 'YES_NO' },
-      { code: 'LEGAL_CAPACITY', title: 'Zdolność do czynności prawnych', question: 'Czy masz pełną zdolność do czynności prawnych?', answerType: 'YES_NO' },
-      { code: 'NO_CONFLICT_OF_INTEREST', title: 'Brak konfliktu interesów', question: 'Czy nie masz konfliktu interesów w tej aukcji?', answerType: 'YES_NO' },
-      { code: 'FUNDS_SOURCE', title: 'Źródło środków', question: 'Czy środki pochodzą z legalnego źródła?', answerType: 'YES_NO' },
-      { code: 'PERMIT_OR_LICENSE', title: 'Uprawnienie lub licencja', question: 'Czy posiadasz wymagane uprawnienie?', answerType: 'YES_NO' },
-      { code: 'TERMS_ACCEPTANCE', title: 'Akceptacja warunków', question: 'Czy akceptujesz warunki aukcji?', answerType: 'YES_NO' }
+      { code: 'LEGAL_CAPACITY', title: 'Zdolność do czynności prawnych', question: 'Czy masz zdolność do czynności prawnych lub działasz przez poprawnego pełnomocnika?', answerType: 'YES_NO' },
+      { code: 'BENEFICIAL_OWNER_DISCLOSURE', title: 'Ujawnienie beneficjenta rzeczywistego', question: 'Czy ujawniono beneficjenta rzeczywistego i strukturę właścicielską?', answerType: 'YES_NO' },
+      { code: 'SANCTIONS_CLEARANCE', title: 'Brak na listach sankcyjnych', question: 'Czy jesteś wolny od wpisów na listy sankcyjne?', answerType: 'YES_NO' },
+      { code: 'EXPORT_CONTROL_ELIGIBILITY', title: 'Uprawnienie do kontroli eksportu', question: 'Czy możesz nabyć towar objęty kontrolą eksportu?', answerType: 'YES_NO' },
+      { code: 'SECTOR_LICENSE', title: 'Licencja branżowa', question: 'Czy posiadasz licencję branżową wymaganą do nabycia tego przedmiotu?', answerType: 'YES_NO' },
+      { code: 'ENVIRONMENTAL_HANDLING_CAPACITY', title: 'Zdolność do postępowania z przedmiotem', question: 'Czy potrafisz legalnie odebrać, przewieźć lub zutylizować przedmiot?', answerType: 'YES_NO' },
+      { code: 'PAYMENT_READINESS', title: 'Gotowość płatnicza', question: 'Czy potwierdzasz możliwość zapłaty w terminie?', answerType: 'YES_NO' },
+      { code: 'TERMS_ACCEPTANCE', title: 'Akceptacja regulaminu', question: 'Czy akceptujesz regulamin aukcji?', answerType: 'YES_NO' }
     ]
   },
   {
@@ -88,17 +90,17 @@ export const QUALIFICATION_PROFILE_CATALOG: QualificationProfileEntry[] = [
     estimatedMinutes: '8-12',
     abandonmentRisk: 'high',
     tasks: [
-      { code: 'ACTING_AS_SELF', title: 'Działam we własnym imieniu', question: 'Czy działasz we własnym imieniu?', answerType: 'YES_NO' },
-      { code: 'ADULT_CONFIRMATION', title: 'Pełnoletność', question: 'Czy masz ukończone 18 lat?', answerType: 'YES_NO' },
-      { code: 'RESIDENCY_DECLARATION', title: 'Deklaracja rezydencji', question: 'Czy jesteś rezydentem PL/EEA?', answerType: 'YES_NO' },
-      { code: 'LEGAL_CAPACITY', title: 'Zdolność do czynności prawnych', question: 'Czy masz pełną zdolność do czynności prawnych?', answerType: 'YES_NO' },
-      { code: 'NO_CONFLICT_OF_INTEREST', title: 'Brak konfliktu interesów', question: 'Czy nie masz konfliktu interesów?', answerType: 'YES_NO' },
-      { code: 'FUNDS_SOURCE', title: 'Źródło środków', question: 'Czy środki pochodzą z legalnego źródła?', answerType: 'YES_NO' },
-      { code: 'NO_SANCTIONS', title: 'Brak na listach sankcyjnych', question: 'Czy nie znajdujesz się na żadnej liście sankcyjnej?', answerType: 'YES_NO' },
-      { code: 'BENEFICIAL_OWNER', title: 'Beneficjent rzeczywisty', question: 'Czy jesteś beneficjentem rzeczywistym transakcji?', answerType: 'YES_NO' },
-      { code: 'ANTI_MONEY_LAUNDERING', title: 'AML', question: 'Czy transakcja nie podlega zgłoszeniu AML?', answerType: 'YES_NO' },
-      { code: 'PERMIT_OR_LICENSE', title: 'Uprawnienie lub licencja', question: 'Czy posiadasz wymagane uprawnienie?', answerType: 'YES_NO' },
-      { code: 'TERMS_ACCEPTANCE', title: 'Akceptacja warunków', question: 'Czy akceptujesz warunki aukcji?', answerType: 'YES_NO' }
+      { code: 'LEGAL_CAPACITY', title: 'Zdolność do czynności prawnych', question: 'Czy masz zdolność do czynności prawnych?', answerType: 'YES_NO' },
+      { code: 'BENEFICIAL_OWNER_DISCLOSURE', title: 'Ujawnienie beneficjenta rzeczywistego', question: 'Czy ujawniono beneficjenta rzeczywistego?', answerType: 'YES_NO' },
+      { code: 'PEP_DISCLOSURE', title: 'Ujawnienie statusu PEP', question: 'Czy jesteś osobą politycznie eksponowaną?', answerType: 'YES_NO' },
+      { code: 'SANCTIONS_CLEARANCE', title: 'Brak na listach sankcyjnych', question: 'Czy jesteś wolny od wpisów na listy sankcyjne?', answerType: 'YES_NO' },
+      { code: 'NO_CONFLICT_OF_INTEREST', title: 'Brak konfliktu interesów', question: 'Czy nie masz relacji z organizatorem, rzeczoznawcą lub sprzedającym?', answerType: 'YES_NO' },
+      { code: 'NO_COLLUSION', title: 'Brak porozumienia', question: 'Czy nie uzgadniałeś ofert z innymi kandydatami?', answerType: 'YES_NO' },
+      { code: 'SOURCE_OF_FUNDS', title: 'Źródło środków', question: 'Czy wskazałeś legalne źródło środków na zakup?', answerType: 'YES_NO' },
+      { code: 'BID_BOND_ACCEPTANCE', title: 'Akceptacja wadium', question: 'Czy akceptujesz wadium, blokadę środków lub gwarancję?', answerType: 'YES_NO' },
+      { code: 'DATA_ROOM_CONFIDENTIALITY', title: 'Poufność data room', question: 'Czy przyjmujesz poufność danych z data room?', answerType: 'YES_NO' },
+      { code: 'INSIDER_INFORMATION_ABSENCE', title: 'Brak informacji niejawnej', question: 'Czy nie posiadasz niejawnych informacji dających przewagę?', answerType: 'YES_NO' },
+      { code: 'TERMS_ACCEPTANCE', title: 'Akceptacja regulaminu', question: 'Czy akceptujesz regulamin aukcji?', answerType: 'YES_NO' }
     ]
   }
 ];
@@ -140,4 +142,15 @@ export function profilesForCategory(category: AuctionCategory): QualificationPro
 export function recommendedProfile(category: AuctionCategory): QualificationProfileEntry {
   const profiles = profilesForCategory(category);
   return profiles.find(p => p.recommended) ?? QUALIFICATION_PROFILE_CATALOG[0];
+}
+
+export function profileByTemplateName(templateName: string): QualificationProfileEntry | undefined {
+  return QUALIFICATION_PROFILE_CATALOG.find(p => p.templateName === templateName);
+}
+
+export function mapApiRiskToRisk(apiRisk?: QualificationProfileSummaryAbandonmentRiskEnum): 'low' | 'medium' | 'high' {
+  if (apiRisk === QualificationProfileSummaryAbandonmentRiskEnum.low) return 'low';
+  if (apiRisk === QualificationProfileSummaryAbandonmentRiskEnum.medium) return 'medium';
+  if (apiRisk === QualificationProfileSummaryAbandonmentRiskEnum.high) return 'high';
+  return 'low';
 }

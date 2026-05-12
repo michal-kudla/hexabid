@@ -2,6 +2,7 @@ apis/AuctionsApi.ts
 apis/InventoryApi.ts
 apis/ParticipationApi.ts
 apis/ProductsApi.ts
+apis/QualificationApi.ts
 apis/index.ts
 index.ts
 models/index.ts

@@ -9,6 +9,7 @@ tags:
   - name: Products
   - name: Inventory
   - name: Participation
+  - name: Qualification
 paths:
   /api/products:
     get:
@@ -649,6 +650,25 @@ paths:
           description: Authentication required
         '404':
           description: Auction not found
+  /api/qualification-profiles:
+    get:
+      operationId: browseQualificationProfiles
+      tags:
+        - Qualification
+      summary: Browse available qualification profiles for auction configuration
+      description: |
+        Returns the list of available participation policy templates (qualification profiles)
+        that sellers can assign to their auctions. Each profile defines what steps bidders must
+        complete before being admitted to bid.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      responses:
+        '200':
+          description: Qualification profile list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualificationProfileListResponse'
   /api/auctions/{auctionId}/participation/program:
     get:
       operationId: getParticipationProgram
@@ -928,6 +948,10 @@ components:
           $ref: '#/components/schemas/Money'
         pricingConfig:
           $ref: '#/components/schemas/PricingConfig'
+        participationPolicyTemplate:
+          type: string
+          description: Name of the participation policy template to assign to this auction. Determines which qualification steps bidders must complete.
+          example: PUBLIC_CONSUMER_LIGHT_V1
     BidResponse:
       type: object
       required:
@@ -991,6 +1015,8 @@ components:
             $ref: '#/components/schemas/BidResponse'
         pricingConfig:
           $ref: '#/components/schemas/PricingConfig'
+        qualificationSummary:
+          $ref: '#/components/schemas/AuctionQualificationSummary'
     AuctionListItemResponse:
       type: object
       required:
@@ -1575,12 +1601,10 @@ components:
           $ref: '#/components/schemas/DocumentStatus'
     StartParticipationProgramRequest:
       type: object
-      required:
-        - templateName
       properties:
         templateName:
           type: string
-          description: Name of the participation policy template to use
+          description: Name of the participation policy template to use. If omitted, the auction's assigned template will be used.
           example: PUBLIC_CONSUMER_LIGHT_V1
     SubmitStatementAnswerRequest:
       type: object
@@ -1698,3 +1722,56 @@ components:
             type: string
         program:
           $ref: '#/components/schemas/StatementProgramView'
+    AuctionQualificationSummary:
+      type: object
+      properties:
+        participationPolicyTemplate:
+          type: string
+          description: Name of the participation policy template assigned to this auction
+          example: PUBLIC_CONSUMER_LIGHT_V1
+        templateLabel:
+          type: string
+          description: Human-readable label of the assigned template
+          example: Standardowy konsument
+        taskCount:
+          type: integer
+          description: Number of qualification tasks bidders must complete
+    QualificationProfileSummary:
+      type: object
+      required:
+        - templateName
+        - label
+        - taskCount
+      properties:
+        templateName:
+          type: string
+          example: PUBLIC_CONSUMER_LIGHT_V1
+        label:
+          type: string
+          description: Human-readable profile name
+          example: Standardowy konsument
+        description:
+          type: string
+          description: Business-oriented description for the seller
+        taskCount:
+          type: integer
+          description: Number of qualification tasks bidders must complete
+        estimatedMinutes:
+          type: string
+          description: Estimated time for bidders to complete all tasks
+          example: 2-3
+        abandonmentRisk:
+          type: string
+          enum: [low, medium, high]
+        recommended:
+          type: boolean
+          description: Whether this profile is recommended for general use
+    QualificationProfileListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualificationProfileSummary'

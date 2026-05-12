@@ -26,7 +26,8 @@ public class AuctionJpaMapper {
                 entity.getStatus(),
                 entity.getBids().stream()
                         .map(this::toDomain)
-                        .toList()
+                        .toList(),
+                entity.getParticipationPolicyTemplate()
         );
     }
 
@@ -55,6 +56,7 @@ public class AuctionJpaMapper {
             bids.add(bidEntity);
         }
         entity.getBids().addAll(bids);
+        entity.setParticipationPolicyTemplate(auction.participationPolicyTemplate());
         return entity;
     }
 

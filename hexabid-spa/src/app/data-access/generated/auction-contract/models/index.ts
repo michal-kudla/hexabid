@@ -175,6 +175,31 @@ export interface AuctionPriceBreakdownResponse {
 /**
  * 
  * @export
+ * @interface AuctionQualificationSummary
+ */
+export interface AuctionQualificationSummary {
+    /**
+     * Name of the participation policy template assigned to this auction
+     * @type {string}
+     * @memberof AuctionQualificationSummary
+     */
+    participationPolicyTemplate?: string;
+    /**
+     * Human-readable label of the assigned template
+     * @type {string}
+     * @memberof AuctionQualificationSummary
+     */
+    templateLabel?: string;
+    /**
+     * Number of qualification tasks bidders must complete
+     * @type {number}
+     * @memberof AuctionQualificationSummary
+     */
+    taskCount?: number;
+}
+/**
+ * 
+ * @export
  * @interface AuctionResponse
  */
 export interface AuctionResponse {
@@ -250,6 +275,12 @@ export interface AuctionResponse {
      * @memberof AuctionResponse
      */
     pricingConfig?: PricingConfig;
+    /**
+     * 
+     * @type {AuctionQualificationSummary}
+     * @memberof AuctionResponse
+     */
+    qualificationSummary?: AuctionQualificationSummary;
 }
 
 
@@ -452,6 +483,12 @@ export interface CreateAuctionRequest {
      * @memberof CreateAuctionRequest
      */
     pricingConfig?: PricingConfig;
+    /**
+     * Name of the participation policy template to assign to this auction. Determines which qualification steps bidders must complete.
+     * @type {string}
+     * @memberof CreateAuctionRequest
+     */
+    participationPolicyTemplate?: string;
 }
 /**
  * 
@@ -1044,6 +1081,79 @@ export interface ProductTypeResponse {
 /**
  * 
  * @export
+ * @interface QualificationProfileListResponse
+ */
+export interface QualificationProfileListResponse {
+    /**
+     * 
+     * @type {Array<QualificationProfileSummary>}
+     * @memberof QualificationProfileListResponse
+     */
+    items: Array<QualificationProfileSummary>;
+}
+/**
+ * 
+ * @export
+ * @interface QualificationProfileSummary
+ */
+export interface QualificationProfileSummary {
+    /**
+     * 
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    templateName: string;
+    /**
+     * Human-readable profile name
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    label: string;
+    /**
+     * Business-oriented description for the seller
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    description?: string;
+    /**
+     * Number of qualification tasks bidders must complete
+     * @type {number}
+     * @memberof QualificationProfileSummary
+     */
+    taskCount: number;
+    /**
+     * Estimated time for bidders to complete all tasks
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    estimatedMinutes?: string;
+    /**
+     * 
+     * @type {QualificationProfileSummaryAbandonmentRiskEnum}
+     * @memberof QualificationProfileSummary
+     */
+    abandonmentRisk?: QualificationProfileSummaryAbandonmentRiskEnum;
+    /**
+     * Whether this profile is recommended for general use
+     * @type {boolean}
+     * @memberof QualificationProfileSummary
+     */
+    recommended?: boolean;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum QualificationProfileSummaryAbandonmentRiskEnum {
+    low = 'low',
+    medium = 'medium',
+    high = 'high'
+}
+
+/**
+ * 
+ * @export
  * @interface RefundWadiumRequest
  */
 export interface RefundWadiumRequest {
@@ -1196,11 +1306,11 @@ export enum SellingMode {
  */
 export interface StartParticipationProgramRequest {
     /**
-     * Name of the participation policy template to use
+     * Name of the participation policy template to use. If omitted, the auction's assigned template will be used.
      * @type {string}
      * @memberof StartParticipationProgramRequest
      */
-    templateName: string;
+    templateName?: string;
 }
 /**
  * 

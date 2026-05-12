@@ -3,10 +3,12 @@ package com.github.hexabid.core.auctioning.port.in;
 import com.github.hexabid.core.auctioning.model.Price;
 import com.github.hexabid.core.party.model.PartyId;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.Objects;
 
-public record CreateAuctionCommand(PartyId sellerId, String title, Price startingPrice, Instant endsAt) {
+public record CreateAuctionCommand(PartyId sellerId, String title, Price startingPrice, Instant endsAt, @Nullable String participationPolicyTemplate) {
 
     public CreateAuctionCommand {
         Objects.requireNonNull(sellerId, "sellerId must not be null");

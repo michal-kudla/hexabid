@@ -15,6 +15,11 @@
   @if (!program && !facade.loading()) {
     <div class="not-started">
       <p>Ta aukcja wymaga dopuszczenia przed licytacją. Musisz przejść przez program oświadczeń, aby móc składać oferty.</p>
+      @if (qualificationSummary(); as qs) {
+        <p class="qualification-info">
+          Profil: <strong>{{ qs.templateLabel }}</strong> — {{ qs.taskCount }} zadań do ukończenia.
+        </p>
+      }
       <button type="button" class="btn-start" (click)="onStartProgram()">
         Rozpocznij dopuszczenie
       </button>

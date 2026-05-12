@@ -34,6 +34,7 @@ public final class Auction {
     private final @Nullable Long version;
     private AuctionStatus status;
     private final List<Bid> biddingHistory;
+    private @Nullable String participationPolicyTemplate;
 
     private Auction(
             AuctionId id,
@@ -43,7 +44,8 @@ public final class Auction {
             Instant endsAt,
             @Nullable Long version,
             AuctionStatus status,
-            List<Bid> biddingHistory
+            List<Bid> biddingHistory,
+            @Nullable String participationPolicyTemplate
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.sellerId = Objects.requireNonNull(sellerId, "sellerId must not be null");
@@ -53,10 +55,11 @@ public final class Auction {
         this.version = version;
         this.status = Objects.requireNonNull(status, "status must not be null");
         this.biddingHistory = new ArrayList<>(Objects.requireNonNull(biddingHistory, "biddingHistory must not be null"));
+        this.participationPolicyTemplate = participationPolicyTemplate;
     }
 
     public static Auction create(AuctionId id, PartyId sellerId, Lot lot, Price startingPrice, Instant endsAt) {
-        return new Auction(id, sellerId, lot, startingPrice, endsAt, null, AuctionStatus.DRAFT, List.of());
+        return new Auction(id, sellerId, lot, startingPrice, endsAt, null, AuctionStatus.DRAFT, List.of(), null);
     }
 
     public static Auction rehydrate(
@@ -67,9 +70,10 @@ public final class Auction {
             Instant endsAt,
             @Nullable Long version,
             AuctionStatus status,
-            List<Bid> biddingHistory
+            List<Bid> biddingHistory,
+            @Nullable String participationPolicyTemplate
     ) {
-        return new Auction(id, sellerId, lot, startingPrice, endsAt, version, status, biddingHistory);
+        return new Auction(id, sellerId, lot, startingPrice, endsAt, version, status, biddingHistory, participationPolicyTemplate);
     }
 
     public AuctionDomainEvent publish(Instant publishedAt) {
@@ -228,6 +232,14 @@ public final class Auction {
 
     public boolean isBiddable() {
         return status == AuctionStatus.IN_PROGRESS;
+    }
+
+    public @Nullable String participationPolicyTemplate() {
+        return participationPolicyTemplate;
+    }
+
+    public void assignParticipationPolicyTemplate(@Nullable String templateName) {
+        this.participationPolicyTemplate = templateName;
     }
 
     private Optional<Bid> maybeLeadingBid() {

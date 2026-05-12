@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ParticipationFacade } from './participation.facade';
 import { QualificationTaskCardComponent } from './qualification-task-card.component';
 import type { QualificationTaskVm } from '../../data-access/contracts/participation-api.models';
+import type { QualificationSummaryVm } from '../../data-access/contracts/auction-api.models';
 
 @Component({
   selector: 'app-participation-center',
@@ -15,13 +16,14 @@ import type { QualificationTaskVm } from '../../data-access/contracts/participat
 export class ParticipationCenterComponent {
   readonly facade = inject(ParticipationFacade);
   readonly auctionId = input.required<string>();
+  readonly qualificationSummary = input<QualificationSummaryVm | null | undefined>(null);
 
   onAnswerSubmit(event: { code: string; value: string }): void {
     void this.facade.submitAnswer(event.code, event.value);
   }
 
   onStartProgram(): void {
-    void this.facade.startProgram(this.auctionId(), 'PUBLIC_CONSUMER_LIGHT_V1');
+    void this.facade.startProgram(this.auctionId());
   }
 
   onRefreshProgram(): void {
@@ -42,5 +44,15 @@ export class ParticipationCenterComponent {
       map.get(step)!.push(task);
     }
     return map;
+  }
+
+  profileLabel(): string {
+    const summary = this.qualificationSummary();
+    return summary?.templateLabel ?? 'kwalifikacja';
+  }
+
+  taskCountLabel(): string {
+    const summary = this.qualificationSummary();
+    return summary?.taskCount ? `${summary.taskCount}` : '';
   }
 }
