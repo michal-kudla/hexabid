@@ -39,6 +39,7 @@
         <div class="progress-bar">
           <div class="progress-fill" [style.width.%]="prog.progressPercent"></div>
         </div>
+        <span class="progress-percent">{{ prog.progressPercent }}%</span>
       </div>
     </div>
 
@@ -71,15 +72,21 @@
         <p>Nie możesz składać ofert w tej aukcji.</p>
       </div>
     } @else {
-      <div class="tasks-list">
-        @for (task of prog.tasks; track task.code) {
-          <app-qualification-task-card
-            [task]="task"
-            [submitting]="facade.answerSubmitting()"
-            (answerSubmit)="onAnswerSubmit($event)"
-          />
-        }
-      </div>
+      @for (stage of stagesFromTasks(prog.tasks); track stage.label) {
+        <div class="stage-group">
+          <h3 class="stage-label">{{ stage.label }}</h3>
+          <p class="stage-progress">{{ stage.completedCount }} z {{ stage.tasks.length }} ukończono</p>
+          <div class="tasks-list">
+            @for (task of stage.tasks; track task.code) {
+              <app-qualification-task-card
+                [task]="task"
+                [submitting]="facade.answerSubmitting()"
+                (answerSubmit)="onAnswerSubmit($event)"
+              />
+            }
+          </div>
+        </div>
+      }
 
       @if (prog.status === 'IN_PROGRESS') {
         <button type="button" class="btn-refresh" (click)="onRefreshProgram()">

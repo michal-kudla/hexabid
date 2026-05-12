@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { QualificationTaskVm } from '../../data-access/contracts/participation-api.models';
+import type { QualificationTaskVm, QualificationTaskKind } from '../../data-access/contracts/participation-api.models';
+import { kindLabel, kindDescription } from '../../data-access/mappers/participation-view.mapper';
 
 @Component({
   selector: 'app-qualification-task-card',
@@ -16,6 +17,9 @@ export class QualificationTaskCardComponent {
 
   selectedAnswer: string | null = null;
   confirmingDestructive = false;
+
+  kindLabel = kindLabel;
+  kindDescription = kindDescription;
 
   onYesNoSelect(value: string): void {
     const task = this.task();
@@ -64,6 +68,37 @@ export class QualificationTaskCardComponent {
       case 'BLOCKED': return 'task-blocked';
       case 'AVAILABLE': return 'task-available';
       default: return 'task-available';
+    }
+  }
+
+  kindIcon(): string {
+    switch (this.task().kind) {
+      case 'STATEMENT': return '\u270D';
+      case 'VERIFIED_FACT': return '\u2705';
+      case 'EVIDENCE': return '\uD83D\uDCC4';
+      case 'EXTERNAL_CHECK': return '\uD83D\uDD0D';
+      case 'PARTY_REFERENCE': return '\uD83D\uDC64';
+      default: return '\u270D';
+    }
+  }
+
+  kindClass(): string {
+    switch (this.task().kind) {
+      case 'VERIFIED_FACT': return 'kind-verified-fact';
+      case 'EVIDENCE': return 'kind-evidence';
+      case 'EXTERNAL_CHECK': return 'kind-external-check';
+      case 'PARTY_REFERENCE': return 'kind-party-reference';
+      default: return 'kind-statement';
+    }
+  }
+
+  actionLabel(): string {
+    switch (this.task().kind) {
+      case 'VERIFIED_FACT': return 'Potwierdź';
+      case 'EVIDENCE': return 'Dołącz dokument';
+      case 'EXTERNAL_CHECK': return 'Zgódź się na weryfikację';
+      case 'PARTY_REFERENCE': return 'Wskaż podmiot';
+      default: return 'Odpowiedz';
     }
   }
 }

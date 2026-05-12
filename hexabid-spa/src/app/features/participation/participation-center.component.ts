@@ -1,9 +1,15 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ParticipationFacade } from './participation.facade';
 import { QualificationTaskCardComponent } from './qualification-task-card.component';
 import type { QualificationTaskVm } from '../../data-access/contracts/participation-api.models';
 import type { QualificationSummaryVm } from '../../data-access/contracts/auction-api.models';
+
+export interface StageGroup {
+  label: string;
+  tasks: QualificationTaskVm[];
+  completedCount: number;
+}
 
 @Component({
   selector: 'app-participation-center',
@@ -34,25 +40,25 @@ export class ParticipationCenterComponent {
     void this.facade.refreshDecision();
   }
 
-  tasksByStep(tasks: QualificationTaskVm[]): Map<string, QualificationTaskVm[]> {
-    const map = new Map<string, QualificationTaskVm[]>();
+  stagesFromTasks(tasks: QualificationTaskVm[]): StageGroup[] {
+    const stageMap = new Map<string, QualificationTaskVm[]>();
+
     for (const task of tasks) {
-      const step = task.stepLabel ?? 'Dopuszczenie';
-      if (!map.has(step)) {
-        map.set(step, []);
+      const label = task.stepLabel ?? 'Dopuszczenie';
+      if (!stageMap.has(label)) {
+        stageMap.set(label, []);
       }
-      map.get(step)!.push(task);
+      stageMap.get(label)!.push(task);
     }
-    return map;
-  }
 
-  profileLabel(): string {
-    const summary = this.qualificationSummary();
-    return summary?.templateLabel ?? 'kwalifikacja';
-  }
-
-  taskCountLabel(): string {
-    const summary = this.qualificationSummary();
-    return summary?.taskCount ? `${summary.taskCount}` : '';
+    const stages: StageGroup[] = [];
+    for (const [label, stageTasks] of stageMap) {
+      stages.push({
+        label,
+        tasks: stageTasks,
+        completedCount: stageTasks.filter(t => t.status === 'COMPLETED').length
+      });
+    }
+    return stages;
   }
 }

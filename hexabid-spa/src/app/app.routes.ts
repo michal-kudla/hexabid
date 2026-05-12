@@ -66,6 +66,13 @@ export const routes: Routes = [
           import('./features/inventory/instance-manager-page.component').then(
             (m) => m.InstanceManagerPageComponent
           )
+      },
+      {
+        path: 'me/participations',
+        loadComponent: () =>
+          import('./features/participation/my-participations-page.component').then(
+            (m) => m.MyParticipationsPageComponent
+          )
       }
     ]
   },

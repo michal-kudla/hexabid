@@ -3,12 +3,14 @@
   border-radius: var(--radius-md);
   border: 2px solid var(--border);
   background: var(--bg-surface);
+  border-left: 4px solid var(--border);
 }
 
 .task-header {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-wrap: wrap;
 }
 
 .task-status-icon {
@@ -18,6 +20,16 @@
 
 .task-title {
   flex: 1;
+  min-width: 0;
+}
+
+.task-kind-badge {
+  font-size: var(--text-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-stone-100);
+  color: var(--ink-secondary);
+  white-space: nowrap;
 }
 
 .task-severity {
@@ -39,6 +51,52 @@
   color: var(--ink-secondary);
   line-height: var(--leading-relaxed);
 }
+
+.task-kind-hint {
+  margin: var(--space-1) 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-style: italic;
+  line-height: var(--leading-relaxed);
+}
+
+.kind-statement .task-kind-hint { display: none; }
+
+.kind-verified-fact .task-kind-hint {
+  background: #eff6ff;
+  color: #1e40af;
+  border-left: 3px solid #3b82f6;
+}
+
+.kind-evidence .task-kind-hint {
+  background: #fefce8;
+  color: #854d0e;
+  border-left: 3px solid #eab308;
+}
+
+.kind-external-check .task-kind-hint {
+  background: #faf5ff;
+  color: #7e22ce;
+  border-left: 3px solid #a855f7;
+}
+
+.kind-party-reference .task-kind-hint {
+  background: #f0fdf4;
+  color: #166534;
+  border-left: 3px solid #22c55e;
+}
+
+.kind-verified-fact { border-left-color: #3b82f6; }
+.kind-evidence { border-left-color: #eab308; }
+.kind-external-check { border-left-color: #a855f7; }
+.kind-party-reference { border-left-color: #22c55e; }
+.kind-statement { border-left-color: var(--accent-text); }
+
+.kind-verified-fact .task-kind-badge { background: #eff6ff; color: #1e40af; }
+.kind-evidence .task-kind-badge { background: #fefce8; color: #854d0e; }
+.kind-external-check .task-kind-badge { background: #faf5ff; color: #7e22ce; }
+.kind-party-reference .task-kind-badge { background: #f0fdf4; color: #166534; }
 
 .task-answer {
   margin-top: var(--space-2);

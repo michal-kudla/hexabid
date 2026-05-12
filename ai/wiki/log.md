@@ -291,3 +291,17 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - `mvn clean verify -Plocal -DskipTests` pass, `npm run build` pass
 - Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
 - Tagi: #qualification-profile #api-contract #participation #spa #angular #e2e #phase4
+
+## [2026-05-12] [IMPLEMENTATION] Faza 5 — Pełne UX wymogów: task kinds, stages, PartyReference, Moje dopuszczenia
+- Zaimplementowano Fazę 5 planu z `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- **Mapper: inferowanie task kind ze statement code** — `participation-view.mapper.ts` mapuje kody oświadczeń na `QualificationTaskKind`: PARTY_REFERENCE (LEGAL_CAPACITY, BENEFICIAL_OWNER), EXTERNAL_CHECK (SANCTIONS, PEP, AML), EVIDENCE (SECTOR_LICENSE, PERMIT, EXPORT_CONTROL), VERIFIED_FACT (ADULT, AGE, KYC), STATEMENT (reszta)
+- **Mapper: kindLabel/kindDescription** — eksportowane funkcje label i opisu dla każdego task kind
+- **QualificationTaskCardComponent** — nowy badge `task-kind-badge` (Oświadczenie/Wymóg weryfikacji/Wymagany dokument/Sprawdzenie zewnętrzne/Identyfikacja podmiotu), kolorowe border-left per kind (niebieski=VERIFIED_FACT, żółty=EVIDENCE, fioletowy=EXTERNAL_CHECK, zielony=PARTY_REFERENCE), opis hint per kind, dynamiczny action label (Potwierdź/Dołącz dokument/Zgódź się na weryfikację/Wskaż podmiot)
+- **ParticipationCenterComponent** — grupowanie zadań po `stepLabel` w sekcje `stage-group` z nagłówkiem i liczbą ukończonych; pasek postępu z procentem; interfejs `StageGroup`
+- **PartyReferencePickerComponent** — nowy komponent z dwiema opcjami: "Działam we własnym imieniu" (SELF) i "Działam w imieniu innego podmiotu" (REPRESENTATIVE)
+- **MyParticipationsPageComponent** — nowa strona `/me/participations` z `MyParticipationsFacade`; ładuje aukcje z `browseMyBids` i dla każdej pobiera program dopuszczenia; pokazuje karty z statusem, postępem, powodem odrzucenia
+- **Nawigacja** — dodano "Moje dopuszczenia" do topbar nav; sekcja w `/dashboard` z linkiem do `/me/participations`; nowa ruta w `app.routes.ts`
+- **E2E: `qualification-ux.spec.ts`** — 6 testów: task kind badges, stage grouping, LAND category regulated profile, ALCOHOL regulated tasks, my participations page, party reference picker
+- `mvn clean verify -Plocal -DskipTests` pass, `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #phase5 #task-kind #stages #party-reference #my-participations #spa #angular #e2e

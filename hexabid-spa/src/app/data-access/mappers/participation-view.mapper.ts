@@ -14,7 +14,8 @@ import type {
   QualificationTaskVm,
   ParticipationDecisionVm,
   SubmitAnswerResultVm,
-  TaskSeverity
+  TaskSeverity,
+  QualificationTaskKind
 } from '../contracts/participation-api.models';
 
 function programStatusLabel(status: StatementProgramViewStatusEnum): string {
@@ -67,17 +68,54 @@ function taskSeverity(answerType: StatementStepViewAnswerTypeEnum): TaskSeverity
   return 'BLOCKING';
 }
 
+function inferTaskKind(code: string): QualificationTaskKind {
+  if (code.includes('LEGAL_CAPACITY') || code.includes('ACTING_AS_SELF') || code.includes('BENEFICIAL_OWNER')) {
+    return 'PARTY_REFERENCE';
+  }
+  if (code.includes('SANCTIONS') || code.includes('PEP_DISCLOSURE') || code.includes('AML') || code.includes('NO_SANCTIONS')) {
+    return 'EXTERNAL_CHECK';
+  }
+  if (code.includes('SECTOR_LICENSE') || code.includes('PERMIT') || code.includes('EXPORT_CONTROL') || code.includes('ENVIRONMENTAL')) {
+    return 'EVIDENCE';
+  }
+  if (code.includes('ADULT') || code.includes('AGE') || code.includes('KYC') || code.includes('IDENTITY')) {
+    return 'VERIFIED_FACT';
+  }
+  return 'STATEMENT';
+}
+
+function kindLabel(kind: QualificationTaskKind): string {
+  switch (kind) {
+    case 'STATEMENT': return 'Oświadczenie';
+    case 'VERIFIED_FACT': return 'Wymóg weryfikacji';
+    case 'EVIDENCE': return 'Wymagany dokument';
+    case 'EXTERNAL_CHECK': return 'Sprawdzenie zewnętrzne';
+    case 'PARTY_REFERENCE': return 'Identyfikacja podmiotu';
+  }
+}
+
+function kindDescription(kind: QualificationTaskKind): string {
+  switch (kind) {
+    case 'STATEMENT': return 'Musisz złożyć oświadczenie.';
+    case 'VERIFIED_FACT': return 'Ten wymóg wymaga weryfikacji — samo oświadczenie może nie wystarczyć.';
+    case 'EVIDENCE': return 'Może być wymagany dokument lub licencja.';
+    case 'EXTERNAL_CHECK': return 'System lub operator musi zweryfikować ten wymóg.';
+    case 'PARTY_REFERENCE': return 'Musisz określić, w jakim charakterze działasz.';
+  }
+}
+
 export function toQualificationTaskVm(
   step: StatementStepView,
   status: QualificationTaskVm['status']
 ): QualificationTaskVm {
+  const kind = inferTaskKind(step.statementCode);
   const destructiveAnswers = isDestructiveAnswer(step.answerType, 'NO')
     ? [{ answerValue: 'NO', consequence: 'Ta odpowiedź spowoduje odmowę dopuszczenia do aukcji.' }]
     : [];
 
   return {
     code: step.statementCode,
-    kind: 'STATEMENT',
+    kind,
     status,
     title: step.title,
     question: step.question,
@@ -135,3 +173,5 @@ export function toSubmitAnswerResultVm(response: GeneratedSubmitResponse): Submi
     missingPrerequisites: response.missingPrerequisites ?? []
   };
 }
+
+export { kindLabel, kindDescription };

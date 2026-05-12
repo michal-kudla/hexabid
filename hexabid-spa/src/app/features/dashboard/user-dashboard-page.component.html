@@ -24,39 +24,47 @@
     <section class="alert-inline" style="margin-top: var(--space-4)">{{ error() }}</section>
   }
 
-  <section class="dashboard-grid">
-    <article class="surface">
-      <div class="section-heading">
-        <h2>Moje aukcje</h2>
-        <a routerLink="/sell">Nowa aukcja</a>
-      </div>
+   <section class="dashboard-grid">
+     <article class="surface">
+       <div class="section-heading">
+         <h2>Moje aukcje</h2>
+         <a routerLink="/sell">Nowa aukcja</a>
+       </div>
 
-      @if (myAuctions().items.length) {
-        <div class="cards">
-          @for (auction of myAuctions().items; track auction.auctionId) {
-            <app-auction-card [auction]="auction" />
-          }
-        </div>
-      } @else {
-        <p class="muted">Brak aukcji wystawionych przez bieżącego użytkownika.</p>
-      }
-    </article>
+       @if (myAuctions().items.length) {
+         <div class="cards">
+           @for (auction of myAuctions().items; track auction.auctionId) {
+             <app-auction-card [auction]="auction" />
+           }
+         </div>
+       } @else {
+         <p class="muted">Brak aukcji wystawionych przez bieżącego użytkownika.</p>
+       }
+     </article>
 
-    <article class="surface">
-      <div class="section-heading">
-        <h2>Moje licytacje</h2>
-        <a routerLink="/">Przeglądaj rynek</a>
-      </div>
+     <article class="surface">
+       <div class="section-heading">
+         <h2>Moje licytacje</h2>
+         <a routerLink="/">Przeglądaj rynek</a>
+       </div>
 
-      @if (myBids().items.length) {
-        <div class="cards">
-          @for (auction of myBids().items; track auction.auctionId) {
-            <app-auction-card [auction]="auction" />
-          }
-        </div>
-      } @else {
-        <p class="muted">Brak aukcji, w których bieżący użytkownik licytował.</p>
-      }
-    </article>
-  </section>
+       @if (myBids().items.length) {
+         <div class="cards">
+           @for (auction of myBids().items; track auction.auctionId) {
+             <app-auction-card [auction]="auction" />
+           }
+         </div>
+       } @else {
+         <p class="muted">Brak aukcji, w których bieżący użytkownik licytował.</p>
+       }
+     </article>
+   </section>
+
+   <section class="surface participation-section">
+     <div class="section-heading">
+       <h2>Moje dopuszczenia</h2>
+       <a routerLink="/me/participations">Zobacz wszystkie</a>
+     </div>
+     <p class="muted">Przeglądaj status swoich programów kwalifikacyjnych i uzupełniaj brakujące oświadczenia.</p>
+   </section>
 }
