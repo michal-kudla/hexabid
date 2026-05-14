@@ -47,6 +47,10 @@ export interface QualificationTaskVm {
   severity: TaskSeverity;
   blockedBy: string[];
   destructiveAnswers: DestructiveAnswerVm[];
+  sourceProfileLabels: string[];
+  subjectLabel: string;
+  subjectRole: string;
+  explanation: string;
 }
 
 export interface QualificationProgramVm {
@@ -59,6 +63,15 @@ export interface QualificationProgramVm {
   completedCount: number;
   totalCount: number;
   progressPercent: number;
+  tasks: QualificationTaskVm[];
+  stages: QualificationStageVm[];
+}
+
+export interface QualificationStageVm {
+  code: string;
+  label: string;
+  purpose: string;
+  status: 'LOCKED' | 'CURRENT' | 'DONE' | 'FAILED';
   tasks: QualificationTaskVm[];
 }
 

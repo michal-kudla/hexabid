@@ -27,21 +27,38 @@
   }
 
   @if (program; as prog) {
-    <div class="program-status">
-      <div class="status-row">
-        <span class="status-label">Status:</span>
-        <span class="status-value" [class.status-in-progress]="prog.status === 'IN_PROGRESS'" [class.status-completed]="prog.status === 'COMPLETED'" [class.status-rejected]="prog.status === 'REJECTED'">
-          {{ prog.headline }}
-        </span>
+    @if (prog.status === 'NOT_STARTED') {
+      <div class="not-started">
+        <p>Status: <strong>{{ prog.headline }}</strong></p>
+        <p>Musisz przejść przez program oświadczeń, aby móc składać oferty.</p>
+        @if (qualificationSummary(); as qs) {
+          <p class="qualification-info">
+            Profil: <strong>{{ qs.templateLabel }}</strong> — {{ qs.taskCount }} zadań do ukończenia.
+          </p>
+        }
+        <button type="button" class="btn-start" (click)="onStartProgram()">
+          {{ prog.userActionLabel }}
+        </button>
       </div>
-      <div class="progress-row">
-        <span class="progress-text">{{ prog.completedCount }} z {{ prog.totalCount }} zadań</span>
-        <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="prog.progressPercent"></div>
+    }
+
+    @if (prog.status !== 'NOT_STARTED') {
+      <div class="program-status">
+        <div class="status-row">
+          <span class="status-label">Status:</span>
+          <span class="status-value" [class.status-in-progress]="prog.status === 'IN_PROGRESS'" [class.status-completed]="prog.status === 'COMPLETED'" [class.status-rejected]="prog.status === 'REJECTED'">
+            {{ prog.headline }}
+          </span>
         </div>
-        <span class="progress-percent">{{ prog.progressPercent }}%</span>
+        <div class="progress-row">
+          <span class="progress-text">{{ prog.completedCount }} z {{ prog.totalCount }} zadań</span>
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="prog.progressPercent"></div>
+          </div>
+          <span class="progress-percent">{{ prog.progressPercent }}%</span>
+        </div>
       </div>
-    </div>
+    }
 
     @if (decision; as dec) {
       <div class="decision-panel" [class.decision-admitted]="dec.status === 'ADMITTED'" [class.decision-admitted-conditions]="dec.status === 'ADMITTED_WITH_CONDITIONS'" [class.decision-rejected]="dec.status === 'REJECTED'" [class.decision-pending]="dec.status === 'PENDING'">
@@ -71,11 +88,12 @@
         <p>Twoje dopuszczenie zostało odrzucone. Przyczyna: {{ decision?.rootCause ?? decision?.humanReason ?? 'odpowiedź dyskwalifikująca' }}.</p>
         <p>Nie możesz składać ofert w tej aukcji.</p>
       </div>
-    } @else {
-      @for (stage of stagesFromTasks(prog.tasks); track stage.label) {
-        <div class="stage-group">
+    } @else if (prog.status !== 'NOT_STARTED') {
+      @for (stage of stages(); track stage.code) {
+        <div class="stage-group" [class]="'stage-' + stage.status.toLowerCase()">
           <h3 class="stage-label">{{ stage.label }}</h3>
-          <p class="stage-progress">{{ stage.completedCount }} z {{ stage.tasks.length }} ukończono</p>
+          <span class="stage-status-badge">{{ stageStatusLabel(stage.status) }}</span>
+          <p class="stage-progress">{{ completedInStage(stage) }} z {{ stage.tasks.length }} ukończono</p>
           <div class="tasks-list">
             @for (task of stage.tasks; track task.code) {
               <app-qualification-task-card

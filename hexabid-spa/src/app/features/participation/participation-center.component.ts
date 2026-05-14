@@ -2,14 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { CommonModule } from '@angular/common';
 import { ParticipationFacade } from './participation.facade';
 import { QualificationTaskCardComponent } from './qualification-task-card.component';
-import type { QualificationTaskVm } from '../../data-access/contracts/participation-api.models';
+import type { QualificationTaskVm, QualificationStageVm } from '../../data-access/contracts/participation-api.models';
 import type { QualificationSummaryVm } from '../../data-access/contracts/auction-api.models';
-
-export interface StageGroup {
-  label: string;
-  tasks: QualificationTaskVm[];
-  completedCount: number;
-}
 
 @Component({
   selector: 'app-participation-center',
@@ -40,25 +34,20 @@ export class ParticipationCenterComponent {
     void this.facade.refreshDecision();
   }
 
-  stagesFromTasks(tasks: QualificationTaskVm[]): StageGroup[] {
-    const stageMap = new Map<string, QualificationTaskVm[]>();
+  stages(): QualificationStageVm[] {
+    return this.facade.program()?.stages ?? [];
+  }
 
-    for (const task of tasks) {
-      const label = task.stepLabel ?? 'Dopuszczenie';
-      if (!stageMap.has(label)) {
-        stageMap.set(label, []);
-      }
-      stageMap.get(label)!.push(task);
+  stageStatusLabel(status: QualificationStageVm['status']): string {
+    switch (status) {
+      case 'LOCKED': return 'Zablokowany';
+      case 'CURRENT': return 'Bieżący';
+      case 'DONE': return 'Ukończony';
+      case 'FAILED': return 'Nieudany';
     }
+  }
 
-    const stages: StageGroup[] = [];
-    for (const [label, stageTasks] of stageMap) {
-      stages.push({
-        label,
-        tasks: stageTasks,
-        completedCount: stageTasks.filter(t => t.status === 'COMPLETED').length
-      });
-    }
-    return stages;
+  completedInStage(stage: QualificationStageVm): number {
+    return stage.tasks.filter(t => t.status === 'COMPLETED').length;
   }
 }

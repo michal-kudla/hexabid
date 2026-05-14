@@ -662,6 +662,16 @@ paths:
         complete before being admitted to bid.
       parameters:
         - $ref: '#/components/parameters/ApiVersionHeader'
+        - name: category
+          in: query
+          description: Filter profiles by auction category
+          schema:
+            type: string
+        - name: jurisdiction
+          in: query
+          description: Filter profiles by jurisdiction
+          schema:
+            type: string
       responses:
         '200':
           description: Qualification profile list
@@ -952,6 +962,11 @@ components:
           type: string
           description: Name of the participation policy template to assign to this auction. Determines which qualification steps bidders must complete.
           example: PUBLIC_CONSUMER_LIGHT_V1
+        auctionFormat:
+          type: string
+          description: Auction sale format determining bidding mechanics
+          enum: [ENGLISH, DUTCH, SEALED_BID, RESTRICTED_TENDER, MULTI_LOT]
+          default: ENGLISH
     BidResponse:
       type: object
       required:
@@ -1632,7 +1647,7 @@ components:
           type: string
         answerType:
           type: string
-          enum: [YES_NO, TEXT, SINGLE_CHOICE, MULTI_CHOICE, NUMERIC, DOCUMENT_UPLOAD]
+          enum: [YES_NO, TEXT, SINGLE_CHOICE, MULTI_CHOICE, NUMERIC, DOCUMENT_UPLOAD, PARTY_PICKER]
         order:
           type: integer
         stepLabel:
@@ -1690,7 +1705,7 @@ components:
           type: integer
         status:
           type: string
-          enum: [IN_PROGRESS, COMPLETED, REJECTED, CANCELLED]
+          enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, REJECTED, CANCELLED]
         availableStatements:
           type: array
           items:

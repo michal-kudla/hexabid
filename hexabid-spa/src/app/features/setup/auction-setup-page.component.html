@@ -90,6 +90,28 @@
         </aside>
       }
 
+      @case ('format') {
+        <h2>Tryb sprzedaży</h2>
+        <p class="step-help">
+          Wybierz mechanikę aukcji. Tryb sprzedaży określa, jak przebiega licytacja.
+          Niektóre tryby mogą wpływać na rekomendowany profil kwalifikacyjny.
+        </p>
+
+        <form [formGroup]="formatForm" class="format-options">
+          @for (fmt of auctionFormats; track fmt.value) {
+            <button
+              type="button"
+              class="format-card"
+              [class.selected]="formatForm.value.auctionFormat === fmt.value"
+              (click)="formatForm.get('auctionFormat')?.setValue(fmt.value)"
+            >
+              <strong>{{ fmt.label }}</strong>
+              <span>{{ fmt.description }}</span>
+            </button>
+          }
+        </form>
+      }
+
       @case ('qualification') {
         <h2>Kwalifikacja licytantów</h2>
         <p class="step-help">
@@ -126,6 +148,10 @@
         <div class="profile-detail">
           <strong>Wybrany profil: {{ profile.label }}</strong>
           <p>{{ profile.description }}</p>
+
+          @if (profile.hasHardVerification) {
+            <p class="doc-warning">Ten profil wymaga twardej weryfikacji — samo oświadczenie może nie wystarczyć.</p>
+          }
 
           @if (profile.possibleDocuments.length) {
             <p class="doc-warning">Licytanci mogą potrzebować: {{ profile.possibleDocuments.join(', ') }}</p>
@@ -250,19 +276,38 @@
           </div>
 
           <div class="review-section">
+            <h3>Tryb sprzedaży</h3>
+            @for (fmt of auctionFormats; track fmt.value) {
+              @if (formatForm.value.auctionFormat === fmt.value) {
+                <dl>
+                  <dt>Mechanika</dt><dd>{{ fmt.label }}</dd>
+                  <dt>Opis</dt><dd>{{ fmt.description }}</dd>
+                </dl>
+              }
+            }
+          </div>
+
+          <div class="review-section">
             <h3>Kwalifikacja licytantów</h3>
             <dl>
               <dt>Profil</dt><dd>{{ profile.label }}</dd>
               <dt>Licytant musi ukończyć</dt><dd>{{ profile.taskCount }} zadań</dd>
               <dt>Szacowany czas</dt><dd>{{ profile.estimatedMinutes }} min</dd>
               <dt>Ryzyko porzucenia</dt><dd>{{ riskLabel(profile.abandonmentRisk) }}</dd>
+              @if (profile.hasHardVerification) {
+                <div><dt>Trudna weryfikacja</dt><dd>Tak</dd></div>
+              }
+              @if (profile.possibleDocuments.length) {
+                <div><dt>Możliwe dokumenty</dt><dd>{{ profile.possibleDocuments.join(', ') }}</dd></div>
+              }
             </dl>
 
             <div class="review-preview-tasks">
-              <strong>Ścieżka licytanta:</strong>
+              <strong>Podgląd procesu licytanta:</strong>
+              <p class="step-help">Tak licytant zobaczy dopuszczenie po rozpoczęciu kwalifikacji.</p>
               <ol>
                 @for (t of profile.tasks; track t.code) {
-                  <li>{{ t.title }}</li>
+                  <li>{{ t.title }} — <em>{{ t.question }}</em></li>
                 }
               </ol>
             </div>

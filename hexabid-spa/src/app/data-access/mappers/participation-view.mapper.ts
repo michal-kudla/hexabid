@@ -12,6 +12,7 @@ import {
 import type {
   QualificationProgramVm,
   QualificationTaskVm,
+  QualificationStageVm,
   ParticipationDecisionVm,
   SubmitAnswerResultVm,
   TaskSeverity,
@@ -20,6 +21,7 @@ import type {
 
 function programStatusLabel(status: StatementProgramViewStatusEnum): string {
   switch (status) {
+    case StatementProgramViewStatusEnum.NOT_STARTED: return 'Nie rozpoczęto';
     case StatementProgramViewStatusEnum.IN_PROGRESS: return 'Wymaga działania';
     case StatementProgramViewStatusEnum.COMPLETED: return 'Ukończony';
     case StatementProgramViewStatusEnum.REJECTED: return 'Odrzucony';
@@ -30,6 +32,7 @@ function programStatusLabel(status: StatementProgramViewStatusEnum): string {
 
 function programActionLabel(status: StatementProgramViewStatusEnum): string {
   switch (status) {
+    case StatementProgramViewStatusEnum.NOT_STARTED: return 'Rozpocznij dopuszczenie';
     case StatementProgramViewStatusEnum.IN_PROGRESS: return 'Kontynuuj';
     case StatementProgramViewStatusEnum.COMPLETED: return 'Przejdź do formularza oferty';
     case StatementProgramViewStatusEnum.REJECTED: return 'Zobacz szczegóły';
@@ -64,7 +67,15 @@ function isDestructiveAnswer(answerType: StatementStepViewAnswerTypeEnum, answer
   return false;
 }
 
-function taskSeverity(answerType: StatementStepViewAnswerTypeEnum): TaskSeverity {
+function taskSeverity(step: StatementStepView, status: QualificationTaskVm['status']): TaskSeverity {
+  if (status === 'COMPLETED') return 'INFO';
+  const code = step.statementCode;
+  if (code.includes('TERMS_ACCEPTANCE') || code.includes('DATA_ROOM') || code.includes('INSIDER')) {
+    return 'INFO';
+  }
+  if (code.includes('PAYMENT_READINESS') || code.includes('BID_BOND') || code.includes('ENVIRONMENTAL')) {
+    return 'IMPORTANT';
+  }
   return 'BLOCKING';
 }
 
@@ -106,7 +117,8 @@ function kindDescription(kind: QualificationTaskKind): string {
 
 export function toQualificationTaskVm(
   step: StatementStepView,
-  status: QualificationTaskVm['status']
+  status: QualificationTaskVm['status'],
+  templateName?: string
 ): QualificationTaskVm {
   const kind = inferTaskKind(step.statementCode);
   const destructiveAnswers = isDestructiveAnswer(step.answerType, 'NO')
@@ -123,21 +135,27 @@ export function toQualificationTaskVm(
     answerValue: step.answerValue,
     order: step.order,
     stepLabel: step.stepLabel,
-    severity: taskSeverity(step.answerType),
+    severity: taskSeverity(step, status),
     blockedBy: [],
-    destructiveAnswers
+    destructiveAnswers,
+    sourceProfileLabels: templateName ? [templateName] : [],
+    subjectLabel: step.stepLabel ?? 'Zalogowany użytkownik',
+    subjectRole: 'bidder',
+    explanation: kindDescription(kind)
   };
 }
 
 export function toQualificationProgramVm(response: StatementProgramView): QualificationProgramVm {
-  const available = response.availableStatements.map(s => toQualificationTaskVm(s, 'AVAILABLE'));
-  const completed = response.completedStatements.map(s => toQualificationTaskVm(s, 'COMPLETED'));
-  const blocked = response.blockedStatements.map(s => toQualificationTaskVm(s, 'BLOCKED'));
+  const templateName = response.templateName;
+  const available = response.availableStatements.map(s => toQualificationTaskVm(s, 'AVAILABLE', templateName));
+  const completed = response.completedStatements.map(s => toQualificationTaskVm(s, 'COMPLETED', templateName));
+  const blocked = response.blockedStatements.map(s => toQualificationTaskVm(s, 'BLOCKED', templateName));
 
   const tasks = [...available, ...completed, ...blocked].sort((a, b) => a.order - b.order);
   const totalCount = available.length + completed.length + blocked.length;
   const completedCount = completed.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const stages = buildStages(tasks);
 
   return {
     auctionId: response.auctionId,
@@ -149,8 +167,45 @@ export function toQualificationProgramVm(response: StatementProgramView): Qualif
     completedCount,
     totalCount,
     progressPercent,
-    tasks
+    tasks,
+    stages
   };
+}
+
+function buildStages(tasks: QualificationTaskVm[]): QualificationStageVm[] {
+  const stageMap = new Map<string, QualificationTaskVm[]>();
+  for (const task of tasks) {
+    const label = task.stepLabel ?? 'Dopuszczenie';
+    if (!stageMap.has(label)) {
+      stageMap.set(label, []);
+    }
+    stageMap.get(label)!.push(task);
+  }
+
+  const stages: QualificationStageVm[] = [];
+  let hasCurrent = false;
+  for (const [label, stageTasks] of stageMap) {
+    const allCompleted = stageTasks.every(t => t.status === 'COMPLETED');
+    const anyAvailable = stageTasks.some(t => t.status === 'AVAILABLE');
+    const anyFailed = stageTasks.some(t => t.status === 'FAILED');
+    let status: QualificationStageVm['status'] = 'LOCKED';
+    if (allCompleted) {
+      status = 'DONE';
+    } else if (anyFailed) {
+      status = 'FAILED';
+    } else if (anyAvailable) {
+      status = hasCurrent ? 'LOCKED' : 'CURRENT';
+      hasCurrent = true;
+    }
+    stages.push({
+      code: label.replace(/\s+/g, '_').toUpperCase(),
+      label,
+      purpose: '',
+      status,
+      tasks: stageTasks
+    });
+  }
+  return stages;
 }
 
 export function toParticipationDecisionVm(response: GeneratedDecision): ParticipationDecisionVm {

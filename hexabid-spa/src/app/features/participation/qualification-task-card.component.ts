@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { CommonModule } from '@angular/common';
 import type { QualificationTaskVm, QualificationTaskKind } from '../../data-access/contracts/participation-api.models';
 import { kindLabel, kindDescription } from '../../data-access/mappers/participation-view.mapper';
+import { PartyReferencePickerComponent } from './party-reference-picker.component';
 
 @Component({
   selector: 'app-qualification-task-card',
-  imports: [CommonModule],
+  imports: [CommonModule, PartyReferencePickerComponent],
   templateUrl: './qualification-task-card.component.html',
   styleUrl: './qualification-task-card.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -90,6 +91,10 @@ export class QualificationTaskCardComponent {
       case 'PARTY_REFERENCE': return 'kind-party-reference';
       default: return 'kind-statement';
     }
+  }
+
+  onPartyAnswer(partyAnswer: string): void {
+    this.answerSubmit.emit({ code: this.task().code, value: partyAnswer });
   }
 
   actionLabel(): string {

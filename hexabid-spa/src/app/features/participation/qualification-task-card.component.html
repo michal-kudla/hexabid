@@ -1,16 +1,22 @@
-@let t = task(); @let isYesNo = t.answerType === 'YES_NO'; @let isText = t.answerType === 'TEXT'; @let isStatement = t.kind === 'STATEMENT';
+@let t = task(); @let isYesNo = t.answerType === 'YES_NO'; @let isText = t.answerType === 'TEXT'; @let isStatement = t.kind === 'STATEMENT'; @let isPartyRef = t.kind === 'PARTY_REFERENCE';
 
 <article class="task-card" [class]="statusClass() + ' ' + kindClass()">
   <div class="task-header">
     <span class="task-status-icon">{{ statusIcon() }}</span>
     <strong class="task-title">{{ t.title }}</strong>
     <span class="task-kind-badge">{{ kindLabel(t.kind) }}</span>
-    <span class="task-severity" [class.severity-blocking]="t.severity === 'BLOCKING'">
-      {{ t.severity === 'BLOCKING' ? 'Wymagane' : 'Opcjonalne' }}
+    <span class="task-severity" [class]="'severity-' + t.severity.toLowerCase()">
+      {{ t.severity === 'BLOCKING' ? 'Wymagane' : t.severity === 'IMPORTANT' ? 'Ważne' : 'Informacja' }}
     </span>
   </div>
 
   <p class="task-question">{{ t.question }}</p>
+
+  <p class="task-subject-hint">Dotyczy: {{ t.subjectLabel }}</p>
+
+  @if (t.sourceProfileLabels.length) {
+    <p class="task-source-hint">Źródło: {{ t.sourceProfileLabels.join(', ') }}</p>
+  }
 
   @if (t.kind !== 'STATEMENT') {
     <p class="task-kind-hint">{{ kindDescription(t.kind) }}</p>
@@ -21,7 +27,13 @@
   } @else if (t.status === 'BLOCKED') {
     <p class="task-blocked-hint">To zadanie jest zablokowane. Najpierw ukończ poprzednie kroki.</p>
   } @else if (t.status === 'AVAILABLE') {
-    @if (isYesNo) {
+    @if (isPartyRef) {
+      <app-party-reference-picker
+        [question]="t.question"
+        [submitting]="submitting()"
+        (answerSubmit)="onPartyAnswer($event)"
+      />
+    } @else if (isYesNo) {
       <div class="answer-options">
         <button type="button" class="answer-btn answer-yes" (click)="onYesNoSelect('YES')" [disabled]="submitting()">
           {{ isStatement ? 'Tak' : actionLabel() }}

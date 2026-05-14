@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angula
 import { Router } from '@angular/router';
 import { AuctionsApiService } from '../../data-access/http/auctions-api.service';
 import { QualificationProfileApiService } from '../../data-access/http/qualification-profile-api.service';
-import { WadiumStrategy, PricingConfigExciseTypeEnum } from '../../data-access/generated/auction-contract';
+import { WadiumStrategy, PricingConfigExciseTypeEnum, CreateAuctionRequestAuctionFormatEnum } from '../../data-access/generated/auction-contract';
 import type { CreateAuctionRequest, PricingConfig, Money } from '../../data-access/generated/auction-contract';
 import {
   AuctionCategory,
@@ -20,7 +20,7 @@ import {
   mapApiRiskToRisk
 } from '../../data-access/contracts/qualification-profile.models';
 
-type SetupStep = 'subject' | 'qualification' | 'pricing' | 'review';
+type SetupStep = 'subject' | 'format' | 'qualification' | 'pricing' | 'review';
 
 @Component({
   selector: 'app-auction-setup-page',
@@ -38,7 +38,7 @@ export class AuctionSetupPageComponent {
   readonly error = signal<string | null>(null);
   readonly profilesLoading = signal(false);
 
-  readonly steps: SetupStep[] = ['subject', 'qualification', 'pricing', 'review'];
+  readonly steps: SetupStep[] = ['subject', 'format', 'qualification', 'pricing', 'review'];
   readonly currentStep = signal<SetupStep>('subject');
 
   readonly categoryLabel = categoryLabel;
@@ -58,6 +58,18 @@ export class AuctionSetupPageComponent {
     currency: new FormControl('PLN', { nonNullable: true, validators: [Validators.required] }),
     endsAt: new FormControl('', { nonNullable: true, validators: [Validators.required] })
   });
+
+  readonly formatForm = new FormGroup({
+    auctionFormat: new FormControl<CreateAuctionRequestAuctionFormatEnum>(CreateAuctionRequestAuctionFormatEnum.ENGLISH, { nonNullable: true })
+  });
+
+  readonly auctionFormats = [
+    { value: CreateAuctionRequestAuctionFormatEnum.ENGLISH, label: 'Aukcja angielska', description: 'Licytacja rosnąca — najwyższa oferta wygrywa.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.DUTCH, label: 'Aukcja holenderska', description: 'Cena spada — pierwszy, kto zaakceptuje, kupuje.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.SEALED_BID, label: 'Oferta zamknięta', description: 'Kandydaci składają jedną ukrytą ofertę.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.RESTRICTED_TENDER, label: 'Przetarg ograniczony', description: 'Tylko zaproszeni kandydaci mogą składać oferty.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.MULTI_LOT, label: 'Aukcja wielolotowa', description: 'Wiele lotów tego samego przedmiotu sprzedawanych osobno.' }
+  ];
 
   readonly selectedProfile = signal<QualificationProfileEntry>(QUALIFICATION_PROFILE_CATALOG[0]);
 
@@ -85,7 +97,8 @@ export class AuctionSetupPageComponent {
   private async loadProfilesFromApi(): Promise<void> {
     this.profilesLoading.set(true);
     try {
-      const response = await this.profileApi.browseProfiles();
+      const category = this.subjectForm.value.category ?? 'GENERAL';
+      const response = await this.profileApi.browseProfiles(category);
       if (response.items.length > 0) {
         const apiItem = response.items[0];
         const match = profileByTemplateName(apiItem.templateName);
@@ -107,6 +120,7 @@ export class AuctionSetupPageComponent {
   stepLabel(step: SetupStep): string {
     switch (step) {
       case 'subject': return 'Przedmiot i kategoria';
+      case 'format': return 'Tryb sprzedaży';
       case 'qualification': return 'Kwalifikacja licytantów';
       case 'pricing': return 'Cena i zabezpieczenia';
       case 'review': return 'Podsumowanie';
@@ -173,7 +187,8 @@ export class AuctionSetupPageComponent {
           currency: sv.currency
         } as Money,
         endsAt: new Date(sv.endsAt).toISOString(),
-        participationPolicyTemplate: this.selectedProfile().templateName
+        participationPolicyTemplate: this.selectedProfile().templateName,
+        auctionFormat: this.formatForm.value.auctionFormat ?? CreateAuctionRequestAuctionFormatEnum.ENGLISH
       };
 
       if (this.showPricing()) {

@@ -489,7 +489,26 @@ export interface CreateAuctionRequest {
      * @memberof CreateAuctionRequest
      */
     participationPolicyTemplate?: string;
+    /**
+     * Auction sale format determining bidding mechanics
+     * @type {CreateAuctionRequestAuctionFormatEnum}
+     * @memberof CreateAuctionRequest
+     */
+    auctionFormat?: CreateAuctionRequestAuctionFormatEnum;
 }
+
+/**
+* @export
+* @enum {string}
+*/
+export enum CreateAuctionRequestAuctionFormatEnum {
+    ENGLISH = 'ENGLISH',
+    DUTCH = 'DUTCH',
+    SEALED_BID = 'SEALED_BID',
+    RESTRICTED_TENDER = 'RESTRICTED_TENDER',
+    MULTI_LOT = 'MULTI_LOT'
+}
+
 /**
  * 
  * @export
@@ -1385,6 +1404,7 @@ export interface StatementProgramView {
 * @enum {string}
 */
 export enum StatementProgramViewStatusEnum {
+    NOT_STARTED = 'NOT_STARTED',
     IN_PROGRESS = 'IN_PROGRESS',
     COMPLETED = 'COMPLETED',
     REJECTED = 'REJECTED',
@@ -1451,7 +1471,8 @@ export enum StatementStepViewAnswerTypeEnum {
     SINGLE_CHOICE = 'SINGLE_CHOICE',
     MULTI_CHOICE = 'MULTI_CHOICE',
     NUMERIC = 'NUMERIC',
-    DOCUMENT_UPLOAD = 'DOCUMENT_UPLOAD'
+    DOCUMENT_UPLOAD = 'DOCUMENT_UPLOAD',
+    PARTY_PICKER = 'PARTY_PICKER'
 }
 
 /**

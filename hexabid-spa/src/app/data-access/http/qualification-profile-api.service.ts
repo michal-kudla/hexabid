@@ -17,9 +17,11 @@ export class QualificationProfileApiService {
     })
   );
 
-  async browseProfiles(): Promise<QualificationProfileListResponse> {
+  async browseProfiles(category?: string): Promise<QualificationProfileListResponse> {
     return this.execute(
-      () => this.client.browseQualificationProfiles({}),
+      () => this.client.browseQualificationProfiles({
+        category: category ?? undefined
+      }),
       'Nie udało się pobrać katalogu profili kwalifikacyjnych.'
     );
   }

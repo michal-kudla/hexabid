@@ -19,6 +19,8 @@ import type {
 
 export interface BrowseQualificationProfilesRequest {
     xAPIVersion?: string;
+    category?: string;
+    jurisdiction?: string;
 }
 
 /**
@@ -31,6 +33,14 @@ export class QualificationApi extends runtime.BaseAPI {
      */
     async browseQualificationProfilesRequestOpts(requestParameters: BrowseQualificationProfilesRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['category'] != null) {
+            queryParameters['category'] = requestParameters['category'];
+        }
+
+        if (requestParameters['jurisdiction'] != null) {
+            queryParameters['jurisdiction'] = requestParameters['jurisdiction'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
