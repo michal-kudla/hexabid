@@ -25,7 +25,7 @@ class RestAuctionContractMapper {
     }
 
     AuctionResponse toResponse(AuctionView view) {
-        return new AuctionResponse(
+        var response = new AuctionResponse(
                 view.auctionId(),
                 view.sellerId(),
                 view.title(),
@@ -35,6 +35,33 @@ class RestAuctionContractMapper {
                 AuctionStatus.fromValue(view.status().name()),
                 view.biddingHistory().stream().map(this::toResponse).toList()
         ).leadingBidderId(view.leadingBidderId());
+
+        if (view.participationPolicyTemplate() != null) {
+            response.setQualificationSummary(new com.github.hexabid.contract.model.AuctionQualificationSummary()
+                    .participationPolicyTemplate(view.participationPolicyTemplate())
+                    .templateLabel(getTemplateLabel(view.participationPolicyTemplate()))
+                    .taskCount(getTemplateTaskCount(view.participationPolicyTemplate())));
+        }
+
+        return response;
+    }
+
+    private static int getTemplateTaskCount(String templateName) {
+        return switch (templateName) {
+            case "PUBLIC_CONSUMER_LIGHT_V1" -> 4;
+            case "REGULATED_ASSET_BUYER_V1" -> 8;
+            case "HIGH_VALUE_TENDER_V1" -> 11;
+            default -> 0;
+        };
+    }
+
+    private static String getTemplateLabel(String templateName) {
+        return switch (templateName) {
+            case "PUBLIC_CONSUMER_LIGHT_V1" -> "Standardowy konsument";
+            case "REGULATED_ASSET_BUYER_V1" -> "Nabywca regulowany";
+            case "HIGH_VALUE_TENDER_V1" -> "Przetarg wysokiej wartości";
+            default -> templateName;
+        };
     }
 
     AuctionListItemResponse toResponse(AuctionSummaryView view) {

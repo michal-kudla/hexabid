@@ -34,11 +34,18 @@ export interface BidVm {
   placedAtLabel: string;
 }
 
+export interface QualificationSummaryVm {
+  participationPolicyTemplate: string;
+  templateLabel: string;
+  taskCount: number;
+}
+
 export interface AuctionDetailsVm extends AuctionSummaryVm {
   bidHistory: BidVm[];
   leadingBidderLabel: string;
   totalBids: number;
   isOpen: boolean;
+  qualificationSummary?: QualificationSummaryVm | null;
 }
 
 export interface ProfileVm {

@@ -8,6 +8,8 @@
     actionHref="/"
   />
 } @else if (facade.auction(); as auction) {
+  <app-participation-center [auctionId]="auction.auctionId" [qualificationSummary]="auction.qualificationSummary" />
+
   <section class="details-grid">
     <article class="surface spotlight">
       <div class="eyebrow">
@@ -59,37 +61,14 @@
       }
     </article>
 
-    <aside class="surface bid-panel">
-      <h2>Złóż ofertę</h2>
-      <p>
-        Ofertę może złożyć zalogowany licytujący, który nie jest sprzedającym i spełnia reguły licytacji.
-        Kopie dokumentów pomagają wejść do aukcji, ale oryginały mogą być wymagane dopiero przy rozliczeniu.
-      </p>
-
-      <form [formGroup]="bidForm" (ngSubmit)="submitBid()" class="stack">
-        <label>
-          <span>Kwota</span>
-          <input type="text" formControlName="amount" placeholder="150.00" />
-        </label>
-
-        <label>
-          <span>Waluta</span>
-          <select formControlName="currency">
-            <option value="PLN">PLN</option>
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-          </select>
-        </label>
-
-        <button type="submit" [disabled]="facade.bidSubmitting() || bidDisabledReason() !== null">
-          {{ facade.bidSubmitting() ? 'Wysyłanie...' : 'Licytuj teraz' }}
-        </button>
-      </form>
-
-      @if (bidDisabledReason(); as reason) {
-        <p class="hint">{{ reason }}</p>
-      }
-    </aside>
+    <app-auction-bid-panel
+      [auction]="auction"
+      [decision]="participationFacade.decision()"
+      [isSeller]="isSeller()"
+      [bidSubmitting]="facade.bidSubmitting()"
+      [hasBiddingBlocks]="hasBiddingBlocks()"
+      (bidSubmit)="onBidSubmit($event)"
+    />
   </section>
 
   <section class="details-grid details-grid--secondary">

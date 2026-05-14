@@ -62,6 +62,9 @@ public class AuctionJpaEntity {
     @OrderBy("placedAt ASC")
     private List<BidJpaEntity> bids = new ArrayList<>();
 
+    @Column
+    private @Nullable String participationPolicyTemplate;
+
     public UUID getId() {
         return id;
     }
@@ -156,5 +159,13 @@ public class AuctionJpaEntity {
 
     public void setBids(List<BidJpaEntity> bids) {
         this.bids = bids;
+    }
+
+    public @Nullable String getParticipationPolicyTemplate() {
+        return participationPolicyTemplate;
+    }
+
+    public void setParticipationPolicyTemplate(@Nullable String participationPolicyTemplate) {
+        this.participationPolicyTemplate = participationPolicyTemplate;
     }
 }

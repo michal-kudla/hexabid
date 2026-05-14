@@ -16,6 +16,7 @@ public record AuctionView(
         Instant endsAt,
         AuctionStatus status,
         @Nullable String leadingBidderId,
-        List<BidView> biddingHistory
+        List<BidView> biddingHistory,
+        @Nullable String participationPolicyTemplate
 ) {
 }

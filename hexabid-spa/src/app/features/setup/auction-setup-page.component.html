@@ -1,0 +1,360 @@
+@let step = currentStep(); @let profile = selectedProfile(); @let idx = stepIndex();
+
+<section class="setup">
+  <article class="surface intro">
+    <span class="kicker">Auction Setup Studio</span>
+    <h1>Konfiguracja aukcji</h1>
+    <p>
+      Przeprowadź aukcję przez konfigurację: przedmiot, kwalifikacja licytantów, cena i podgląd procesu dopuszczenia.
+      Na koniec zapiszesz szkic i będziesz mógł uruchomić licytację.
+    </p>
+  </article>
+
+  <nav class="step-nav">
+    @for (s of steps; track s) {
+      <button
+        type="button"
+        class="step-tab"
+        [class.active]="s === step"
+        [class.completed]="steps.indexOf(s) < idx"
+        (click)="goToStep(s)"
+      >
+        <span class="step-number">{{ steps.indexOf(s) + 1 }}</span>
+        <span class="step-name">{{ stepLabel(s) }}</span>
+      </button>
+    }
+  </nav>
+
+  <article class="surface form-card">
+    @switch (step) {
+      @case ('subject') {
+        <h2>Przedmiot i kategoria</h2>
+        <p class="step-help">
+          Wskaż kategorię przedmiotu. Kategoria jest wejściem do profili kwalifikacyjnych —
+          system zaproponuje odpowiedni profil na kolejnym kroku.
+        </p>
+
+        <form [formGroup]="subjectForm" class="form-grid">
+          <label class="wide">
+            <span>Tytuł aukcji</span>
+            <input type="text" formControlName="title" placeholder="Komiks z limitowanej serii" />
+          </label>
+
+          <label>
+            <span>Kategoria przedmiotu</span>
+            <select formControlName="category" (change)="onCategoryChange()">
+              <option value="GENERAL">Ogólny</option>
+              <option value="LAND">Grunt / Nieruchomość</option>
+              <option value="ALCOHOL">Alkohol</option>
+              <option value="PHARMA">Lek / Produkt farmaceutyczny</option>
+              <option value="CONTROLLED_SUBSTANCE">Substancja kontrolowana</option>
+              <option value="VEHICLE">Pojazd</option>
+              <option value="ART">Sztuka / Antyki</option>
+              <option value="ELECTRONICS">Elektronika</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Jurysdykcja sprzedaży</span>
+            <select formControlName="jurisdiction">
+              <option value="PL">Polska</option>
+              <option value="EU">Unia Europejska</option>
+              <option value="EEA">EOG</option>
+              <option value="WORLD">Świat</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Cena wywoławcza</span>
+            <input type="text" formControlName="amount" />
+          </label>
+
+          <label>
+            <span>Waluta</span>
+            <select formControlName="currency">
+              <option value="PLN">PLN</option>
+              <option value="EUR">EUR</option>
+              <option value="USD">USD</option>
+            </select>
+          </label>
+
+          <label class="wide">
+            <span>Koniec aukcji</span>
+            <input type="datetime-local" formControlName="endsAt" />
+          </label>
+        </form>
+
+        <aside class="detected-requirements">
+          <strong>Wykryte wymagania dla: {{ categoryLabel(subjectForm.value.category ?? 'GENERAL') }}</strong>
+          <p>Na kolejnym kroku wybierzesz profil kwalifikacyjny licytantów.</p>
+        </aside>
+      }
+
+      @case ('format') {
+        <h2>Tryb sprzedaży</h2>
+        <p class="step-help">
+          Wybierz mechanikę aukcji. Tryb sprzedaży określa, jak przebiega licytacja.
+          Niektóre tryby mogą wpływać na rekomendowany profil kwalifikacyjny.
+        </p>
+
+        <form [formGroup]="formatForm" class="format-options">
+          @for (fmt of auctionFormats; track fmt.value) {
+            <button
+              type="button"
+              class="format-card"
+              [class.selected]="formatForm.value.auctionFormat === fmt.value"
+              (click)="formatForm.get('auctionFormat')?.setValue(fmt.value)"
+            >
+              <strong>{{ fmt.label }}</strong>
+              <span>{{ fmt.description }}</span>
+            </button>
+          }
+        </form>
+      }
+
+      @case ('qualification') {
+        <h2>Kwalifikacja licytantów</h2>
+        <p class="step-help">
+          Wybierz profil kwalifikacyjny. Profil określa, jakie oświadczenia i wymogi muszą spełnić licytanci,
+          aby móc składać oferty. Poniżej widzisz rekomendowany profil dla wybranej kategorii.
+        </p>
+
+        <div class="profile-list">
+          @for (p of availableProfiles(); track p.templateName) {
+            <button
+              type="button"
+              class="profile-card"
+              [class.selected]="profile.templateName === p.templateName"
+              [class.recommended]="p.recommended"
+              (click)="selectProfile(p)"
+            >
+              <div class="profile-header">
+                <strong>{{ p.label }}</strong>
+                @if (p.recommended) {
+                  <span class="badge-recommended">Rekomendowany</span>
+                }
+              </div>
+              <p class="profile-desc">{{ p.description }}</p>
+              <dl class="profile-meta">
+                <div><dt>Zadań dla licytanta</dt><dd>{{ p.taskCount }}</dd></div>
+                <div><dt>Szacowany czas</dt><dd>{{ p.estimatedMinutes }} min</dd></div>
+                <div><dt>Ryzyko porzucenia</dt><dd>{{ riskLabel(p.abandonmentRisk) }}</dd></div>
+                <div><dt>Trudna weryfikacja</dt><dd>{{ p.hasHardVerification ? 'Tak' : 'Nie' }}</dd></div>
+              </dl>
+            </button>
+          }
+        </div>
+
+        <div class="profile-detail">
+          <strong>Wybrany profil: {{ profile.label }}</strong>
+          <p>{{ profile.description }}</p>
+
+          @if (profile.hasHardVerification) {
+            <p class="doc-warning">Ten profil wymaga twardej weryfikacji — samo oświadczenie może nie wystarczyć.</p>
+          }
+
+          @if (profile.possibleDocuments.length) {
+            <p class="doc-warning">Licytanci mogą potrzebować: {{ profile.possibleDocuments.join(', ') }}</p>
+          }
+
+          <div class="bidder-preview">
+            <h3>Tak licytant zobaczy dopuszczenie:</h3>
+            <ol class="preview-tasks">
+              @for (t of profile.tasks; track t.code) {
+                <li>
+                  <strong>{{ t.title }}</strong>
+                  <span>{{ t.question }}</span>
+                </li>
+              }
+            </ol>
+          </div>
+        </div>
+      }
+
+      @case ('pricing') {
+        <h2>Cena i zabezpieczenia</h2>
+        <p class="step-help">
+          Skonfiguruj parametry kalkulacji ceny. Wadium może być wymagane przed licytacją albo dopiero po wygranej.
+          Pełna płatność i oryginały dokumentów dotyczą zwycięzcy na etapie rozliczenia.
+        </p>
+
+        <div class="pricing-toggle">
+          <button type="button" class="button-secondary" (click)="togglePricing()">
+            {{ showPricing() ? 'Ukryj konfigurację ceny' : 'Dodaj konfigurację ceny' }}
+          </button>
+        </div>
+
+        @if (showPricing()) {
+          <div class="pricing-section">
+            <h3>Konfiguracja ceny</h3>
+            <form [formGroup]="pricingForm" class="form-grid">
+              <label>
+                <span>Strategia wadium</span>
+                <select formControlName="wadiumStrategy">
+                  <option value="">Brak wadium</option>
+                  <option [ngValue]="WadiumStrategy.PERCENTAGE">Procentowe</option>
+                  <option [ngValue]="WadiumStrategy.FIXED">Stałe kwotowo</option>
+                </select>
+              </label>
+
+              @if (pricingForm.value.wadiumStrategy === WadiumStrategy.PERCENTAGE) {
+                <label>
+                  <span>Stawka wadium (np. 0.05 = 5%)</span>
+                  <input type="text" formControlName="wadiumRate" placeholder="0.05" />
+                </label>
+              }
+
+              @if (pricingForm.value.wadiumStrategy === WadiumStrategy.FIXED) {
+                <label>
+                  <span>Stała kwota wadium</span>
+                  <input type="text" formControlName="wadiumFixedAmount" placeholder="50.00" />
+                </label>
+              }
+
+              <label>
+                <span>Stawka VAT (np. 0.23 = 23%)</span>
+                <input type="text" formControlName="vatRate" />
+              </label>
+
+              <label>
+                <span>Produkt akcyzowy</span>
+                <select formControlName="isExcisable">
+                  <option [ngValue]="false">Nie</option>
+                  <option [ngValue]="true">Tak</option>
+                </select>
+              </label>
+
+              @if (pricingForm.value.isExcisable) {
+                <label>
+                  <span>Stawka akcyzy</span>
+                  <input type="text" formControlName="exciseRate" placeholder="0.031" />
+                </label>
+                <label>
+                  <span>Typ akcyzy</span>
+                  <select formControlName="exciseType">
+                    <option [ngValue]="ExciseType.PERCENTAGE">Procentowa</option>
+                    <option [ngValue]="ExciseType.PER_UNIT">Na jednostkę</option>
+                  </select>
+                </label>
+              }
+
+              <label>
+                <span>Produkt importowany</span>
+                <select formControlName="isImported">
+                  <option [ngValue]="false">Nie</option>
+                  <option [ngValue]="true">Tak</option>
+                </select>
+              </label>
+
+              @if (pricingForm.value.isImported) {
+                <label>
+                  <span>Stawka cła (np. 0.05 = 5%)</span>
+                  <input type="text" formControlName="customsDutyRate" placeholder="0.05" />
+                </label>
+              }
+            </form>
+          </div>
+        }
+      }
+
+      @case ('review') {
+        <h2>Podsumowanie</h2>
+        <p class="step-help">
+          Przejrzyj konfigurację aukcji przed zapisaniem szkicu. Po zapisaniu będziesz mógł uruchomić licytację.
+        </p>
+
+        <div class="review-grid">
+          <div class="review-section">
+            <h3>Przedmiot</h3>
+            <dl>
+              <dt>Tytuł</dt><dd>{{ subjectForm.value.title }}</dd>
+              <dt>Kategoria</dt><dd>{{ categoryLabel(subjectForm.value.category ?? 'GENERAL') }}</dd>
+              <dt>Jurysdykcja</dt><dd>{{ jurisdictionLabel(subjectForm.value.jurisdiction ?? 'PL') }}</dd>
+              <dt>Cena wywoławcza</dt><dd>{{ subjectForm.value.amount }} {{ subjectForm.value.currency }}</dd>
+              <dt>Koniec aukcji</dt><dd>{{ subjectForm.value.endsAt }}</dd>
+            </dl>
+          </div>
+
+          <div class="review-section">
+            <h3>Tryb sprzedaży</h3>
+            @for (fmt of auctionFormats; track fmt.value) {
+              @if (formatForm.value.auctionFormat === fmt.value) {
+                <dl>
+                  <dt>Mechanika</dt><dd>{{ fmt.label }}</dd>
+                  <dt>Opis</dt><dd>{{ fmt.description }}</dd>
+                </dl>
+              }
+            }
+          </div>
+
+          <div class="review-section">
+            <h3>Kwalifikacja licytantów</h3>
+            <dl>
+              <dt>Profil</dt><dd>{{ profile.label }}</dd>
+              <dt>Licytant musi ukończyć</dt><dd>{{ profile.taskCount }} zadań</dd>
+              <dt>Szacowany czas</dt><dd>{{ profile.estimatedMinutes }} min</dd>
+              <dt>Ryzyko porzucenia</dt><dd>{{ riskLabel(profile.abandonmentRisk) }}</dd>
+              @if (profile.hasHardVerification) {
+                <div><dt>Trudna weryfikacja</dt><dd>Tak</dd></div>
+              }
+              @if (profile.possibleDocuments.length) {
+                <div><dt>Możliwe dokumenty</dt><dd>{{ profile.possibleDocuments.join(', ') }}</dd></div>
+              }
+            </dl>
+
+            <div class="review-preview-tasks">
+              <strong>Podgląd procesu licytanta:</strong>
+              <p class="step-help">Tak licytant zobaczy dopuszczenie po rozpoczęciu kwalifikacji.</p>
+              <ol>
+                @for (t of profile.tasks; track t.code) {
+                  <li>{{ t.title }} — <em>{{ t.question }}</em></li>
+                }
+              </ol>
+            </div>
+          </div>
+
+          <div class="review-section">
+            <h3>Cena i zabezpieczenia</h3>
+            @if (showPricing()) {
+              <dl>
+                <dt>Wadium</dt><dd>{{ pricingForm.value.wadiumStrategy || 'Brak' }}</dd>
+                <dt>VAT</dt><dd>{{ pricingForm.value.vatRate }}</dd>
+                @if (pricingForm.value.isExcisable) {
+                  <div><dt>Akcyza</dt><dd>{{ pricingForm.value.exciseRate }}</dd></div>
+                }
+                @if (pricingForm.value.isImported) {
+                  <div><dt>Cło</dt><dd>{{ pricingForm.value.customsDutyRate }}</dd></div>
+                }
+              </dl>
+            } @else {
+              <p>Brak dodatkowej konfiguracji ceny.</p>
+            }
+          </div>
+        </div>
+
+        <div class="profile-note">
+          Profil kwalifikacyjny <strong>{{ profile.label }}</strong> zostanie przypisany do aukcji.
+          Licytant rozpocznie program dopuszczenia automatycznie — bez konieczności wyboru szablonu.
+        </div>
+      }
+    }
+
+    @if (error()) {
+      <div class="alert-inline">{{ error() }}</div>
+    }
+
+    <div class="actions">
+      @if (!isFirstStep()) {
+        <button type="button" class="button-secondary" (click)="prevStep()">Wstecz</button>
+      }
+      @if (!isLastStep()) {
+        <button type="button" (click)="nextStep()">Dalej</button>
+      }
+      @if (isLastStep()) {
+        <button type="button" (click)="submit()" [disabled]="submitting()">
+          {{ submitting() ? 'Zapisywanie...' : 'Zapisz szkic aukcji' }}
+        </button>
+      }
+    </div>
+  </article>
+</section>

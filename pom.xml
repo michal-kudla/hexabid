@@ -26,6 +26,7 @@
         <module>hexabid-inventory</module>
         <module>hexabid-rules</module>
         <module>hexabid-rules-adapter</module>
+        <module>hexabid-statements</module>
         <module>hexabid-core</module>
         <module>hexabid-auth-core</module>
         <module>hexabid-api-contract</module>

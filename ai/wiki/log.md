@@ -156,3 +156,152 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - Wynik: `mvn -Plocal -DskipTests install`, `systemctl --user restart hexabid-backend`, `npm run e2e:business` 5/5 pass, `npm run e2e:auth` 1/1 pass, `npm run build` pass
 - Link: [[decisions/2026-05-05-auction-activation-rules-guidance]]
 - Tagi: #websocket #stomp #auth #dev-auth #e2e #bidding
+
+## [2026-05-09] [DESIGN] System Zbierania Oświadczeń — DAG, szablony aukcji, kaskadowe odrzucenie
+- Projekt modułu `hexabid-statements` oparty na algorytmach grafowych (DAG, sortowanie topologiczne, domknięcie przechodnie)
+- 4 typy aukcji jako szablony oświadczeń: ENGLISH_ASCENDING (5), SEALED_BID_TENDER (16), RESTRICTED_TENDER (16 dwuetapowo), DUTCH_DESCENDING (3)
+- 16 typów oświadczeń w 4 fazach: TOŻSAMOŚĆ → KWALIFIKACJA → ZDOLNOŚĆ → ZOBOWIĄZANIE
+- Graf zależności DAG z kaskadowym odrzuceniem (reachability index)
+- Decyzja o przystąpieniu: PARTICIPATION_GRANTED / REJECTED / PENDING
+- REST API: 7 endpointów, integracja z hexabid-core, hexabid-rules, hexabid-pricing
+- Link: [[decisions/2026-05-09-statement-collection-system]]
+- Tagi: #statements #dag #auction-types #templates #cascade-rejection #participation-decision
+
+## [2026-05-10] [DESIGN] Alternatywna propozycja systemu zbierania oświadczeń
+- Dodano osobny dokument AsciiDoc z propozycją Codex: `ai/wiki/decisions/2026-05-10-statement-collection-system-codex-proposal.adoc`
+- Kluczowa decyzja: rozdzielić `AuctionFormat` od `ParticipationPolicyTemplate`, aby mechanika aukcji nie wymuszała jednego zestawu compliance
+- Zaproponowano moduł `hexabid-statements`, graf DAG z warunkowymi krawędziami, reachability index, decyzje `ADMITTED`, `REJECTED`, `PENDING`, `ADMITTED_WITH_CONDITIONS`
+- Rozszerzono katalog oświadczeń o AML/sankcje, beneficjenta rzeczywistego, konflikt interesów, zmowę, źródło środków, licencje sektorowe, eksport, data room i zdolność środowiskową
+- Opisano pięć typów polityk aukcyjnych, natychmiastowe odrzucenie po odpowiedzi dyskwalifikującej oraz integrację z `hexabid-rules`
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #statements #policy-template #graphs #rules #participation-decision
+
+## [2026-05-10] [DESIGN] Weryfikacja systemu oświadczeń z archetypami oprogramowania
+- Przejrzano lokalne materiały `.local/archetypyoprogramowania/`, transkrypcje `.local/archetypyoprogramowania/txt/` oraz źródła `/work/projects/github.com/archetypy-oprogramowania/archetypes/`
+- Doprecyzowano, że graf jest mechanizmem planowania, ścieżki użytkownika i wyjaśniania wpływu, a nie całym modelem domenowym
+- Wprowadzono korekty projektowe: `ParticipationApplication`, `StatementProgramGraph`, `StatementScope`, `StatementExecutionDelta`, `RejectionImpactZone`
+- Uzasadniono rozdzielenie `StatementDefinition`, `ParticipationPolicyTemplate` i `StatementProgramInstance` przez analogie do archetypów Graphs, Party, Rules, Plan-vs-Execution, Ordering i Pricing
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #statements #archetypes #graphs #party #rules #plan-vs-execution
+
+## [2026-05-10] [DESIGN] Kategorie aukcji, wymogi i pakiety kwalifikacyjne
+- Rozszerzono projekt o `QualificationProfile`: nazwany, wersjonowany pakiet wymagań dla kategorii, jurysdykcji, wartości i ryzyka aukcji
+- Rozdzielono `StatementRequirement` od `VerifiedFactRequirement`, `EvidenceRequirement` i `ExternalCheckRequirement`
+- Opisano przykłady profili: grunt w Polsce, lek/substancja kontrolowana, alkohol oraz udział w imieniu innego `PartyId`
+- Dodano model odpowiedzi z referencjami do stron: `PartyReference`, role reprezentowanego kupującego, beneficjenta, płatnika, odbiorcy, posiadacza licencji i specjalisty medycznego
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #qualification-profile #statements #party #requirements #category-policy
+
+## [2026-05-10] [IMPLEMENTATION] Moduł hexabid-statements — pełna implementacja z poprawkami
+- Zaimplementowano moduł domenowy `hexabid-statements` (bez Springa, bez JPA) z modelami: `StatementDefinition`, `StatementCode`, `StatementProgramInstance`, `ParticipationDecision`, `StatementDependencyGraph`, `ParticipationPolicyEvaluator`, `PolicyTemplateCatalog`
+- Trzy szablony polityki: `PUBLIC_CONSUMER_LIGHT_V1` (4 oświadczenia), `REGULATED_ASSET_BUYER_V1` (8 oświadczeń), `HIGH_VALUE_TENDER_V1` (11 oświadczeń)
+- Graf DAG z sortowaniem topologicznym, wykrywaniem cykli, reachability, dostępnością oświadczeń i kaskadowym odrzuceniem
+- 4 porty wejściowe: `StartStatementProgramUseCase`, `SubmitStatementAnswerUseCase`, `GetStatementProgramUseCase`, `GetParticipationDecisionUseCase`
+- REST adapter: `RestParticipationApiDelegate` z 4 endpointami Participation API
+- JPA adapter: `JpaStatementProgramInstanceRepositoryAdapter` z persystencją programów, odpowiedzi i decyzji
+- Naprawiono krytyczne bugi utraty danych w JPA adapterze: persystencja `violationType`, `decidedAt`, `blockedByPrerequisites`; czyszczenie answers przed save; `saveAndFlush` zamiast `save`; zastąpienie `default -> null` wyjątkiem
+- Naprawiono `StatementProgramInstance.markCompleted()` — prawidłowa obsługa `Pending` (pozostaje IN_PROGRESS) z użyciem `switch` zamiast `if-else`
+- Dodano defensywne kopie map sąsiedztwa w `StatementDependencyGraph`
+- Dodano `@Nullable` (jspecify) do view DTOs: `StatementStepView.answerValue`, `StatementProgramView.decision`, `ParticipationDecisionView.rootCause`, `ParticipationDecisionView.humanReason`
+- Dodano JavaDoc do wszystkich publicznych typów w module hexabid-statements (48 plików źródłowych)
+- Dodano JavaDoc do REST i DB adapterów
+- Testy jednostkowe: 14 pass (8 graph + 2 definition + 4 evaluator)
+- Testy integracyjne: 10 scenariuszy (SC1-SC10) w `StatementCollectionFlowIT`
+- Weryfikacja E2E: SC1 (admitted) i SC2 (rejected with cascade) potwierdzone curl-em
+- Frontend: wygenerowany ParticipationApi.ts z OpenAPI contract, `npm run build` pass
+- Architektura: `CoreArchitectureTest` sprawdza brak zależności `hexabid-statements` od Spring/JPA
+- Link: [[decisions/2026-05-10-statement-collection-system-codex-proposal]]
+- Tagi: #statements #implementation #javadoc #bugfix #integration-tests #participation-decision
+
+## [2026-05-10] [DESIGN] Projekt UX oświadczeń i szablonów kwalifikacji w Hexabid SPA
+- Kompleksowa analiza obecnego stanu frontend (ParticipationApi wygenerowany ale nieużywany, płaski formularz tworzenia aukcji, brak ścieżki kwalifikacji licytanta)
+- Projekt wizarda tworzenia aukcji: 4 kroki (Podstawy → Format i kwalifikacja → Konfiguracja ceny → Podsumowanie) zamiast płaskiego formularza
+- Projekt ParticipationGate: bramka kwalifikacji na stronie szczegółów aukcji, 5 stanów (NOT_STARTED / IN_PROGRESS / ADMITTED / REJECTED / PENDING)
+- Projekt StatementWizard: DAG-driven UI sterowany z backendu, grupowanie oświadczeń po krokach, ostrzeżenia przy odpowiedziach dyskwalifikujących, ekran odrzucenia z kaskadą
+- Nowe komponenty: ParticipationGateComponent, StatementWizardComponent, StatementStepCardComponent, RejectionScreenComponent, FormatAdmissionStepComponent
+- Nowy data-access layer: participation-api.models.ts, participation-view.mapper.ts, participation-api.service.ts
+- Integracja: ParticipationGate na AuctionDetailsPage, Rules panel linkuje do kwalifikacji, bid panel warunkowy na podstawie decision status
+- Wymagane zmiany backend: dodanie auctionFormat i participationPolicyTemplate do CreateAuctionRequest, dodanie participationPolicyTemplate do AuctionResponse
+- Plan implementacji: 5 faz (data-access → participation → wizard tworzenia → backend API → integracja i polish)
+- Link: [[decisions/2026-05-10-statements-ux-design]]
+- Tagi: #statements #ux #wizard #participation #frontend #angular #dag-driven-ui
+
+## [2026-05-11] [DESIGN] Propozycja Codex dla UI/UX kwalifikacji i oświadczeń w SPA
+- Dodano osobny dokument AsciiDoc `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- Zweryfikowano aktualny frontend: `ParticipationApi` jest wygenerowany, `/sell` pozostaje płaskim formularzem, a `AuctionResponse`/`CreateAuctionRequest` nie niosą profilu kwalifikacyjnego aukcji
+- Zaproponowano `Auction Setup Studio` dla sprzedającego i `Participation Center` dla licytanta jako procesy nadrzędne wobec prostego statement wizard
+- Wprowadzono docelowy model UI `QualificationTaskVm`, który rozróżnia `STATEMENT`, `VERIFIED_FACT`, `EVIDENCE`, `EXTERNAL_CHECK` i `PARTY_REFERENCE`
+- Opisano plan wdrożenia w 5 fazach: most do obecnego backendu, blokowanie licytacji decyzją, kreator aukcji MVP, kontrakt profili kwalifikacyjnych, pełny UX wymogów
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #statements #ux #frontend #qualification-profile #participation-center #auction-setup
+
+## [2026-05-11] [IMPLEMENTATION] Faza 1 Participation Center — most do backendu oświadczeń
+- Zaimplementowano Fazę 1 planu z `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- Nowe pliki data-access: `participation-api.models.ts` (QualificationTaskVm, QualificationProgramVm, ParticipationDecisionVm, SubmitAnswerResultVm), `participation-view.mapper.ts` (mapowanie StatementProgramView → QualificationProgramVm), `participation-api.service.ts` (ParticipationApiService wrapping generated ParticipationApi)
+- Nowy feature: `features/participation/` z `ParticipationFacade`, `ParticipationCenterComponent`, `QualificationTaskCardComponent`
+- Integracja ze stroną aukcji: ParticipationCenterComponent nad panelem licytacji, bidDisabledReason() uwzględnia ParticipationDecision
+- Centrum dopuszczenia: status programu, pasek postępu, mapa zadań, formularze odpowiedzi (YES_NO, TEXT), ostrzeżenie przy odpowiedziach dyskwalifikujących, panel decyzji
+- E2E: `participation.spec.ts` — 5 testów (centrum widoczne, start programu, zadania, blokada licytacji, odpowiedzi pozytywne)
+- `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #statements #participation-center #spa #angular #e2e #qualification-task
+
+## [2026-05-11] [IMPLEMENTATION] Faza 2 — bezpieczne blokowanie licytacji przez ParticipationDecision
+- Wydzielono `AuctionBidPanelComponent` z formularzem oferty i logiką blokowania
+- Panel ma 5 trybów: `bid` (formularz), `qualification-needed` (CTA do ParticipationCenter), `rejected` (odmowa bez formularza), `seller` (info), `inactive` (aukcja nieaktywna)
+- Gdy `ParticipationDecision` = REJECTED — formularz licytacji jest całkowicie ukryty, widoczny komunikat odrzucenia z przyczyną
+- Gdy brak decyzji lub status inny niż ADMITTED — widoczny CTA "Rozpocznij dopuszczenie w Centrum dopuszczenia powyżej"
+- Gdy ADMITTED_WITH_CONDITIONS — widoczny formularz z ostrzeżeniem o warunkach
+- Rules panel zachowany jako dodatkowy warunek (hasBiddingBlocks nadal blokuje submit)
+- E2E rozszerzone o testy Fazy 2: qualification CTA, rejected message bez formularza, bid form unlock
+- `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #statements #bid-panel #participation-decision #spa #angular #e2e
+
+## [2026-05-11] [IMPLEMENTATION] Faza 3 — Kreator aukcji MVP (Auction Setup Studio)
+- Zastąpiono płaski formularz `/sell` kreatorem krokowym `AuctionSetupPageComponent` w `features/setup/`
+- 4 kroki: Przedmiot i kategoria → Kwalifikacja licytantów → Cena i zabezpieczenia → Podsumowanie
+- Krok 1: wybór kategorii (8 typów), jurysdykcji, tytuł, cena, termin; panel "Wykryte wymagania"
+- Krok 2: wybór profilu kwalifikacyjnego z tymczasowego katalogu (3 profile: PUBLIC_CONSUMER_LIGHT_V1, REGULATED_ASSET_BUYER_V1, HIGH_VALUE_TENDER_V1); podgląd ścieżki licytanta
+- Krok 3: konfiguracja PricingConfig (wadium, VAT, akcyza, cło) — przeniesione z dawnego `/sell`
+- Krok 4: podsumowanie z pełnym przeglądem konfiguracji, ścieżką licytanta, informacją o profilu eksperymentalnym
+- Nawigacja: step tabs (klikalne), przyciski Wstecz/Dalej/Zapisz szkic
+- Nowy plik: `data-access/contracts/qualification-profile.models.ts` z katalogiem profili, labelami, funkcjami `profilesForCategory()`, `recommendedProfile()`
+- Route `/sell` kieruje do `AuctionSetupPageComponent`; stary `AuctionCreatePageComponent` zachowany w `features/create/`
+- E2E: `e2e/auction-setup.spec.ts` — 8 testów (ładowanie, kategoria, profile, bidder preview, pricing, review, nawigacja, pełen flow z logowaniem)
+- `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #auction-setup #wizard #qualification-profile #spa #angular #e2e #sell
+
+## [2026-05-12] [IMPLEMENTATION] Faza 4 — Kontrakt profili kwalifikacyjnych i automatyczne dopasowanie
+- Zaimplementowano Fazę 4 planu z `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- **Backend: `RestQualificationApiDelegate`** — implementacja `GET /api/qualification-profiles`, zwraca katalog z `PolicyTemplateCatalog` (3 profile z labelami, opisami, taskCount, estimatedMinutes, abandonmentRisk, recommended)
+- **Backend: `RestParticipationApiDelegate`** — gdy `templateName` nie jest przekazany w `StartParticipationProgramRequest`, delegat rozwiązuje profil z aukcji przez `FindAuctionDetailsUseCase`; licytant nie musi wybierać szablonu
+- **Backend: `RestAuctionContractMapper`** — dodano `templateLabel` do `AuctionQualificationSummary` w odpowiedzi
+- **Frontend: `qualification-profile-api.service.ts`** — nowy serwis opakowujący wygenerowany `QualificationApi`
+- **Frontend: `qualification-profile.models.ts`** — zaktualizowano katalog profili (zgodny z backendowymi `StatementCode` zamiast fikcyjnych kodów), dodano `profileByTemplateName()` i `mapApiRiskToRisk()`
+- **Frontend: `auction-api.models.ts`** — dodano `QualificationSummaryVm` i pole `qualificationSummary` w `AuctionDetailsVm`
+- **Frontend: `auction-view.mapper.ts`** — mapowanie `AuctionResponse.qualificationSummary` do `QualificationSummaryVm`
+- **Frontend: `AuctionSetupPageComponent`** — ładuje profile z API w `constructor()`, wysyła `participationPolicyTemplate` przy tworzeniu aukcji; usunięto notatkę eksperymentalną, zastąpiono komunikatem o automatycznym przypisaniu profilu
+- **Frontend: `ParticipationApiService`** — `startProgram()` akceptuje opcjonalny `templateName` (gdy brak, backend używa profilu aukcji)
+- **Frontend: `ParticipationFacade`** — `startProgram()` akceptuje opcjonalny `templateName`
+- **Frontend: `ParticipationCenterComponent`** — przyjmuje input `[qualificationSummary]`, pokazuje label profilu i taskCount przed rozpoczęciem programu, nie hardcoduje już szablonu
+- **Frontend: `auction-details-page.component.html`** — przekazuje `[qualificationSummary]="auction.qualificationSummary"` do participation center
+- E2E: `e2e/qualification-profile.spec.ts` — 5 testów (API catalog, tworzenie aukcji z profilem, start programu bez templateName, SPA profile assignment note, participation center z qualification summary)
+- `mvn clean verify -Plocal -DskipTests` pass, `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #qualification-profile #api-contract #participation #spa #angular #e2e #phase4
+
+## [2026-05-12] [IMPLEMENTATION] Faza 5 — Pełne UX wymogów: task kinds, stages, PartyReference, Moje dopuszczenia
+- Zaimplementowano Fazę 5 planu z `ai/wiki/decisions/2026-05-11-statements-ui-ux-codex-proposal.adoc`
+- **Mapper: inferowanie task kind ze statement code** — `participation-view.mapper.ts` mapuje kody oświadczeń na `QualificationTaskKind`: PARTY_REFERENCE (LEGAL_CAPACITY, BENEFICIAL_OWNER), EXTERNAL_CHECK (SANCTIONS, PEP, AML), EVIDENCE (SECTOR_LICENSE, PERMIT, EXPORT_CONTROL), VERIFIED_FACT (ADULT, AGE, KYC), STATEMENT (reszta)
+- **Mapper: kindLabel/kindDescription** — eksportowane funkcje label i opisu dla każdego task kind
+- **QualificationTaskCardComponent** — nowy badge `task-kind-badge` (Oświadczenie/Wymóg weryfikacji/Wymagany dokument/Sprawdzenie zewnętrzne/Identyfikacja podmiotu), kolorowe border-left per kind (niebieski=VERIFIED_FACT, żółty=EVIDENCE, fioletowy=EXTERNAL_CHECK, zielony=PARTY_REFERENCE), opis hint per kind, dynamiczny action label (Potwierdź/Dołącz dokument/Zgódź się na weryfikację/Wskaż podmiot)
+- **ParticipationCenterComponent** — grupowanie zadań po `stepLabel` w sekcje `stage-group` z nagłówkiem i liczbą ukończonych; pasek postępu z procentem; interfejs `StageGroup`
+- **PartyReferencePickerComponent** — nowy komponent z dwiema opcjami: "Działam we własnym imieniu" (SELF) i "Działam w imieniu innego podmiotu" (REPRESENTATIVE)
+- **MyParticipationsPageComponent** — nowa strona `/me/participations` z `MyParticipationsFacade`; ładuje aukcje z `browseMyBids` i dla każdej pobiera program dopuszczenia; pokazuje karty z statusem, postępem, powodem odrzucenia
+- **Nawigacja** — dodano "Moje dopuszczenia" do topbar nav; sekcja w `/dashboard` z linkiem do `/me/participations`; nowa ruta w `app.routes.ts`
+- **E2E: `qualification-ux.spec.ts`** — 6 testów: task kind badges, stage grouping, LAND category regulated profile, ALCOHOL regulated tasks, my participations page, party reference picker
+- `mvn clean verify -Plocal -DskipTests` pass, `npm run build` pass
+- Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
+- Tagi: #phase5 #task-kind #stages #party-reference #my-participations #spa #angular #e2e

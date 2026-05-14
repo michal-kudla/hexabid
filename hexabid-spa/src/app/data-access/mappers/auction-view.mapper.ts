@@ -4,7 +4,8 @@ import {
   AuctionStatus,
   AuctionSummaryVm,
   BidVm,
-  ProfileVm
+  ProfileVm,
+  QualificationSummaryVm
 } from '../contracts/auction-api.models';
 import type {
   AuctionListItemResponse,
@@ -130,12 +131,22 @@ export function toBidVm(bid: BidResponse): BidVm {
 export function toAuctionDetailsVm(response: AuctionResponse): AuctionDetailsVm {
   const summary = toAuctionSummaryVm(response);
 
+  let qualificationSummary: QualificationSummaryVm | null = null;
+  if (response.qualificationSummary?.participationPolicyTemplate) {
+    qualificationSummary = {
+      participationPolicyTemplate: response.qualificationSummary.participationPolicyTemplate,
+      templateLabel: response.qualificationSummary.templateLabel ?? response.qualificationSummary.participationPolicyTemplate,
+      taskCount: response.qualificationSummary.taskCount ?? 0
+    };
+  }
+
   return {
     ...summary,
     bidHistory: response.bids.map(toBidVm).reverse(),
     leadingBidderLabel: bidderLabel(response.leadingBidderId),
     totalBids: response.bids.length,
-    isOpen: response.status === AuctionStatus.IN_PROGRESS
+    isOpen: response.status === AuctionStatus.IN_PROGRESS,
+    qualificationSummary
   };
 }
 

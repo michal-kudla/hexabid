@@ -49,6 +49,7 @@ public final class CreateAuctionService implements CreateAuctionUseCase {
                 command.startingPrice(),
                 command.endsAt()
         );
+        created.assignParticipationPolicyTemplate(command.participationPolicyTemplate());
         var saved = auctionRepository.save(created);
         return new CreateAuctionResult.AuctionCreated(AuctionViews.from(saved));
     }

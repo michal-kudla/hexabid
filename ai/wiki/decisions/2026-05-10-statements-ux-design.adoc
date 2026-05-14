@@ -1,0 +1,953 @@
+= ADR: Projekt UX oświadczeń i szablonów kwalifikacji w interfejsie Hexabid SPA
+:toc: macro
+:toclevels: 3
+:sectnums:
+
+toc::[]
+
+== Tytuł
+
+Redesign interfejsu użytkownika Hexabid SPA: integracja systemu oświadczeń kandydatów, szablonów polityki dopuszczenia i konfiguracji aukcji w spójny, intuicyjny proces dla sprzedającego i licytanta.
+
+== Podsumowanie (TLDR)
+
+Obecny interfejs Hexabid SPA nie korzysta z gotowego backendu oświadczeń (`ParticipationApi` jest wygenerowany, ale nieużywany). Formularz tworzenia aukcji jest płaski i nie pozwala na wybór szablonu kwalifikacji. Licytant nie ma żadnej ścieżki do przejścia przez oświadczenia przed licytacją.
+
+Proponuję trzy kluczowe zmiany UX:
+
+. **Sprzedający**: Przejście z płaskiego formularza na **wizard krokowy** (4 kroki: Podstawy → Format i kwalifikacja → Konfiguracja ceny → Podsumowanie), gdzie krok 2 pozwala wybrać `AuctionFormat` i `ParticipationPolicyTemplate`.
+. **Licytant**: Dodanie **bramki kwalifikacji** (`ParticipationGate`) na stronie szczegółów aukcji -- licytant musi przejść przez oświadczenia zanim zobaczy formularz licytacji.
+. **Oświadczenia**: **Guided statement wizard** sterowany grafem DAG z backendu -- pokazuje tylko dostępne oświadczenia, grupuje je w kroki, daje natychmiastowy feedback, obsługuje odrzucenie z wyjaśnieniem kaskady.
+
+== Tagi
+
+#statements #ux #wizard #participation #qualification #auction-creation #frontend #angular #spa #dag-driven-ui
+
+== Diagnoza obecnego stanu
+
+=== Co działa
+
+| Aspekt | Stan |
+|--------|------|
+| Backend oświadczeń | W pełni zaimplementowany: 3 szablony, DAG, ewaluator, REST API, JPA, testy integracyjne |
+| OpenAPI contract | Zdefiniowane 4 endpointy Participation + wszystkie modele |
+| TypeScript codegen | `ParticipationApi`, `StatementProgramView`, `SubmitStatementAnswerResponse` wygenerowane |
+| Rules panel | Pokazuje fazy PARTICIPATION/BIDDING/SETTLEMENT z naruszeniami |
+| Bidding real-time | STOMP WebSocket z live feed |
+| Dokumenty | Formularz zgłaszania dokumentów (excise, customs, etc.) |
+
+=== Co nie działa
+
+| Aspekt | Problem |
+|--------|---------|
+| Participation API | Wygenerowana, ale **zero użycia** w kodzie ręcznym |
+| Tworzenie aukcji | Płaski formularz, brak wyboru `AuctionFormat` ani `ParticipationPolicyTemplate` |
+| Ścieżka licytanta | Brak jakiejkolwiek ścieżki kwalifikacji przed licytacją |
+| Integracja rules ↔ statements | Rules panel pokazuje PARTICIPATION violations, ale nie linkuje do wizardu oświadczeń |
+| Buy-now price | Model istnieje w `CreateAuctionRequest`, ale nie ma pola w UI |
+| Lot assignment | Brak w UI |
+
+=== Diagnoza UX
+
+Obecny flow jest **rozlany i niekierowany**:
+
+1. Sprzedający tworzy aukcję jednym formularzem -- nie wie, że może skonfigurować wymagania dla licytantów.
+2. Licytant widzi formularz licytacji od razu, nawet jeśli nie przeszedł kwalifikacji.
+3. Rules panel mówi "masz blokady w PARTICIPATION", ale nie mówi CO Z TYM ZROBIĆ.
+4. Dokumenty i oświadczenia to dwa różne byty, ale w UI nie ma tego rozróżnienia.
+
+== Zasady projektowe
+
+=== 1. Progressive Disclosure
+
+Nie pokazuj złożoności, dopóki użytkownik jej nie potrzebuje.
+
+* Dla prostej aukcji konsumenckiej: 2 pola + wybór szablonu z podpowiedzią.
+* Dla przetargu regulowanego: pełna konfiguracja z wyjaśnieniem każdego wymogu.
+
+=== 2. DAG-Driven UI
+
+Graf zależności z backendu **steruje** interfejsem, nie odwrotnie.
+
+* Backend mówi: "te oświadczenia są dostępne" → UI je pokazuje.
+* Backend mówi: "te oświadczenia są zablokowane" → UI je ukrywa z wyjaśnieniem.
+* Backend mówi: "odpowiedź dyskwalifikująca" → UI zatrzymuje proces z powodem.
+
+=== 3. Goal-Oriented Navigation
+
+Każdy ekran powinien odpowiadać na pytanie: "co chcę osiągnąć i jak?"
+
+* Licytant: "Chcę licytować" → "Najpierw musisz przejść kwalifikację" → "Oto Twoje oświadczenia do złożenia"
+* Sprzedający: "Chcę wystawić aukcję" → "Jaki to typ aukcji?" → "Jakie wymagania dla licytantów?"
+
+=== 4. Graceful Rejection
+
+Odrzucenie nie jest błędem -- to informacja. Zawsze pokazuj:
+
+* CO się stało (które oświadczenie, która odpowiedź)
+* DLACZEGO ma to znaczenie (jaka reguła, jaki skutek)
+* CO DALEJ (czy jest odwołanie, czy trzeba zacząć od nowa, czy nic nie da się zrobić)
+
+=== 5. Consistent Mental Model
+
+Oświadczenia ≠ dokumenty ≠ reguły, ale są powiązane:
+
+| Pojęcie | Co robi użytkownik | Kiedy | Gdzie w UI |
+|---------|-------------------|-------|------------|
+| Oświadczenie | Deklaruje fakt o sobie | Przed licytacją (PARTICIPATION) | Statement wizard |
+| Dokument | Dostarcza dowód | Na każdym etapie | Document submit form |
+| Reguła | System weryfikuje warunek | Automatycznie | Rules panel |
+
+== Projekt: Sprzedający -- Wizard tworzenia aukcji
+
+=== Obecny flow
+
+```
+/sell → [Płaski formularz: tytuł, cena, data, opcjonalna konfiguracja ceny] → Zapisz → /auction/:id
+```
+
+=== Proponowany flow
+
+```
+/sell → Krok 1: Podstawy → Krok 2: Format i kwalifikacja → Krok 3: Konfiguracja ceny → Krok 4: Podsumowanie → Zapisz → /auction/:id
+```
+
+=== Krok 1: Podstawy (Basics)
+
+.Nazwa aukcji (title) -- wymagane, min 4 znaki
+.Cena wywoławcza (startingPrice) -- kwota + waluta
+.Koniec aukcji (endsAt) -- datetime-local
+.Cena "Kup teraz" (buyNowPrice) -- opcjonalne, kwota + waluta
+
+Racjonalizacja: To absolutne minimum, żeby aukcja miała sens. Bez tytułu, ceny i terminu nie da się wystawić aukcji. Buy-now jest opcjonalne -- istnieje w modelu, ale nie było w UI.
+
+=== Krok 2: Format i kwalifikacja (Format & Admission)
+
+==== Auction Format
+
+Wybór mechaniki aukcji:
+
+| Wartość | Label PL | Opis |
+|---------|----------|------|
+| `ENGLISH_ASCENDING` | Angielska (rosnąca) | Standardowa licytacja z rosnącymi ofertami |
+| `DUTCH_DESCENDING` | Holenderska (malejąca) | Cena spada, pierwszy kto zaakceptuje wygrywa |
+| `SEALED_BID` | Przetarg zamknięty | Jednorazowa ukryta oferta, najlepsza wygrywa |
+| `RESTRICTED_TENDER` | Przetarg ograniczony | Tylko zaproszeni kandydaci mogą licytować |
+
+==== Participation Policy Template
+
+Wybór poziomu kwalifikacji licytantów:
+
+| Szablon | Label PL | Opis UI | Ilość oświadczeń |
+|---------|----------|---------|------------------|
+| `PUBLIC_CONSUMER_LIGHT_V1` | Publiczna konsumencka | "Lekka weryfikacja -- 4 oświadczenia, szybka ścieżka dopuszczenia. Idealna dla aktywów niskiego ryzyka: elektronika, kolekcjonerstwo, dobra konsumenckie." | 4 |
+| `REGULATED_ASSET_BUYER_V1` | Majątek regulowany | "Weryfikacja regulowana -- 8 oświadczeń z weryfikacją licencji, kontroli eksportu i zdolności środowiskowej. Dla alkoholu, paliw, odpadów, urządzeń specjalistycznych." | 8 |
+| `HIGH_VALUE_TENDER_V1` | Przetarg wysokiej wartości | "Pełna weryfikacja AML/antykoluzja -- 11 oświadczeń z ujawnieniem PEP, źródłem środków i poufnością data room. Dla nieruchomości, floty, maszyn, pakietów przedsiębiorstwa." | 11 |
+
+==== UX szczegóły
+
+* Każdy szablon pokazany jako **karta** (card) z ikoną, tytułem, opisem i liczbą oświadczeń.
+* Po najechaniu (hover) lub kliknięciu "Szczegóły" -- rozwinięcie z listą kroków i oświadczeń.
+* Domyślnie wybrany `PUBLIC_CONSUMER_LIGHT_V1` (najprostszy).
+* Jeśli `AuctionFormat = SEALED_BID` -- podpowiedź: "Przetarg zamknięty często wymaga wyższego poziomu kwalifikacji. Rozważ REGULATED_ASSET_BUYER_V1 lub HIGH_VALUE_TENDER_V1."
+* Jeśli `AuctionFormat = RESTRICTED_TENDER` -- podpowiedź: "Przetarg ograniczony wymaga dopuszczenia. Wybierz co najmniej REGULATED_ASSET_BUYER_V1."
+
+=== Krok 3: Konfiguracja ceny (Pricing Config)
+
+Identyczny jak obecna sekcja "Dodaj konfigurację ceny", ale jako osobny krok zamiast collapsible section:
+
+* Strategia wadium (brak / procentowe / stałe)
+* Stawka VAT
+* Produkt akcyzowy + stawka i typ
+* Produkt importowany + stawka cła
+
+Racjonalizacja: Przeniesienie z collapsible do osobnego kroku zmniejsza cognitive load na kroku 1 i daje równą wagę konfiguracji finansowej.
+
+=== Krok 4: Podsumowanie (Review)
+
+Widok read-only z wszystkimi wybranymi opcjami:
+
+* Podstawy: tytuł, cena, termin, buy-now
+* Format: wybrany format z opisem
+* Kwalifikacja: wybrany szablon z listą oświadczeń
+* Cena: konfiguracja VAT/wadium/akcyza/cło
+* Przycisk "Zapisz szkic aukcji" lub "Wstecz" do edycji
+
+Racjonalizacja: Podsumowanie daje sprzedającemu ostatnią szansę na weryfikację przed utworzeniem szkicu. Jest to standard UX w e-commerce i formularzach wielokrokowych.
+
+=== Nawigacja wizarda
+
+* Stepper na górze strony: `① Podstawy → ② Format i kwalifikacja → ③ Cena → ④ Podsumowanie`
+* Przyciski "Dalej" i "Wstecz" na każdym kroku
+* "Dalej" waliduje bieżący krok przed przejściem
+* "Wstecz" zachowuje stan formularza
+* Bezpośredni klik na numer kroku pozwala na powrót do zatwierdzonego kroku
+
+== Projekt: Licytant -- Bramka kwalifikacji
+
+=== Obecny flow
+
+```
+/auction/:id → [Formularz licytacji od razu widoczny] → Licytuj
+```
+
+Problem: Licytant widzi formularz licytacji nawet jeśli nie jest dopuszczony do aukcji. Rules panel mówi o blokadach PARTICIPATION, ale nie daje akcji.
+
+=== Proponowany flow
+
+```
+/auction/:id
+  → [Czy licytant ma zakończony program oświadczeń?]
+    → NIE: Bramka kwalifikacji → Statement wizard → Decyzja → [Jeśli ADMITTED] → Formularz licytacji
+    → TAK (ADMITTED): Formularz licytacji od razu
+    → TAK (REJECTED): Ekran odrzucenia z wyjaśnieniem
+    → TAK (PENDING): Informacja o brakach + link do uzupełnienia
+```
+
+=== ParticipationGate -- komponent bramki
+
+Trzy stany bramki:
+
+==== Stan 1: Program nie rozpoczęty
+
+Licytant nie rozpoczął programu oświadczeń.
+
+....
+┌──────────────────────────────────────────────────────┐
+│  🔒 Przystąpienie do aukcji                         │
+│                                                      │
+│  Ta aukcja wymaga przejścia kwalifikacji przed       │
+│  licytacją. Musisz złożyć oświadczenia dotyczące     │
+│  Twojej tożsamości, zgodności i zdolności.           │
+│                                                      │
+│  Wymagane oświadczenia: 4 (Publiczna konsumencka)    │
+│  Szacowany czas: 2-3 minuty                          │
+│                                                      │
+│  [ Rozpocznij kwalifikację ]                         │
+│                                                      │
+│  <small>Dlaczego to potrzebne?</small>               │
+│  <small>Organizator aukcji musi upewnić się, że      │
+│  wszyscy licytanci spełniają wymagania prawne        │
+│  i regulacyjne. Twoje odpowiedzi są poufne i         │
+│  służą wyłącznie celom kwalifikacji.</small>         │
+└──────────────────────────────────────────────────────┘
+....
+
+Kliknięcie "Rozpocznij kwalifikację":
+
+1. Wywołanie `POST /api/auctions/{auctionId}/participation/program` z `templateName` z konfiguracji aukcji.
+2. Przejście do Statement Wizard.
+
+==== Stan 2: Program w trakcie (IN_PROGRESS)
+
+Licytant rozpoczął program, ale nie złożył wszystkich oświadczeń.
+
+....
+┌──────────────────────────────────────────────────────┐
+│  ⏳ Kwalifikacja w toku                              │
+│                                                      │
+│  Złożono 2 z 4 oświadczeń.                          │
+│                                                      │
+│  ✓ Profil i umocowanie (krok 1)                     │
+│  ✓ Wykluczenia twarde (krok 2)                      │
+│  → Zdolność wykonania i finansowanie (krok 3)       │
+│  ○ Zobowiązanie końcowe (krok 4)                    │
+│                                                      │
+│  [ Kontynuuj kwalifikację ]                          │
+└──────────────────────────────────────────────────────┘
+....
+
+==== Stan 3: Decyzja podjęta
+
+===== ADMITTED
+
+....
+┌──────────────────────────────────────────────────────┐
+│  ✅ Dopuszczony do aukcji                            │
+│                                                      │
+│  Przeszedłeś kwalifikację. Możesz teraz składać      │
+│  oferty w tej aukcji.                                │
+│                                                      │
+│  [ Przejdź do licytacji ↓ ]                         │
+└──────────────────────────────────────────────────────┘
+....
+
+Formularz licytacji jest widoczny i aktywny.
+
+===== ADMITTED_WITH_CONDITIONS
+
+....
+┌──────────────────────────────────────────────────────┐
+│  ⚠️ Dopuszczony z warunkami                          │
+│                                                      │
+│  Możesz licytować, ale musisz spełnić warunki        │
+│  przed ostateczną ofertą:                            │
+│                                                      │
+│  • Dostarczyć oryginał pełnomocnictwa                │
+│  • Zweryfikować źródło środków z banku               │
+│                                                      │
+│  [ Przejdź do licytacji ↓ ]                         │
+└──────────────────────────────────────────────────────┘
+....
+
+Formularz licytacji jest aktywny, ale warunki są widoczne jako przypomnienie.
+
+===== REJECTED
+
+....
+┌──────────────────────────────────────────────────────┐
+│  ✋ Nie zostałeś dopuszczony do aukcji               │
+│                                                      │
+│  Powód: Oświadczenie "Brak na listach sankcyjnych"   │
+│  zostało odrzucone.                                  │
+│                                                      │
+│  Zaznaczono odpowiedź: "Jestem na liście sankcyjnej"  │
+│                                                      │
+│  Skutek: dalsze oświadczenia dotyczące finansowania,  │
+│  wadium i akceptacji regulaminu nie są już wymagane,  │
+│  ponieważ decyzja o dopuszczeniu jest negatywna.      │
+│                                                      │
+│  Dotyczy: SOURCE_OF_FUNDS, PAYMENT_READINESS,        │
+│  BID_BOND_ACCEPTANCE, TERMS_ACCEPTANCE               │
+│                                                      │
+│  [ Zobacz szczegóły oświadczeń ]                     │
+└──────────────────────────────────────────────────────┘
+....
+
+Formularz licytacji jest **ukryty** (nie disabled -- ukryty, bo nie ma sensu).
+
+===== PENDING
+
+....
+┌──────────────────────────────────────────────────────┐
+│  ⏳ Kwalifikacja niekompletna                        │
+│                                                      │
+│  Brakuje oświadczeń:                                │
+│  • SOURCE_OF_FUNDS -- Źródło środków                │
+│  • TERMS_ACCEPTANCE -- Akceptacja regulaminu         │
+│                                                      │
+│  [ Uzupełnij oświadczenia ]                         │
+└──────────────────────────────────────────────────────┘
+....
+
+Formularz licytacji jest widoczny ale **disabled** z komunikatem "Najpierw uzupełnij oświadczenia kwalifikacyjne."
+
+== Projekt: Statement Wizard
+
+=== Architektura komponentu
+
+Wizard jest **sterowany z backendu** -- każdy krok i każde oświadczenie pochodzi z `StatementProgramView`, nie jest hardcodowane w UI.
+
+=== Widok kroku
+
+Każdy krok (`StatementStep`) to grupa oświadczeń z tym samym `order` i `stepLabel`:
+
+....
+┌──────────────────────────────────────────────────────────────┐
+│  Krok 2 z 4: Wykluczenia twarde                              │
+│                                                              │
+│  ████████░░░░░░░░░░░░  50% ukończenia kwalifikacji          │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  SANCTIONS_CLEARANCE                                  │  │
+│  │                                                        │  │
+│  │  Nie jestem na listach sankcyjnych ani zamrożonych     │  │
+│  │  środków.                                              │  │
+│  │                                                        │  │
+│  │  ⚠️ Odpowiedź "Nie" powoduje natychmiastowe            │  │
+│  │  odrzucenie i unieważnia dalsze oświadczenia.          │  │
+│  │                                                        │  │
+│  │  ○ Tak    ● Nie                                       │  │
+│  │                                                        │  │
+│  │  [ Potwierdź i przejdź dalej ]                        │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │  🔒 EXPORT_CONTROL_ELIGIBILITY                        │  │
+│  │                                                        │  │
+│  │  To oświadczenie będzie dostępne po złożeniu           │  │
+│  │  poprzedzających oświadczeń.                           │  │
+│  │                                                        │  │
+│  │  Wymaga: SANCTIONS_CLEARANCE (złożone)                 │  │
+│  └────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
+....
+
+=== Interakcja z oświadczeniem
+
+Każde oświadczenie (`StatementStepView`) jest renderowane na podstawie `answerType`:
+
+| `answerType` | Komponent UI | Walidacja |
+|--------------|-------------|-----------|
+| `YES_NO` | Dwa radio buttony: "Tak" / "Nie" | Wymagany wybór |
+| `TEXT` | Textarea | Wymagany niepusty tekst |
+| `SINGLE_CHOICE` | Radio group z opcjami | Wymagany wybór |
+| `MULTI_CHOICE` | Checkbox group z opcjami | Wymagany co najmniej jeden |
+| `NUMERIC` | Input number | Wymagana wartość numeryczna |
+| `DOCUMENT_UPLOAD` | File upload + status | Wymagany plik |
+
+Po kliknięciu "Potwierdź":
+
+1. Wywołanie `POST /api/auctions/{auctionId}/participation/statements/{statementCode}/answers`
+2. Obsługa trzech wyników:
+   - `ACCEPTED`: Odśwież program, odblokuj następne oświadczenia, zaktualizuj pasek postępu.
+   - `REJECTED`: Zatrzymaj wizard, pokaż ekran odrzucenia z powodem i kaskadą.
+   - `PREREQUISITE_NOT_MET`: Błąd walidacji -- pokaż które prerekwizyty brakują.
+
+=== Ekran odrzucenia
+
+....
+┌──────────────────────────────────────────────────────────────┐
+│  ✋ Oświadczenie odrzucone                                   │
+│                                                              │
+│  Twoja odpowiedź na oświadczenie                             │
+│  "Brak na listach sankcyjnych" powoduje wykluczenie          │  ← rootCause + humanReason
+│  z tej aukcji.                                               │
+│                                                              │
+│  Oświadczenie: SANCTIONS_CLEARANCE                          │  ← statementCode
+│  Twoja odpowiedź: Nie                                        │  ← answerValue
+│  Powód: Kandydat na liście sankcyjnej nie może               │  ← humanReason
+│  przystąpić do aukcji.                                      │
+│                                                              │
+│  Skutek kaskadowy:                                           │
+│  Odpowiedź unieważnia następujące oświadczenia:              │
+│  • SOURCE_OF_FUNDS -- Źródło środków                       │  ← cascadedStatements
+│  • PAYMENT_READINESS -- Gotowość do zapłaty                 │
+│  • BID_BOND_ACCEPTANCE -- Akceptacja wadium                │
+│  • TERMS_ACCEPTANCE -- Akceptacja regulaminu                │
+│                                                              │
+│  [ Zamknij i wróć do aukcji ]                               │
+│                                                              │
+│  <small>Jeśli uważasz, że to pomyłka, skontaktuj się        │
+│  z organizatorem aukcji.</small>                             │
+└──────────────────────────────────────────────────────────────┘
+....
+
+=== Przepływ danych
+
+....
+1. startParticipationProgram(auctionId, templateName)
+   → StatementProgramView { availableStatements, completedStatements, blockedStatements, decision }
+
+2. Dla każdego dostępnego oświadczenia:
+   submitStatementAnswer(auctionId, statementCode, answerValue)
+   → SubmitStatementAnswerResponse { resultType, reason, missingPrerequisites, program }
+
+3. Po każdej odpowiedzi:
+   - Jeśli ACCEPTED: odśwież program → pokaż nowo dostępne oświadczenia
+   - Jeśli REJECTED: zatrzymaj wizard → pokaż ekran odrzucenia
+   - Jeśli PREREQUISITE_NOT_MET: pokaż błąd walidacji
+
+4. Na żądanie:
+   getParticipationDecision(auctionId)
+   → ParticipationDecisionView { status, rootCause, humanReason, missingStatements, cascadedStatements, conditions }
+....
+
+== Projekt: Integracja z istniejącymi komponentami
+
+=== Rules Panel ↔ Participation Gate
+
+Obecny rules panel pokazuje fazy PARTICIPATION/BIDDING/SETTLEMENT. Zmiana:
+
+* Faza PARTICIPATION: zamiast tylko pokazywać naruszenia, dodaj link/akcję "Rozpocznij kwalifikację" lub "Kontynuuj kwalifikację" lub "Zobacz decyzję".
+* Faza BIDDING: jeśli naruszenie to `PARTICIPATION_DECISION_GRANTED` (brak), pokaż "Najpierw przejdź kwalifikację w fazie PARTICIPATION powyżej".
+
+=== Document Submit ↔ Statements
+
+Oświadczenia i dokumenty to różne byty (zgodnie z ADR):
+
+* Oświadczenia: w wizardzie, przed licytacją.
+* Dokumenty: w dotychczasowym formularzu DocumentSubmitComponent, na każdym etapie.
+
+Nie łączymy ich w jeden formularz, ale wizualnie pokazujemy relację:
+"Twoje oświadczenie o licencji branżowej (SECTOR_LICENSE) może wymagać dokumentu potwierdzającego."
+
+=== Auction Details Page -- Nowy layout
+
+....
+┌──────────────────────────────────────────────────────────────┐
+│ SECTION 1: Spotlight (status, cena, lider, czas)            │
+│ [bez zmian]                                                  │
+├──────────────────────────────────────────────────────────────┤
+│ SECTION 2: Participation Gate                                │  ← NOWE
+│ [jeśli licytant nie jest dopuszczony]                       │
+│ [ ParticipationGateComponent ]                               │
+├──────────────────────────────────────────────────────────────┤
+│ SECTION 3: Bid Panel                                         │
+│ [jeśli licytant jest dopuszczony -- ADMITTED/AWSC]         │
+│ [ AuctionBidPanelComponent ] ← wydzielony z obecnej strony  │
+├──────────────────────────────────────────────────────────────┤
+│ SECTION 4: Rules + Documents                                 │
+│ [bez zmian, ale PARTICIPATION phase linkuje do Gate]        │
+├──────────────────────────────────────────────────────────────┤
+│ SECTION 5: Bid History + Live Feed                           │
+│ [bez zmian]                                                  │
+└──────────────────────────────────────────────────────────────┘
+....
+
+Dla sprzedającego:
+* SECTION 2 i 3 są ukryte.
+* Zamiast tego: Seller Activation Panel (bez zmian).
+
+== Struktura plików frontend
+
+=== Nowe pliki
+
+....
+hexabid-spa/src/app/
+├── data-access/
+│   ├── contracts/
+│   │   └── participation-api.models.ts        ← VM interfaces
+│   ├── http/
+│   │   └── participation-api.service.ts       ← HTTP service wrapping ParticipationApi
+│   └── mappers/
+│       └── participation-view.mapper.ts       ← Generated → VM mapping
+├── features/
+│   ├── create/
+│   │   ├── auction-create-page.component.ts/html/scss  ← REFACTOR: flat → wizard
+│   │   ├── steps/
+│   │   │   ├── basics-step.component.ts/html/scss      ← Step 1: Podstawy
+│   │   │   ├── format-admission-step.component.ts/html/scss ← Step 2: Format & kwalifikacja
+│   │   │   ├── pricing-step.component.ts/html/scss     ← Step 3: Cena (wydzielony z obecnej sekcji)
+│   │   │   └── review-step.component.ts/html/scss      ← Step 4: Podsumowanie
+│   │   └── auction-create.facade.ts                    ← NOWY: facade zamiast bezpośredniego api inject
+│   ├── participation/
+│   │   ├── participation-gate.component.ts/html/scss   ← Bramka kwalifikacji na details page
+│   │   ├── statement-wizard.component.ts/html/scss     ← Wizard oświadczeń (sterowany DAG)
+│   │   ├── statement-step-card.component.ts/html/scss  ← Pojedyncze oświadczenie z answerType
+│   │   ├── rejection-screen.component.ts/html/scss     ← Ekran odrzucenia z kaskadą
+│   │   └── participation.facade.ts                     ← Facade dla programu oświadczeń
+│   └── details/
+│       ├── auction-details-page.component.ts/html/scss  ← REFACTOR: dodanie ParticipationGate
+│       └── auction-details.facade.ts                    ← REFACTOR: integracja z participation
+....
+
+=== Nowe View Models (participation-api.models.ts)
+
+....
+interface ParticipationProgramVm {
+  programInstanceId: string;
+  auctionId: string;
+  candidateId: string;
+  templateName: string;
+  templateVersion: number;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
+  statusLabel: string;              ← mapper: polskie labelki
+  progressLabel: string;            ← mapper: "2 z 4 oświadczeń"
+  progressPercent: number;          ← mapper: computed
+  steps: StatementStepGroupVm[];    ← pogrupowane po order
+  decision: ParticipationDecisionVm | null;
+}
+
+interface StatementStepGroupVm {
+  order: number;
+  stepLabel: string;                ← z backendu, np. "Profil i umocowanie"
+  statements: StatementStepItemVm[];
+  allCompleted: boolean;            ← computed
+  hasRejection: boolean;            ← computed
+}
+
+interface StatementStepItemVm {
+  statementCode: string;
+  title: string;
+  question: string;
+  answerType: 'YES_NO' | 'TEXT' | 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'NUMERIC' | 'DOCUMENT_UPLOAD';
+  answerTypeLabel: string;          ← mapper: polskie labelki
+  order: number;
+  stepLabel: string;
+  answerValue: string | null;
+  isAvailable: boolean;            ← true jeśli w availableStatements
+  isCompleted: boolean;            ← true jeśli w completedStatements
+  isBlocked: boolean;              ← true jeśli w blockedStatements
+  blockedByPrerequisites: string[]; ← nazwy prerekwizytów
+  severity: 'BLOCKING' | 'IMPORTANT' | 'INFORMATIONAL';  ← z definicji (potrzebne w API?)
+  severityLabel: string;           ← polska labelka
+}
+
+interface ParticipationDecisionVm {
+  status: 'PENDING' | 'ADMITTED' | 'ADMITTED_WITH_CONDITIONS' | 'REJECTED';
+  statusLabel: string;
+  rootCause: string | null;
+  humanReason: string | null;
+  missingStatements: string[];
+  cascadedStatements: string[];
+  conditions: string[];
+}
+
+interface TemplateInfoVm {
+  templateName: string;
+  label: string;                    ← polska nazwa
+  description: string;              ← polski opis
+  statementCount: number;
+  steps: TemplateStepInfoVm[];
+}
+
+interface TemplateStepInfoVm {
+  order: number;
+  stepLabel: string;
+  statementCodes: string[];
+}
+....
+
+=== Nowy Mapper (participation-view.mapper.ts)
+
+Mapper transformuje wygenerowane typy na VM z polskimi labelkami:
+
+* `StatementProgramViewStatusEnum.IN_PROGRESS` → `'Kwalifikacja w toku'`
+* `ParticipationDecisionViewStatusEnum.ADMITTED` → `'Dopuszczony'`
+* `StatementStepViewAnswerTypeEnum.YES_NO` → `'Tak / Nie'`
+* Template labels: mapowanie `templateName` → polska nazwa + opis
+* Progress computed: `completedStatements.length / (available + completed + blocked).length`
+* Grupowanie oświadczeń po `order` + `stepLabel`
+
+=== Nowy HTTP Service (participation-api.service.ts)
+
+....
+@Injectable({ providedIn: 'root' })
+class ParticipationApiService {
+  constructor(private participationApi: ParticipationApi) {}
+
+  async startProgram(auctionId: string, templateName: string): Promise<StatementProgramView>
+  async getProgram(auctionId: string): Promise<StatementProgramView>
+  async submitAnswer(auctionId: string, statementCode: string, answerValue: string): Promise<SubmitStatementAnswerResponse>
+  async getDecision(auctionId: string): Promise<ParticipationDecisionView>
+}
+....
+
+Metody opakowują wygenerowany `ParticipationApi` z obsługą błędów i normalizacją, analogicznie do `AuctionsApiService`.
+
+=== Nowy Facade (participation.facade.ts)
+
+....
+@Injectable()
+class ParticipationFacade {
+  readonly program = signal<ParticipationProgramVm | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly submitting = signal(false);
+  readonly rejectionResult = signal<SubmitStatementAnswerResponse | null>(null);
+
+  async startProgram(auctionId: string, templateName: string): Promise<void>
+  async loadProgram(auctionId: string): Promise<void>
+  async submitAnswer(auctionId: string, statementCode: string, answerValue: string): Promise<void>
+  async loadDecision(auctionId: string): Promise<void>
+}
+....
+
+Facade zarządza stanem programu, odświeża po każdej odpowiedzi, obsługuje odrzucenie.
+
+== Zmiany w istniejących komponentach
+
+=== AuctionCreatePageComponent → AuctionCreateWizardComponent
+
+| Aspekt | Obecnie | Po zmianie |
+|--------|---------|------------|
+| Struktura | Płaski formularz | 4-krokowy wizard ze stepperem |
+| Pola | title, amount, currency, endsAt, pricingConfig | + buyNowPrice, auctionFormat, participationPolicyTemplate |
+| Submit | Bezpośredni `api.createAuction()` | Przez facade `AuctionCreateFacade` |
+| Walidacja | Cały formularz na raz | Per-krok walidacja |
+
+Zmiany w `CreateAuctionRequest`:
+
+* `auctionFormat`: nowe pole (domyślnie `ENGLISH_ASCENDING`)
+* `participationPolicyTemplate`: nowe pole (domyślnie `PUBLIC_CONSUMER_LIGHT_V1`)
+
+**Uwaga backend**: Obecnie `CreateAuctionRequest` w OpenAPI nie ma pól `auctionFormat` ani `participationPolicyTemplate`. To wymaga rozszerzenia backend API przed implementacją frontend. Patrz sekcja "Wymagane zmiany backend".
+
+=== AuctionDetailsPageComponent
+
+* Dodanie `ParticipationGateComponent` między spotlight a bid panel.
+* Warunkowe wyświetlanie bid panelu (tylko jeśli dopuszczony).
+* Dodanie `ParticipationFacade` do providerów komponentu.
+* Integracja `bidDisabledReason()` z decision status.
+
+=== RulesPanelComponent
+
+* W fazie PARTICIPATION: dodanie linku "Przejdź do kwalifikacji" jeśli są naruszenia.
+* Wydzielenie `PARTICIPATION_DECISION_GRANTED` jako osobnej reguły z akcją.
+
+== Wymagane zmiany backend
+
+=== 1. Rozszerzenie CreateAuctionRequest
+
+Obecny `CreateAuctionRequest` w OpenAPI:
+
+....
+CreateAuctionRequest:
+  type: object
+  required: [title, startingPrice, endsAt]
+  properties:
+    title: { type: string }
+    startingPrice: { $ref: '#/components/schemas/Money' }
+    endsAt: { type: string, format: date-time }
+    buyNowPrice: { $ref: '#/components/schemas/Money' }
+    lotId: { type: string, format: uuid }
+    pricingConfig: { $ref: '#/components/schemas/PricingConfig' }
+....
+
+Brakuje:
+
+....
+    auctionFormat:
+      type: string
+      enum: [ENGLISH_ASCENDING, DUTCH_DESCENDING, SEALED_BID, RESTRICTED_TENDER, MULTI_LOT_COMBINATORIAL]
+      default: ENGLISH_ASCENDING
+    participationPolicyTemplate:
+      type: string
+      default: PUBLIC_CONSUMER_LIGHT_V1
+....
+
+To wymaga:
+
+. Dodania pól do OpenAPI YAML
+. Regeneracji TypeScript i Java
+. Dodania pól do `AuctionJpaEntity`
+. Dodania pól do domeny `Auction`
+. Ustawienia template'u przy tworzeniu aukcji
+
+=== 2. Endpoint listowania szablonów
+
+Obecnie `PolicyTemplateCatalog` jest statyczny w Javie. UI musi wiedzieć, jakie szablony są dostępne i jakie mają parametry.
+
+Propozycja nowego endpointu:
+
+....
+GET /api/participation-templates
+200:
+  content:
+    application/json:
+      schema:
+        type: array
+        items:
+          type: object
+          properties:
+            templateName: { type: string }
+            label: { type: string }
+            description: { type: string }
+            statementCount: { type: integer }
+            steps:
+              type: array
+              items:
+                type: object
+                properties:
+                  order: { type: integer }
+                  stepLabel: { type: string }
+                  statementCodes: { type: array, items: { type: string } }
+....
+
+Alternatywa: Hardcode listę szablonów w frontendzie (ponieważ są statyczne). Jest to akceptowalne na tym etapie, bo szablony są zdefiniowane w kodzie Java, nie w bazie.
+
+**Rekomendacja**: Hardcode na etapie MVP. Endpoint dodać, gdy szablony będą dynamiczne (zapisywane w bazie przez administratora).
+
+=== 3. Association: Auction → Template
+
+Obecnie `StartParticipationProgramRequest` wymaga `templateName` od klienta. To znaczy, że licytant sam wybiera szablon.
+
+Docelowo: aukcja powinna mieć przypisany szablon. Licytant nie powinien wybierać -- to organizator decyduje o poziomie kwalifikacji.
+
+**Rekomendacja na MVP**: Dodanie `participationPolicyTemplate` do `CreateAuctionRequest`. Przy `startProgram` frontend automatycznie używa szablonu przypisanego do aukcji (zamiast pytania licytanta).
+
+To wymaga dodania pola do `AuctionResponse`:
+
+....
+    participationPolicyTemplate:
+      type: string
+      description: Name of the participation policy template assigned to this auction
+....
+
+== Plan implementacji -- kolejność kroków
+
+=== Faza 1: Fundament (data-access layer)
+
+| # | Zadanie | Pliki | Zależności |
+|---|---------|-------|------------|
+| 1.1 | Utworzenie `participation-api.models.ts` z VM interfaces | `data-access/contracts/` | - |
+| 1.2 | Utworzenie `participation-view.mapper.ts` z polskimi labelkami | `data-access/mappers/` | 1.1 |
+| 1.3 | Utworzenie `participation-api.service.ts` opakowującego `ParticipationApi` | `data-access/http/` | - |
+| 1.4 | Hardcode `TEMPLATE_CATALOG` -- lista szablonów z polskimi opisami | `data-access/contracts/` | - |
+
+=== Faza 2: Participation ( bidder flow)
+
+| # | Zadanie | Pliki | Zależności |
+|---|---------|-------|------------|
+| 2.1 | Utworzenie `participation.facade.ts` | `features/participation/` | 1.1-1.3 |
+| 2.2 | Utworzenie `ParticipationGateComponent` (3 stany + decyzja) | `features/participation/` | 2.1 |
+| 2.3 | Utworzenie `StatementWizardComponent` (grupowanie po krokach) | `features/participation/` | 2.1 |
+| 2.4 | Utworzenie `StatementStepCardComponent` (renderowanie po answerType) | `features/participation/` | 2.1 |
+| 2.5 | Utworzenie `RejectionScreenComponent` (powód + kaskada) | `features/participation/` | 2.1 |
+| 2.6 | Integracja z `AuctionDetailsPageComponent` | `features/details/` | 2.2-2.5 |
+
+=== Faza 3: Wizard tworzenia aukcji ( seller flow)
+
+| # | Zadanie | Pliki | Zależności |
+|---|---------|-------|------------|
+| 3.1 | Utworzenie `AuctionCreateFacade` | `features/create/` | - |
+| 3.2 | Wydzielenie `BasicsStepComponent` z obecnego formularza | `features/create/steps/` | 3.1 |
+| 3.3 | Utworzenie `FormatAdmissionStepComponent` (format + szablon) | `features/create/steps/` | 3.1, 1.4 |
+| 3.4 | Wydzielenie `PricingStepComponent` z obecnego formularza | `features/create/steps/` | 3.1 |
+| 3.5 | Utworzenie `ReviewStepComponent` (read-only podsumowanie) | `features/create/steps/` | 3.1 |
+| 3.6 | Refaktor `AuctionCreatePageComponent` na wizard ze stepperem | `features/create/` | 3.2-3.5 |
+
+=== Faza 4: Backend API rozszerzenia
+
+| # | Zadanie | Zależności |
+|---|---------|------------|
+| 4.1 | Dodanie `auctionFormat` i `participationPolicyTemplate` do `CreateAuctionRequest` w OpenAPI | - |
+| 4.2 | Regeneracja TypeScript i Java codegen | 4.1 |
+| 4.3 | Dodanie pól do `Auction` domeny + JPA + REST delegate | 4.2 |
+| 4.4 | Dodanie `participationPolicyTemplate` do `AuctionResponse` | 4.3 |
+| 4.5 | Automatyczne użycie szablonu aukcji w `startProgram` (frontend) | 4.4, 2.1 |
+
+=== Faza 5: Integracja i polish
+
+| # | Zadanie | Zależności |
+|---|---------|------------|
+| 5.1 | Rules panel: link z PARTICIPATION phase do ParticipationGate | 2.6 |
+| 5.2 | Bid panel: warunkowe wyświetlanie na podstawie decision status | 2.6 |
+| 5.3 | Auction card: pokazanie badge typu kwalifikacji (light/regulated/high-value) | 4.4 |
+| 5.4 | Dashboard: sekcja "Moje kwalifikacje" z linkami do uzupełnienia | 2.1 |
+| 5.5 | Stylowanie i responsywność | 5.1-5.4 |
+
+== Sygnatury komponentów Angular
+
+=== ParticipationGateComponent
+
+....
+@Component({
+  selector: 'app-participation-gate',
+  imports: [CommonModule, StatementWizardComponent],
+  templateUrl: './participation-gate.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+class ParticipationGateComponent {
+  auctionId = input.required<string>();
+  templateName = input.required<string>();
+
+  // Wstrzykuje ParticipationFacade
+  // Wyświetla odpowiedni stan: NOT_STARTED / IN_PROGRESS / ADMITTED / REJECTED / PENDING
+  // Deleguje do StatementWizardComponent jeśli IN_PROGRESS
+}
+....
+
+=== StatementWizardComponent
+
+....
+@Component({
+  selector: 'app-statement-wizard',
+  imports: [CommonModule, StatementStepCardComponent],
+  templateUrl: './statement-wizard.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+class StatementWizardComponent {
+  program = input.required<ParticipationProgramVm>();
+  submitting = input<boolean>(false);
+  answerSubmitted = output<{ statementCode: string; answerValue: string }>();
+
+  // Grupuje oświadczenia po stepLabel
+  // Renderuje StatementStepCardComponent dla każdego dostępnego oświadczenia
+  // Pokazuje blocked oświadczenia jako zablokowane karty
+  // Pasek postępu
+}
+....
+
+=== StatementStepCardComponent
+
+....
+@Component({
+  selector: 'app-statement-step-card',
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './statement-step-card.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+class StatementStepCardComponent {
+  statement = input.required<StatementStepItemVm>();
+  submitting = input<boolean>(false);
+  answerSubmitted = output<{ statementCode: string; answerValue: string }>();
+
+  // Renderuje formularz na podstawie answerType
+  // YES_NO: dwa radio buttony
+  // TEXT: textarea
+  // SINGLE_CHOICE: radio group
+  // MULTI_CHOICE: checkbox group
+  // NUMERIC: input number
+  // DOCUMENT_UPLOAD: file upload
+  // Po submit emituje answerSubmitted
+}
+....
+
+=== FormatAdmissionStepComponent
+
+....
+@Component({
+  selector: 'app-format-admission-step',
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './format-admission-step.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+class FormatAdmissionStepComponent {
+  templateCatalog = signal<TemplateInfoVm[]>(TEMPLATE_CATALOG);
+  selectedTemplate = model<string>('PUBLIC_CONSUMER_LIGHT_V1');
+
+  // Pokazuje 3 karty szablonów z opisami
+  // Po wybraniu szablonu: rozwija listę kroków i oświadczeń
+  // Podpowiedzi kontekstowe na podstawie AuctionFormat
+}
+....
+
+== Mapowanie odpowiedzi YES_NO
+
+Dla `answerType = YES_NO`, UI pokazuje "Tak" / "Nie", ale API oczekuje `answerValue` jako string.
+
+Konwencja:
+
+* "Tak" → `"YES"`
+* "Nie" → `"NO"`
+
+To jest spójne z backendem, gdzie `DisqualifyingAnswer` ma `answerValue = "NO"` dla oświadczeń z `AnswerType.YES_NO`.
+
+**Ważne UX**: Oświadczenia z `severity = BLOCKING` i odpowiedzią "Nie" jako dyskwalifikującą powinny mieć ostrzeżenie przy opcji "Nie":
+
+....
+⚠️ Odpowiedź "Nie" powoduje natychmiastowe odrzucenie z aukcji.
+....
+
+To jest krytyczne dla UX -- użytkownik musi wiedzieć o konsekwencji PRZED kliknięciem.
+
+== Sygnalizacja wagi oświadczenia
+
+Każde oświadczenie ma `severity` (z `StatementDefinition`), ale obecnie `StatementStepView` w OpenAPI nie przekazuje tego pola.
+
+**Opcja A**: Rozszerzyć `StatementStepView` o pole `severity`.
+**Opcja B**: Hardcode mapowanie `statementCode → severity` w frontendzie na podstawie `PolicyTemplateCatalog`.
+
+**Rekomendacja**: Opcja A dla pełnej poprawności. Opcja B jako fallback MVP.
+
+Severniness UI:
+
+| Severity | Wizualizacja |
+|----------|-------------|
+| `BLOCKING` | Czerwona ramka + ostrzeżenie + "Odpowiedź powoduje wykluczenie" |
+| `IMPORTANT` | Żółta ramka + informacja + "Odpowiedź będzie wymagała weryfikacji" |
+| `INFORMATIONAL` | Standardowa ramka + "Odpowiedź ma charakter informacyjny" |
+
+== Podsumowanie kluczowych decyzji projektowych
+
+| # | Decyzja | Uzasadnienie |
+|---|---------|-------------|
+| 1 | Wizard zamiast płaskiego formularza | Progressive disclosure, mniejszy cognitive load |
+| 2 | Bramka kwalifikacji przed licytacją | Bezpieczeństwo: licytant musi być dopuszczony przed ofertą |
+| 3 | DAG-driven statement wizard | Backend steruje dostępnością, UI nie hardcoduje logiki |
+| 4 | Karty szablonów z opisami | Licytant i sprzedający rozumieją konsekwencje wyboru |
+| 5 | Ekran odrzucenia z kaskadą | Transparentność: użytkownik wie, CO się stało i DLACZEGO |
+| 6 | Ostrzeżenie przy dyskwalifikujących odpowiedziach | Zapobieganie przypadkowemu odrzuceniu |
+| 7 | Hardcode szablonów na MVP | Szablony są statyczne; endpoint dodamy przy dynamicznych szablonach |
+| 8 | ParticipationPolicyTemplate na aukcji | Organizator decyduje o wymaganiach, nie licytant |
+| 9 | Osobny ParticipationFacade | Czysty separation of concerns, testowalność |
+| 10 | Mapowanie VM z polskimi labelkami | Spójność z obecnym podejściem (mappers, nie komponenty) |
+
+== Powiązania
+
+* [[2026-05-10-statement-collection-system-codex-proposal.adoc]]
+* [[2026-05-09-statement-collection-system.adoc]]
+* [[2026-05-05-auction-activation-rules-guidance.md]]
+* [[../plan-system-regul.adoc]]

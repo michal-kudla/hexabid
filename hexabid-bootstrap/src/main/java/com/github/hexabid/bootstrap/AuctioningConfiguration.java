@@ -31,6 +31,12 @@ import com.github.hexabid.core.auctioning.usecase.PlaceBidService;
 import com.github.hexabid.core.auctioning.usecase.SettleAuctionService;
 import com.github.hexabid.core.auctioning.usecase.SubmitDocumentService;
 import com.github.hexabid.pricing.auction.AuctionPricingFacade;
+import com.github.hexabid.statement.port.in.GetParticipationDecisionUseCase;
+import com.github.hexabid.statement.port.in.GetStatementProgramUseCase;
+import com.github.hexabid.statement.port.in.StartStatementProgramUseCase;
+import com.github.hexabid.statement.port.in.SubmitStatementAnswerUseCase;
+import com.github.hexabid.statement.port.out.StatementProgramInstanceRepository;
+import com.github.hexabid.statement.usecase.StatementService;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -158,6 +164,31 @@ class AuctioningConfiguration {
     @Bean
     AuctionPricingFacade auctionPricingFacade() {
         return new AuctionPricingFacade();
+    }
+
+    @Bean
+    StatementService statementService(StatementProgramInstanceRepository repository, Clock clock) {
+        return new StatementService(repository, clock);
+    }
+
+    @Bean
+    StartStatementProgramUseCase startStatementProgramUseCase(StatementService statementService) {
+        return statementService;
+    }
+
+    @Bean
+    SubmitStatementAnswerUseCase submitStatementAnswerUseCase(StatementService statementService) {
+        return statementService;
+    }
+
+    @Bean
+    GetStatementProgramUseCase getStatementProgramUseCase(StatementService statementService) {
+        return statementService;
+    }
+
+    @Bean
+    GetParticipationDecisionUseCase getParticipationDecisionUseCase(StatementService statementService) {
+        return statementService;
     }
 
     private static void publishToChannels(

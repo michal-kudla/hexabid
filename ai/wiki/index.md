@@ -16,6 +16,10 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-05-05-local-port-configuration]] - Ujednolicenie lokalnych adresów backendu i SPA
 - [[decisions/2026-05-05-dev-auth-e2e]] - Dev auth jako jawny wybór użytkownika i scenariusz E2E
 - [[decisions/2026-05-05-auction-activation-rules-guidance]] - Aktywacja szkicu aukcji oraz rozdzielenie reguł licytacji i rozliczenia w UI
+- [[decisions/2026-05-09-statement-collection-system]] - System zbierania oświadczeń: DAG zależności, 4 typy aukcji, 16 oświadczeń, kaskadowe odrzucenie
+- [[decisions/2026-05-10-statement-collection-system-codex-proposal]] - Alternatywna propozycja Codex: rozdzielenie formatu aukcji od wersjonowanego szablonu polityki dopuszczenia, profile kwalifikacyjne kategorii, zweryfikowane z archetypami Graphs/Party/Rules/Plan-vs-Execution
+- [[decisions/2026-05-10-statements-ux-design]] - Projekt UX oświadczeń i szablonów kwalifikacji w SPA: wizard tworzenia aukcji, bramka kwalifikacji licytanta, DAG-driven statement wizard, integracja z rules panel
+- [[decisions/2026-05-11-statements-ui-ux-codex-proposal]] - Propozycja Codex dla UI/UX kwalifikacji: Auction Setup Studio, Participation Center, QualificationTask VM, rozdzielenie oświadczeń od wymogów, dowodów i weryfikacji
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
@@ -45,4 +49,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-05-05*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-05-11*

@@ -175,6 +175,31 @@ export interface AuctionPriceBreakdownResponse {
 /**
  * 
  * @export
+ * @interface AuctionQualificationSummary
+ */
+export interface AuctionQualificationSummary {
+    /**
+     * Name of the participation policy template assigned to this auction
+     * @type {string}
+     * @memberof AuctionQualificationSummary
+     */
+    participationPolicyTemplate?: string;
+    /**
+     * Human-readable label of the assigned template
+     * @type {string}
+     * @memberof AuctionQualificationSummary
+     */
+    templateLabel?: string;
+    /**
+     * Number of qualification tasks bidders must complete
+     * @type {number}
+     * @memberof AuctionQualificationSummary
+     */
+    taskCount?: number;
+}
+/**
+ * 
+ * @export
  * @interface AuctionResponse
  */
 export interface AuctionResponse {
@@ -250,6 +275,12 @@ export interface AuctionResponse {
      * @memberof AuctionResponse
      */
     pricingConfig?: PricingConfig;
+    /**
+     * 
+     * @type {AuctionQualificationSummary}
+     * @memberof AuctionResponse
+     */
+    qualificationSummary?: AuctionQualificationSummary;
 }
 
 
@@ -452,7 +483,32 @@ export interface CreateAuctionRequest {
      * @memberof CreateAuctionRequest
      */
     pricingConfig?: PricingConfig;
+    /**
+     * Name of the participation policy template to assign to this auction. Determines which qualification steps bidders must complete.
+     * @type {string}
+     * @memberof CreateAuctionRequest
+     */
+    participationPolicyTemplate?: string;
+    /**
+     * Auction sale format determining bidding mechanics
+     * @type {CreateAuctionRequestAuctionFormatEnum}
+     * @memberof CreateAuctionRequest
+     */
+    auctionFormat?: CreateAuctionRequestAuctionFormatEnum;
 }
+
+/**
+* @export
+* @enum {string}
+*/
+export enum CreateAuctionRequestAuctionFormatEnum {
+    ENGLISH = 'ENGLISH',
+    DUTCH = 'DUTCH',
+    SEALED_BID = 'SEALED_BID',
+    RESTRICTED_TENDER = 'RESTRICTED_TENDER',
+    MULTI_LOT = 'MULTI_LOT'
+}
+
 /**
  * 
  * @export
@@ -847,6 +903,61 @@ export interface Money {
 /**
  * 
  * @export
+ * @interface ParticipationDecisionView
+ */
+export interface ParticipationDecisionView {
+    /**
+     * 
+     * @type {ParticipationDecisionViewStatusEnum}
+     * @memberof ParticipationDecisionView
+     */
+    status: ParticipationDecisionViewStatusEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ParticipationDecisionView
+     */
+    rootCause?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ParticipationDecisionView
+     */
+    humanReason?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ParticipationDecisionView
+     */
+    missingStatements?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ParticipationDecisionView
+     */
+    cascadedStatements?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ParticipationDecisionView
+     */
+    conditions?: Array<string>;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum ParticipationDecisionViewStatusEnum {
+    PENDING = 'PENDING',
+    ADMITTED = 'ADMITTED',
+    ADMITTED_WITH_CONDITIONS = 'ADMITTED_WITH_CONDITIONS',
+    REJECTED = 'REJECTED'
+}
+
+/**
+ * 
+ * @export
  * @interface PricingConfig
  */
 export interface PricingConfig {
@@ -985,6 +1096,79 @@ export interface ProductTypeResponse {
     preferredUnit: string;
 }
 
+
+/**
+ * 
+ * @export
+ * @interface QualificationProfileListResponse
+ */
+export interface QualificationProfileListResponse {
+    /**
+     * 
+     * @type {Array<QualificationProfileSummary>}
+     * @memberof QualificationProfileListResponse
+     */
+    items: Array<QualificationProfileSummary>;
+}
+/**
+ * 
+ * @export
+ * @interface QualificationProfileSummary
+ */
+export interface QualificationProfileSummary {
+    /**
+     * 
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    templateName: string;
+    /**
+     * Human-readable profile name
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    label: string;
+    /**
+     * Business-oriented description for the seller
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    description?: string;
+    /**
+     * Number of qualification tasks bidders must complete
+     * @type {number}
+     * @memberof QualificationProfileSummary
+     */
+    taskCount: number;
+    /**
+     * Estimated time for bidders to complete all tasks
+     * @type {string}
+     * @memberof QualificationProfileSummary
+     */
+    estimatedMinutes?: string;
+    /**
+     * 
+     * @type {QualificationProfileSummaryAbandonmentRiskEnum}
+     * @memberof QualificationProfileSummary
+     */
+    abandonmentRisk?: QualificationProfileSummaryAbandonmentRiskEnum;
+    /**
+     * Whether this profile is recommended for general use
+     * @type {boolean}
+     * @memberof QualificationProfileSummary
+     */
+    recommended?: boolean;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum QualificationProfileSummaryAbandonmentRiskEnum {
+    low = 'low',
+    medium = 'medium',
+    high = 'high'
+}
 
 /**
  * 
@@ -1137,6 +1321,163 @@ export enum SellingMode {
 /**
  * 
  * @export
+ * @interface StartParticipationProgramRequest
+ */
+export interface StartParticipationProgramRequest {
+    /**
+     * Name of the participation policy template to use. If omitted, the auction's assigned template will be used.
+     * @type {string}
+     * @memberof StartParticipationProgramRequest
+     */
+    templateName?: string;
+}
+/**
+ * 
+ * @export
+ * @interface StatementProgramView
+ */
+export interface StatementProgramView {
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    programInstanceId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    auctionId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    candidateId: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementProgramView
+     */
+    templateName: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatementProgramView
+     */
+    templateVersion: number;
+    /**
+     * 
+     * @type {StatementProgramViewStatusEnum}
+     * @memberof StatementProgramView
+     */
+    status: StatementProgramViewStatusEnum;
+    /**
+     * 
+     * @type {Array<StatementStepView>}
+     * @memberof StatementProgramView
+     */
+    availableStatements: Array<StatementStepView>;
+    /**
+     * 
+     * @type {Array<StatementStepView>}
+     * @memberof StatementProgramView
+     */
+    completedStatements: Array<StatementStepView>;
+    /**
+     * 
+     * @type {Array<StatementStepView>}
+     * @memberof StatementProgramView
+     */
+    blockedStatements: Array<StatementStepView>;
+    /**
+     * 
+     * @type {ParticipationDecisionView}
+     * @memberof StatementProgramView
+     */
+    decision?: ParticipationDecisionView;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum StatementProgramViewStatusEnum {
+    NOT_STARTED = 'NOT_STARTED',
+    IN_PROGRESS = 'IN_PROGRESS',
+    COMPLETED = 'COMPLETED',
+    REJECTED = 'REJECTED',
+    CANCELLED = 'CANCELLED'
+}
+
+/**
+ * 
+ * @export
+ * @interface StatementStepView
+ */
+export interface StatementStepView {
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    statementCode: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    title: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    question: string;
+    /**
+     * 
+     * @type {StatementStepViewAnswerTypeEnum}
+     * @memberof StatementStepView
+     */
+    answerType: StatementStepViewAnswerTypeEnum;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatementStepView
+     */
+    order: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    stepLabel?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatementStepView
+     */
+    answerValue?: string;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum StatementStepViewAnswerTypeEnum {
+    YES_NO = 'YES_NO',
+    TEXT = 'TEXT',
+    SINGLE_CHOICE = 'SINGLE_CHOICE',
+    MULTI_CHOICE = 'MULTI_CHOICE',
+    NUMERIC = 'NUMERIC',
+    DOCUMENT_UPLOAD = 'DOCUMENT_UPLOAD',
+    PARTY_PICKER = 'PARTY_PICKER'
+}
+
+/**
+ * 
+ * @export
  * @interface SubmitDocumentRequest
  */
 export interface SubmitDocumentRequest {
@@ -1175,6 +1516,61 @@ export interface SubmitDocumentResponse {
     status: DocumentStatus;
 }
 
+
+/**
+ * 
+ * @export
+ * @interface SubmitStatementAnswerRequest
+ */
+export interface SubmitStatementAnswerRequest {
+    /**
+     * The candidate's answer value
+     * @type {string}
+     * @memberof SubmitStatementAnswerRequest
+     */
+    answerValue: string;
+}
+/**
+ * 
+ * @export
+ * @interface SubmitStatementAnswerResponse
+ */
+export interface SubmitStatementAnswerResponse {
+    /**
+     * 
+     * @type {SubmitStatementAnswerResponseResultTypeEnum}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    resultType: SubmitStatementAnswerResponseResultTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    reason?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    missingPrerequisites?: Array<string>;
+    /**
+     * 
+     * @type {StatementProgramView}
+     * @memberof SubmitStatementAnswerResponse
+     */
+    program: StatementProgramView;
+}
+
+/**
+* @export
+* @enum {string}
+*/
+export enum SubmitStatementAnswerResponseResultTypeEnum {
+    ACCEPTED = 'ACCEPTED',
+    REJECTED = 'REJECTED',
+    PREREQUISITE_NOT_MET = 'PREREQUISITE_NOT_MET'
+}
 
 /**
  * 

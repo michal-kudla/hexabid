@@ -121,7 +121,8 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
                 authenticatedUser.partyId(),
                 request.getTitle(),
                 toPrice(request.getStartingPrice().getAmount(), request.getStartingPrice().getCurrency()),
-                request.getEndsAt().toInstant()
+                request.getEndsAt().toInstant(),
+                request.getParticipationPolicyTemplate()
         ));
         if (result instanceof CreateAuctionResult.AuctionCreated created) {
             if (request.getPricingConfig() != null) {

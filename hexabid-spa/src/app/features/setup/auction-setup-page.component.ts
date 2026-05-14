@@ -1,0 +1,230 @@
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuctionsApiService } from '../../data-access/http/auctions-api.service';
+import { QualificationProfileApiService } from '../../data-access/http/qualification-profile-api.service';
+import { WadiumStrategy, PricingConfigExciseTypeEnum, CreateAuctionRequestAuctionFormatEnum } from '../../data-access/generated/auction-contract';
+import type { CreateAuctionRequest, PricingConfig, Money } from '../../data-access/generated/auction-contract';
+import {
+  AuctionCategory,
+  Jurisdiction,
+  QualificationProfileEntry,
+  categoryLabel,
+  jurisdictionLabel,
+  riskLabel,
+  profilesForCategory,
+  recommendedProfile,
+  profileByTemplateName,
+  QUALIFICATION_PROFILE_CATALOG,
+  mapApiRiskToRisk
+} from '../../data-access/contracts/qualification-profile.models';
+
+type SetupStep = 'subject' | 'format' | 'qualification' | 'pricing' | 'review';
+
+@Component({
+  selector: 'app-auction-setup-page',
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './auction-setup-page.component.html',
+  styleUrl: './auction-setup-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class AuctionSetupPageComponent {
+  private readonly router = inject(Router);
+  private readonly api = inject(AuctionsApiService);
+  private readonly profileApi = inject(QualificationProfileApiService);
+
+  readonly submitting = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly profilesLoading = signal(false);
+
+  readonly steps: SetupStep[] = ['subject', 'format', 'qualification', 'pricing', 'review'];
+  readonly currentStep = signal<SetupStep>('subject');
+
+  readonly categoryLabel = categoryLabel;
+  readonly jurisdictionLabel = jurisdictionLabel;
+  readonly riskLabel = riskLabel;
+  readonly WadiumStrategy = WadiumStrategy;
+  readonly ExciseType = PricingConfigExciseTypeEnum;
+
+  readonly subjectForm = new FormGroup({
+    title: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(4)] }),
+    category: new FormControl<AuctionCategory>('GENERAL', { nonNullable: true }),
+    jurisdiction: new FormControl<Jurisdiction>('PL', { nonNullable: true }),
+    amount: new FormControl('100.00', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^\d+(\.\d{1,2})?$/)]
+    }),
+    currency: new FormControl('PLN', { nonNullable: true, validators: [Validators.required] }),
+    endsAt: new FormControl('', { nonNullable: true, validators: [Validators.required] })
+  });
+
+  readonly formatForm = new FormGroup({
+    auctionFormat: new FormControl<CreateAuctionRequestAuctionFormatEnum>(CreateAuctionRequestAuctionFormatEnum.ENGLISH, { nonNullable: true })
+  });
+
+  readonly auctionFormats = [
+    { value: CreateAuctionRequestAuctionFormatEnum.ENGLISH, label: 'Aukcja angielska', description: 'Licytacja rosnąca — najwyższa oferta wygrywa.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.DUTCH, label: 'Aukcja holenderska', description: 'Cena spada — pierwszy, kto zaakceptuje, kupuje.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.SEALED_BID, label: 'Oferta zamknięta', description: 'Kandydaci składają jedną ukrytą ofertę.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.RESTRICTED_TENDER, label: 'Przetarg ograniczony', description: 'Tylko zaproszeni kandydaci mogą składać oferty.' },
+    { value: CreateAuctionRequestAuctionFormatEnum.MULTI_LOT, label: 'Aukcja wielolotowa', description: 'Wiele lotów tego samego przedmiotu sprzedawanych osobno.' }
+  ];
+
+  readonly selectedProfile = signal<QualificationProfileEntry>(QUALIFICATION_PROFILE_CATALOG[0]);
+
+  readonly showPricing = signal(false);
+
+  readonly pricingForm = new FormGroup({
+    wadiumStrategy: new FormControl<WadiumStrategy | ''>('', { nonNullable: true }),
+    wadiumRate: new FormControl('', { nonNullable: true }),
+    wadiumFixedAmount: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.pattern(/^\d+(\.\d{1,2})?$/)]
+    }),
+    vatRate: new FormControl('0.23', { nonNullable: true, validators: [Validators.required] }),
+    isExcisable: new FormControl(false, { nonNullable: true }),
+    exciseRate: new FormControl('', { nonNullable: true }),
+    exciseType: new FormControl<PricingConfigExciseTypeEnum>(PricingConfigExciseTypeEnum.PERCENTAGE, { nonNullable: true }),
+    isImported: new FormControl(false, { nonNullable: true }),
+    customsDutyRate: new FormControl('', { nonNullable: true })
+  });
+
+  constructor() {
+    this.loadProfilesFromApi();
+  }
+
+  private async loadProfilesFromApi(): Promise<void> {
+    this.profilesLoading.set(true);
+    try {
+      const category = this.subjectForm.value.category ?? 'GENERAL';
+      const response = await this.profileApi.browseProfiles(category);
+      if (response.items.length > 0) {
+        const apiItem = response.items[0];
+        const match = profileByTemplateName(apiItem.templateName);
+        if (match) {
+          this.selectedProfile.set(match);
+        }
+      }
+    } catch {
+      // fallback to hardcoded catalog - already set as default
+    } finally {
+      this.profilesLoading.set(false);
+    }
+  }
+
+  stepIndex(): number {
+    return this.steps.indexOf(this.currentStep());
+  }
+
+  stepLabel(step: SetupStep): string {
+    switch (step) {
+      case 'subject': return 'Przedmiot i kategoria';
+      case 'format': return 'Tryb sprzedaży';
+      case 'qualification': return 'Kwalifikacja licytantów';
+      case 'pricing': return 'Cena i zabezpieczenia';
+      case 'review': return 'Podsumowanie';
+    }
+  }
+
+  isFirstStep(): boolean {
+    return this.currentStep() === 'subject';
+  }
+
+  isLastStep(): boolean {
+    return this.currentStep() === 'review';
+  }
+
+  goToStep(step: SetupStep): void {
+    this.currentStep.set(step);
+  }
+
+  nextStep(): void {
+    const idx = this.stepIndex();
+    if (idx < this.steps.length - 1) {
+      this.currentStep.set(this.steps[idx + 1]);
+    }
+  }
+
+  prevStep(): void {
+    const idx = this.stepIndex();
+    if (idx > 0) {
+      this.currentStep.set(this.steps[idx - 1]);
+    }
+  }
+
+  onCategoryChange(): void {
+    const category = this.subjectForm.value.category;
+    if (category) {
+      this.selectedProfile.set(recommendedProfile(category));
+    }
+  }
+
+  selectProfile(profile: QualificationProfileEntry): void {
+    this.selectedProfile.set(profile);
+  }
+
+  availableProfiles(): QualificationProfileEntry[] {
+    const category = this.subjectForm.value.category ?? 'GENERAL';
+    return profilesForCategory(category);
+  }
+
+  togglePricing(): void {
+    this.showPricing.update(v => !v);
+  }
+
+  async submit(): Promise<void> {
+    this.submitting.set(true);
+    this.error.set(null);
+
+    try {
+      const sv = this.subjectForm.getRawValue();
+
+      const request: CreateAuctionRequest = {
+        title: sv.title,
+        startingPrice: {
+          amount: sv.amount,
+          currency: sv.currency
+        } as Money,
+        endsAt: new Date(sv.endsAt).toISOString(),
+        participationPolicyTemplate: this.selectedProfile().templateName,
+        auctionFormat: this.formatForm.value.auctionFormat ?? CreateAuctionRequestAuctionFormatEnum.ENGLISH
+      };
+
+      if (this.showPricing()) {
+        const pv = this.pricingForm.getRawValue();
+        const pricingConfig: PricingConfig = {
+          vatRate: pv.vatRate,
+          isExcisable: pv.isExcisable,
+          isImported: pv.isImported
+        };
+
+        if (pv.wadiumStrategy === WadiumStrategy.PERCENTAGE && pv.wadiumRate) {
+          pricingConfig.wadiumStrategy = pv.wadiumStrategy;
+          pricingConfig.wadiumRate = pv.wadiumRate;
+        } else if (pv.wadiumStrategy === WadiumStrategy.FIXED && pv.wadiumFixedAmount) {
+          pricingConfig.wadiumStrategy = pv.wadiumStrategy;
+          pricingConfig.wadiumFixedAmount = { amount: pv.wadiumFixedAmount, currency: sv.currency } as Money;
+        }
+
+        if (pv.isExcisable && pv.exciseRate) {
+          pricingConfig.exciseRate = pv.exciseRate;
+          pricingConfig.exciseType = pv.exciseType;
+        }
+
+        if (pv.isImported && pv.customsDutyRate) {
+          pricingConfig.customsDutyRate = pv.customsDutyRate;
+        }
+
+        request.pricingConfig = pricingConfig;
+      }
+
+      const created = await this.api.createAuction(request);
+      await this.router.navigate(['/auction', created.auctionId]);
+    } catch (error) {
+      this.error.set(this.api.toMessage(error, 'Nie udało się utworzyć aukcji.'));
+    } finally {
+      this.submitting.set(false);
+    }
+  }
+}

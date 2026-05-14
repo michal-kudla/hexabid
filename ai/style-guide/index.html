@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Hexabid — Style Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-body:'DM Sans',system-ui,sans-serif;
+  --font-display:'Source Serif 4',Georgia,serif;
+  --font-mono:ui-monospace,'Cascadia Code',monospace;
+  --color-amber-50:#fff8eb;--color-amber-100:#ffefcf;--color-amber-200:#ffdb99;
+  --color-amber-500:#c27a1a;--color-amber-600:#a86514;--color-amber-700:#8a5110;--color-amber-800:#6d3f0d;
+  --color-green-50:#ecfdf5;--color-green-100:#d1fae5;--color-green-600:#047857;
+  --color-green-700:#036b4c;--color-green-800:#02593d;
+  --color-red-50:#fef2f2;--color-red-100:#fee2e2;--color-red-600:#c42b1c;
+  --color-red-700:#a32215;--color-red-800:#871c12;
+  --color-stone-50:#faf8f5;--color-stone-100:#f2ede6;--color-stone-200:#e8e0d4;
+  --color-stone-300:#d4c9b8;--color-stone-400:#b5a68e;--color-stone-500:#9a886e;
+  --color-stone-600:#7d6b53;--color-stone-700:#5e4f3c;--color-stone-800:#3d3224;
+  --color-stone-900:#1f1a12;
+  --bg:var(--color-stone-50);--bg-surface:#ffffff;
+  --border:var(--color-stone-200);--border-focus:var(--color-amber-600);--border-strong:var(--color-stone-400);
+  --ink:var(--color-stone-900);--ink-secondary:var(--color-stone-600);--ink-muted:var(--color-stone-400);
+  --accent:var(--color-amber-600);--accent-hover:var(--color-amber-700);
+  --accent-light:var(--color-amber-50);--accent-text:var(--color-amber-800);
+  --success:var(--color-green-700);--success-bg:var(--color-green-50);--success-text:var(--color-green-800);
+  --danger:var(--color-red-700);--danger-bg:var(--color-red-50);--danger-text:var(--color-red-800);
+  --text-2xs:0.6875rem;--text-xs:0.75rem;--text-sm:0.8125rem;--text-base:0.875rem;
+  --text-md:1rem;--text-lg:1.125rem;--text-xl:1.25rem;--text-2xl:1.5rem;
+  --text-3xl:1.875rem;--text-4xl:2.25rem;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:10px;--radius-xl:14px;--radius-full:9999px;
+  --shadow-sm:0 1px 3px rgba(31,26,18,0.06);
+  --shadow-md:0 4px 12px rgba(31,26,18,0.08);
+  --shadow-lg:0 12px 32px rgba(31,26,18,0.1);
+  --transition-fast:120ms ease;--transition-normal:200ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.guide{max-width:980px;margin:0 auto;padding:4rem 2rem}
+.guide-header{margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:2px solid var(--ink)}
+.guide-header h1{font:700 2.25rem/1.1 var(--font-display);margin-bottom:0.5rem}
+.guide-header p{color:var(--ink-secondary);max-width:64ch;font-size:1rem;line-height:1.6}
+.section{margin-bottom:3rem}
+.section-title{font:700 0.8125rem/1 var(--font-body);text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-secondary);margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.subsection{margin-bottom:2rem}
+.subsection h3{font:600 1.125rem/1.3 var(--font-body);margin-bottom:0.75rem}
+.subsection p.desc{color:var(--ink-secondary);font-size:0.875rem;max-width:64ch;margin-bottom:1rem;line-height:1.6}
+.swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.5rem}
+.swatch{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.swatch-color{height:56px}
+.swatch-info{padding:0.5rem}
+.swatch-name{font:600 0.75rem/1.3 var(--font-body);color:var(--ink)}
+.swatch-value{font:400 0.6875rem/1.4 var(--font-mono);color:var(--ink-secondary)}
+.sample-row{display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.code-ref{font:400 0.75rem/1.4 var(--font-mono);color:var(--ink-secondary);background:var(--color-stone-100);padding:2px 8px;border-radius:var(--radius-sm)}
+.type-sample{margin-bottom:1rem}
+.type-label{font:500 0.75rem/1 var(--font-mono);color:var(--ink-muted);margin-bottom:2px}
+.spacer-bar{height:24px;background:var(--accent);border-radius:var(--radius-sm)}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;padding:10px 22px;border-radius:var(--radius-md);border:none;background:var(--accent);color:white;font:600 0.875rem/1.4 var(--font-body);cursor:pointer;transition:background var(--transition-fast);min-height:44px}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-primary:disabled{opacity:0.55;cursor:not-allowed}
+.btn-secondary{display:inline-flex;align-items:center;justify-content:center;padding:10px 22px;border-radius:var(--radius-md);border:2px solid var(--border-strong);background:var(--bg-surface);color:var(--ink);font:500 0.875rem/1.4 var(--font-body);cursor:pointer;min-height:44px}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-ghost{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:var(--radius-md);border:none;background:transparent;font:500 0.8125rem/1.4 var(--font-body);color:var(--ink-secondary);cursor:pointer;min-height:44px}
+.btn-ghost:hover{background:var(--accent-light);color:var(--accent)}
+.btn-danger{display:inline-flex;align-items:center;justify-content:center;padding:10px 22px;border-radius:var(--radius-md);border:none;background:var(--danger);color:white;font:600 0.875rem/1.4 var(--font-body);cursor:pointer;min-height:44px}
+.input-field{padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius-md);background:var(--bg-surface);font:400 0.875rem/1.4 var(--font-body);color:var(--ink);min-height:44px;width:260px;outline:none;transition:border-color var(--transition-fast),box-shadow var(--transition-fast)}
+.input-field:focus{border-color:var(--border-focus);box-shadow:0 0 0 4px rgba(168,101,20,0.12)}
+.input-field::placeholder{color:var(--ink-muted)}
+.input-field:disabled{background:var(--color-stone-100);color:var(--ink-muted);cursor:not-allowed}
+.input-field.error{border-color:var(--danger)}
+.select-field{padding:10px 14px;border:2px solid var(--border);border-radius:var(--radius-md);background:var(--bg-surface);font:400 0.875rem/1.4 var(--font-body);color:var(--ink);min-height:44px;width:260px}
+.form-label{display:flex;flex-direction:column;gap:6px}
+.form-label span{font:600 0.8125rem/1 var(--font-body);color:var(--ink-secondary)}
+.badge{display:inline-flex;padding:4px 10px;border-radius:var(--radius-sm);font:600 0.75rem/1.5 var(--font-body);border:1px solid transparent}
+.badge-success{background:var(--success-bg);color:var(--success);border-color:rgba(3,107,76,0.2)}
+.badge-danger{background:var(--danger-bg);color:var(--danger);border-color:rgba(163,34,21,0.2)}
+.badge-warning{background:var(--color-amber-50);color:var(--accent-text);border-color:rgba(194,122,26,0.2)}
+.badge-neutral{background:var(--color-stone-100);color:var(--ink-secondary);border-color:var(--border)}
+.card{padding:1.25rem;background:var(--bg-surface);border:2px solid var(--border);border-radius:var(--radius-xl);transition:box-shadow var(--transition-normal)}
+.card:hover{box-shadow:var(--shadow-md)}
+.alert{padding:1rem 1.25rem;border-radius:var(--radius-lg);font:500 0.875rem/1.5 var(--font-body);border-left:4px solid}
+.alert-success{background:var(--success-bg);color:var(--success-text);border-left-color:var(--success)}
+.alert-danger{background:var(--danger-bg);color:var(--danger-text);border-left-color:var(--danger)}
+.alert-warning{background:var(--color-amber-50);color:var(--accent-text);border-left-color:var(--color-amber-500)}
+.alert-info{background:var(--accent-light);color:var(--accent-text);border-left-color:var(--accent)}
+.nav-underline{display:flex;gap:0;height:48px;border-bottom:2px solid var(--border);margin-bottom:1rem}
+.nav-underline a{display:grid;place-items:center;padding:0 18px;font:500 0.875rem/1 var(--font-body);color:var(--ink-secondary);text-decoration:none;border-bottom:3px solid transparent}
+.nav-underline a:hover{color:var(--ink)}
+.nav-underline a.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.nav-pill{display:inline-flex;gap:2px;padding:3px;background:var(--color-stone-100);border-radius:var(--radius-lg)}
+.nav-pill a{padding:8px 18px;border-radius:var(--radius-md);font:500 0.8125rem/1.4 var(--font-body);color:var(--ink-secondary);text-decoration:none}
+.nav-pill a:hover{color:var(--ink)}
+.nav-pill a.active{background:var(--bg-surface);color:var(--ink);font-weight:600;box-shadow:var(--shadow-sm);border:1px solid var(--border)}
+.contrast-demo{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;padding:1rem;background:var(--bg-surface);border-radius:var(--radius-lg);border:1px solid var(--border);margin-bottom:1rem}
+.contrast-demo .sample{display:flex;flex-direction:column;gap:2px}
+.contrast-demo .sample .label{font:500 0.6875rem/1 var(--font-mono);color:var(--ink-muted)}
+.principle-card{padding:1.25rem;background:var(--bg-surface);border:2px solid var(--border);border-radius:var(--radius-xl);margin-bottom:1rem}
+.principle-card h4{font:700 1.125rem/1.2 var(--font-body);margin-bottom:0.5rem}
+.principle-card ul{padding-left:1.25rem;color:var(--ink-secondary);line-height:1.6}
+.principle-card li{margin-bottom:0.25rem}
+.dodont{width:100%;border-collapse:collapse;font-size:0.875rem}
+.dodont th{text-align:left;padding:0.75rem 1rem;font:600 0.875rem/1 var(--font-body)}
+.dodont th.do{color:var(--success)}
+.dodont th.dont{color:var(--danger)}
+.dorow{background:var(--success-bg)}
+.dorow td{padding:0.75rem 1rem;border-bottom:1px solid var(--color-stone-100)}
+.dorow td:first-child{width:28px;text-align:center;font-weight:700;color:var(--success)}
+.dontrow{background:var(--danger-bg)}
+.dontrow td{padding:0.75rem 1rem;border-bottom:1px solid var(--color-stone-100)}
+.dontrow td:first-child{width:28px;text-align:center;font-weight:700;color:var(--danger)}
+.empty-state{text-align:center;padding:3rem 2rem}
+.empty-state-icon{width:56px;height:56px;margin:0 auto 1rem;border-radius:var(--radius-xl);background:var(--accent-light);border:2px solid var(--color-amber-200);display:grid;place-items:center;font-size:1.5rem;color:var(--accent)}
+.empty-state h2{font:600 1.5rem/1.2 var(--font-display);margin-bottom:0.5rem}
+.empty-state p{color:var(--ink-secondary);max-width:44ch;margin:0 auto 1rem;line-height:1.6}
+.tag-recommended{display:inline-flex;padding:2px 8px;border-radius:var(--radius-sm);background:var(--success-bg);color:var(--success);font:600 0.6875rem/1.5 var(--font-body);margin-left:8px}
+.tag-alternative{display:inline-flex;padding:2px 8px;border-radius:var(--radius-sm);background:var(--color-stone-100);color:var(--ink-secondary);font:500 0.6875rem/1.5 var(--font-body);margin-left:8px}
+.radius-box{width:60px;height:60px;background:var(--accent-light);border:2px solid var(--accent);margin:0 auto 8px}
+.shadow-box{padding:1rem;background:var(--bg-surface);border:2px solid var(--border);border-radius:var(--radius-xl);margin-bottom:0.75rem}
+@media(max-width:640px){.guide{padding:2rem 1rem}.swatch-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="guide">
+<header class="guide-header">
+<h1>Hexabid Style Guide</h1>
+<p>Jedno źródło prawdy dla tokenów, komponentów i wzorców UI. Paleta Concept B (Warm Professional) z wzmocnioną dostępnością (WCAG AA). Wszystkie kontrasty tekst-vs-tło spełniają 4.5:1.</p>
+</header>
+
+<section class="section">
+<div class="section-title">1. Color Palette — Brand / Accent (Amber)</div>
+<p class="desc"><code class="code-ref">--accent</code> = amber-600 (~5.5:1 na białym). Dla małych tekstów: <code class="code-ref">--accent-text</code> = amber-800 (~8:1).</p>
+<div class="swatch-grid">
+<div class="swatch"><div class="swatch-color" style="background:#fff8eb"></div><div class="swatch-info"><div class="swatch-name">Amber 50</div><div class="swatch-value">--accent-light</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#ffefcf"></div><div class="swatch-info"><div class="swatch-name">Amber 100</div><div class="swatch-value">#ffefcf</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#ffdb99"></div><div class="swatch-info"><div class="swatch-name">Amber 200</div><div class="swatch-value">#ffdb99</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#c27a1a"></div><div class="swatch-info"><div class="swatch-name">Amber 500</div><div class="swatch-value">#c27a1a</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#a86514"></div><div class="swatch-info"><div class="swatch-name">Amber 600</div><div class="swatch-value">--accent</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#8a5110"></div><div class="swatch-info"><div class="swatch-name">Amber 700</div><div class="swatch-value">--accent-hover</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#6d3f0d"></div><div class="swatch-info"><div class="swatch-name">Amber 800</div><div class="swatch-value">--accent-text</div></div></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">1b. Semantic — Success</div>
+<div class="swatch-grid">
+<div class="swatch"><div class="swatch-color" style="background:#ecfdf5"></div><div class="swatch-info"><div class="swatch-name">Green 50</div><div class="swatch-value">--success-bg</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#d1fae5"></div><div class="swatch-info"><div class="swatch-name">Green 100</div><div class="swatch-value">#d1fae5</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#036b4c"></div><div class="swatch-info"><div class="swatch-name">Green 700</div><div class="swatch-value">--success</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#02593d"></div><div class="swatch-info"><div class="swatch-name">Green 800</div><div class="swatch-value">--success-text</div></div></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">1c. Semantic — Danger</div>
+<div class="swatch-grid">
+<div class="swatch"><div class="swatch-color" style="background:#fef2f2"></div><div class="swatch-info"><div class="swatch-name">Red 50</div><div class="swatch-value">--danger-bg</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#fee2e2"></div><div class="swatch-info"><div class="swatch-name">Red 100</div><div class="swatch-value">#fee2e2</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#a32215"></div><div class="swatch-info"><div class="swatch-name">Red 700</div><div class="swatch-value">--danger</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#871c12"></div><div class="swatch-info"><div class="swatch-name">Red 800</div><div class="swatch-value">--danger-text</div></div></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">1d. Stone (Neutral)</div>
+<div class="swatch-grid">
+<div class="swatch"><div class="swatch-color" style="background:#faf8f5"></div><div class="swatch-info"><div class="swatch-name">Stone 50</div><div class="swatch-value">--bg</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#f2ede6"></div><div class="swatch-info"><div class="swatch-name">Stone 100</div><div class="swatch-value">--border-subtle</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#e8e0d4"></div><div class="swatch-info"><div class="swatch-name">Stone 200</div><div class="swatch-value">--border</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#d4c9b8"></div><div class="swatch-info"><div class="swatch-name">Stone 300</div><div class="swatch-value">#d4c9b8</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#b5a68e"></div><div class="swatch-info"><div class="swatch-name">Stone 400</div><div class="swatch-value">--ink-muted</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#7d6b53"></div><div class="swatch-info"><div class="swatch-name">Stone 600</div><div class="swatch-value">--ink-secondary</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#3d3224"></div><div class="swatch-info"><div class="swatch-name">Stone 800</div><div class="swatch-value">#3d3224</div></div></div>
+<div class="swatch"><div class="swatch-color" style="background:#1f1a12"></div><div class="swatch-info"><div class="swatch-name">Stone 900</div><div class="swatch-value">--ink</div></div></div>
+</div>
+</section>
+<section class="section">
+<div class="section-title">2. Contrast Verification (WCAG AA)</div>
+<p class="desc">Każda para tekst-vs-tło musi spełniać 4.5:1 (normal) lub 3:1 (large text).</p>
+<div class="contrast-demo">
+<div class="sample"><span class="label">--ink / white (~15:1)</span><span style="font-weight:700;color:var(--ink)">Przykładowy tekst</span></div>
+<div class="sample"><span class="label">--ink-secondary / white (~6.5:1)</span><span style="font-weight:500;color:var(--ink-secondary)">Tekst poboczny</span></div>
+<div class="sample"><span class="label">--accent / white (~5.5:1)</span><span style="font-weight:700;color:var(--accent)">Akcent nagłówkowy</span></div>
+<div class="sample"><span class="label">--accent-text / white (~8:1)</span><span style="font-weight:700;color:var(--accent-text)">Akcent mały tekst</span></div>
+<div class="sample"><span class="label">--success / white (~5.8:1)</span><span style="font-weight:600;color:var(--success)">Status sukces</span></div>
+<div class="sample"><span class="label">--danger / white (~5.5:1)</span><span style="font-weight:600;color:var(--danger)">Status błąd</span></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">3. Typography</div>
+<div class="subsection">
+<h3>Font Families</h3>
+<div class="type-sample"><div class="type-label">--font-body: 'DM Sans'</div><p style="font-family:var(--font-body);font-size:1.125rem">Aplikacja aukcyjna zaprojektowana jak produkt.</p></div>
+<div class="type-sample"><div class="type-label">--font-display: 'Source Serif 4'</div><p style="font-family:var(--font-display);font-size:1.5rem;font-weight:700">Nagłówki strony</p></div>
+<div class="type-sample"><div class="type-label">--font-mono: system</div><p style="font-family:var(--font-mono);font-size:0.875rem">const auctionId = params.get('auctionId');</p></div>
+</div>
+<div class="subsection">
+<h3>Type Scale</h3>
+<div class="type-sample"><div class="type-label">--text-xs: 0.75rem — badges, hints</div><span style="font-size:var(--text-xs);color:var(--ink-secondary)">Badge label</span></div>
+<div class="type-sample"><div class="type-label">--text-sm: 0.8125rem — form labels</div><span style="font-size:var(--text-sm);color:var(--ink-secondary)">Etykieta pola</span></div>
+<div class="type-sample"><div class="type-label">--text-base: 0.875rem — body text</div><span style="font-size:var(--text-base)">Domyślny tekst treści</span></div>
+<div class="type-sample"><div class="type-label">--text-md: 1rem — prominent body</div><span style="font-size:var(--text-md)">Ważniejszy akapit</span></div>
+<div class="type-sample"><div class="type-label">--text-lg: 1.125rem — section titles</div><span style="font-size:var(--text-lg);font-weight:600">Nagłówek sekcji</span></div>
+<div class="type-sample"><div class="type-label">--text-xl: 1.25rem — page subtitles</div><span style="font-size:var(--text-xl);font-weight:600">Podtytuł strony</span></div>
+<div class="type-sample"><div class="type-label">--text-2xl: 1.5rem — page titles</div><span style="font-size:var(--text-2xl);font-weight:700">Tytuł strony</span></div>
+<div class="type-sample"><div class="type-label">--text-3xl: 1.875rem — hero titles</div><span style="font-size:var(--text-3xl);font-weight:700">Hero Title</span></div>
+</div>
+<div class="subsection">
+<h3>Font Weights</h3>
+<div class="sample-row">
+<span style="font-weight:400">Regular 400</span>
+<span style="font-weight:500">Medium 500</span>
+<span style="font-weight:600">Semibold 600</span>
+<span style="font-weight:700">Bold 700</span>
+</div>
+</div>
+</section>
+<section class="section">
+<div class="section-title">4. Spacing (4px Grid)</div>
+<div style="display:grid;gap:8px">
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:4px"></div><code class="code-ref">--space-1: 0.25rem (4px)</code></div>
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:8px"></div><code class="code-ref">--space-2: 0.5rem (8px)</code></div>
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:12px"></div><code class="code-ref">--space-3: 0.75rem (12px)</code></div>
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:16px"></div><code class="code-ref">--space-4: 1rem (16px)</code></div>
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:24px"></div><code class="code-ref">--space-6: 1.5rem (24px)</code></div>
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:32px"></div><code class="code-ref">--space-8: 2rem (32px)</code></div>
+<div style="display:flex;align-items:center;gap:12px"><div class="spacer-bar" style="width:48px"></div><code class="code-ref">--space-12: 3rem (48px)</code></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">5. Border Radius</div>
+<div style="display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center">
+<div style="text-align:center"><div class="radius-box" style="border-radius:4px"></div><code class="code-ref">--radius-sm: 4px</code></div>
+<div style="text-align:center"><div class="radius-box" style="border-radius:8px"></div><code class="code-ref">--radius-md: 8px</code></div>
+<div style="text-align:center"><div class="radius-box" style="border-radius:10px"></div><code class="code-ref">--radius-lg: 10px</code></div>
+<div style="text-align:center"><div class="radius-box" style="border-radius:14px"></div><code class="code-ref">--radius-xl: 14px</code></div>
+<div style="text-align:center"><div class="radius-box" style="border-radius:9999px"></div><code class="code-ref">--radius-full: 9999px</code></div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">6. Shadows</div>
+<div class="shadow-box" style="box-shadow:var(--shadow-sm)"><code class="code-ref">--shadow-sm</code></div>
+<div class="shadow-box" style="box-shadow:var(--shadow-md)"><code class="code-ref">--shadow-md</code></div>
+<div class="shadow-box" style="box-shadow:var(--shadow-lg)"><code class="code-ref">--shadow-lg</code></div>
+</section>
+
+<section class="section">
+<div class="section-title">7. Buttons</div>
+<div class="sample-row">
+<button class="btn-primary">Primary</button>
+<button class="btn-primary" disabled>Primary disabled</button>
+<button class="btn-secondary">Secondary</button>
+<button class="btn-ghost">Ghost</button>
+<button class="btn-danger">Danger</button>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">8. Form Inputs</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+<div class="form-label"><span>Default input</span><input type="text" class="input-field" placeholder="Wpisz tekst..." style="width:100%"></div>
+<div class="form-label"><span>Focused (click me)</span><input type="text" class="input-field" placeholder="Kliknij aby zobaczyć focus" style="width:100%"></div>
+<div class="form-label"><span>Disabled</span><input type="text" class="input-field" disabled value="Disabled" style="width:100%"></div>
+<div class="form-label"><span>Error state</span><input type="text" class="input-field error" value="Błędna wartość" style="width:100%"></div>
+</div>
+</section>
+<section class="section">
+<div class="section-title">9. Badges (z border — widoczne)</div>
+<div class="sample-row">
+<span class="badge badge-success">Aktywna</span>
+<span class="badge badge-danger">Zamknięta</span>
+<span class="badge badge-warning">Ostrzeżenie</span>
+<span class="badge badge-neutral">Neutral</span>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">10. Alerts (z border-left — jasny wskaźnik)</div>
+<div style="display:grid;gap:0.75rem">
+<div class="alert alert-success">Operacja zakończona sukcesem. Wadium zostało wpłacone.</div>
+<div class="alert alert-danger">Nie udało się złożyć oferty. Spróbuj ponownie.</div>
+<div class="alert alert-warning">Sesja wygasa za 5 minut. Zapisz swoje dane.</div>
+<div class="alert alert-info">Nowa funkcja: kalkulacja ceny jest dostępna.</div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">11. Cards</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+<div class="card">
+<strong>Default card</strong>
+<p style="color:var(--ink-secondary);font-size:0.875rem;margin-top:0.5rem">2px border, radius-xl, hover shadow</p>
+</div>
+<div class="card" style="box-shadow:var(--shadow-md)">
+<strong>Hover state</strong>
+<p style="color:var(--ink-secondary);font-size:0.875rem;margin-top:0.5rem">Elevated shadow + border-color change</p>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">12. Navigation</div>
+<div class="subsection">
+<h3>Underline nav <span class="tag-recommended">Recommended</span></h3>
+<p class="desc">Bottom-border active indicator — najbardziej przewidywalny wzorzec. Użytkownik natychmiast widzi aktywną zakładkę.</p>
+<nav class="nav-underline">
+<a href="#" class="active">Rynek</a>
+<a href="#">Wystaw aukcję</a>
+<a href="#">Moje konto</a>
+</nav>
+</div>
+<div class="subsection">
+<h3>Pill nav <span class="tag-alternative">Alternative</span></h3>
+<p class="desc">Segmented control — bardziej dekoracyjny. Może zaskakiwać nowego użytkownika.</p>
+<nav class="nav-pill">
+<a href="#" class="active">Rynek</a>
+<a href="#">Wystaw</a>
+<a href="#">Konto</a>
+</nav>
+</div>
+</section>
+
+<section class="section">
+<div class="section-title">13. Empty State</div>
+<div class="empty-state" style="border:2px solid var(--border);border-radius:var(--radius-xl)">
+<div class="empty-state-icon">&#9671;</div>
+<h2>Brak danych</h2>
+<p>Nie znaleziono aukcji spełniających kryteria. Spróbuj zmienić filtry.</p>
+</div>
+</section>
