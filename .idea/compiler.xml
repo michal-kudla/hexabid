@@ -24,12 +24,14 @@
         <module name="hexabid-api-contract" />
         <module name="hexabid-payment-core" />
         <module name="hexabid-statements" />
+        <module name="hexabid-adapter-in-authz" />
         <module name="hexabid-auth-core" />
         <module name="hexabid-payment-adapter-crypto" />
         <module name="hexabid-rules-adapter" />
         <module name="hexabid-adapter-in-auth-oauth" />
         <module name="hexabid-adapter-out-kafka" />
         <module name="hexabid-adapter-in-ws" />
+        <module name="hexabid-authorization-core" />
         <module name="hexabid-adapter-out-kyc-local" />
         <module name="hexabid-core" />
         <module name="hexabid-adapter-out-kyc" />
@@ -88,6 +90,7 @@
       <module name="auctions-payment-core" options="-parameters" />
       <module name="hexabid-adapter-in-auth-local" options="-parameters" />
       <module name="hexabid-adapter-in-auth-oauth" options="-parameters" />
+      <module name="hexabid-adapter-in-authz" options="-parameters" />
       <module name="hexabid-adapter-in-job" options="-parameters" />
       <module name="hexabid-adapter-in-rest" options="-parameters" />
       <module name="hexabid-adapter-in-ws" options="-parameters" />
@@ -98,6 +101,7 @@
       <module name="hexabid-api-contract" options="-parameters" />
       <module name="hexabid-architecture-tests" options="-parameters" />
       <module name="hexabid-auth-core" options="-parameters" />
+      <module name="hexabid-authorization-core" options="-parameters" />
       <module name="hexabid-bootstrap" options="-parameters" />
       <module name="hexabid-core" options="-parameters" />
       <module name="hexabid-integration-tests" options="-parameters" />

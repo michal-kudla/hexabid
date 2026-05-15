@@ -28,3 +28,35 @@ auctions:
   seed:
     enabled: true
 
+hexabid:
+  authorization:
+    jwt:
+      secret: hexabid-local-development-secret-key-at-least-256-bits-long-for-hmac-sha
+      expiration-hours: 8
+    dev-users:
+      - username: anna
+        password: password
+        roles: [AUCTION_AUTHOR]
+        organisationCode: A12/B04/C77
+        displayName: Anna Developer
+      - username: marek
+        password: password
+        roles: [AUCTION_AUTHOR]
+        organisationCode: A12/B04/C77
+        displayName: Marek Demo
+      - username: piotr
+        password: password
+        roles: [AUCTION_MANAGER]
+        organisationCode: A12/B04
+        displayName: Piotr Manager
+      - username: barbara
+        password: password
+        roles: [REPORT_VIEWER]
+        organisationCode: A12
+        displayName: Barbara Viewer
+      - username: admin
+        password: password
+        roles: [AUCTION_ADMIN]
+        organisationCode: A12
+        displayName: Admin User
+

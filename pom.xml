@@ -29,9 +29,11 @@
         <module>hexabid-statements</module>
         <module>hexabid-core</module>
         <module>hexabid-auth-core</module>
+        <module>hexabid-authorization-core</module>
         <module>hexabid-api-contract</module>
         <module>hexabid-adapter-in-auth-oauth</module>
         <module>hexabid-adapter-in-auth-local</module>
+        <module>hexabid-adapter-in-authz</module>
         <module>hexabid-adapter-in-rest</module>
         <module>hexabid-adapter-in-ws</module>
         <module>hexabid-adapter-in-job</module>
@@ -63,6 +65,7 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <openapi.generator.version>7.14.0</openapi.generator.version>
         <archunit.version>1.4.1</archunit.version>
+        <jjwt.version>0.12.6</jjwt.version>
         <skipIntegrationTests>true</skipIntegrationTests>
     </properties>
 
@@ -75,6 +78,23 @@
                 <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

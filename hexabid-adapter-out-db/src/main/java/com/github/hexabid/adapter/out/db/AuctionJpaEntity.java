@@ -30,6 +30,12 @@ public class AuctionJpaEntity {
     @Column(nullable = false)
     private String sellerId;
 
+    @Column(name = "created_by_user_id", nullable = false, length = 64)
+    private String createdByUserId;
+
+    @Column(name = "created_by_org_code", nullable = false, length = 256)
+    private String createdByOrganisationCode;
+
     @Column(nullable = false)
     private String title;
 
@@ -79,6 +85,22 @@ public class AuctionJpaEntity {
 
     public void setSellerId(String sellerId) {
         this.sellerId = sellerId;
+    }
+
+    public String getCreatedByUserId() {
+        return createdByUserId;
+    }
+
+    public void setCreatedByUserId(String createdByUserId) {
+        this.createdByUserId = createdByUserId;
+    }
+
+    public String getCreatedByOrganisationCode() {
+        return createdByOrganisationCode;
+    }
+
+    public void setCreatedByOrganisationCode(String createdByOrganisationCode) {
+        this.createdByOrganisationCode = createdByOrganisationCode;
     }
 
     public String getTitle() {

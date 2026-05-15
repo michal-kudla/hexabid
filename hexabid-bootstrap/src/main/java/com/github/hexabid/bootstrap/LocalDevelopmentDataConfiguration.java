@@ -158,6 +158,8 @@ class LocalDevelopmentDataConfiguration {
         Auction auction = Auction.create(
                 AuctionId.newId(),
                 new PartyId(sellerId),
+                "dev:" + sellerId,
+                "A12/B04/C77",
                 Lot.singleProductDraft(title),
                 startingPrice,
                 endsAt

@@ -36,7 +36,7 @@ class PlaceBidServiceTest {
 
     private static Auction createInProgressAuction(AuctionId id, PartyId sellerId, String title,
                                                     Price startingPrice, Instant endsAt) {
-        var auction = Auction.create(id, sellerId, Lot.singleProductDraft(title), startingPrice, endsAt);
+        var auction = Auction.create(id, sellerId, sellerId.value(), "A12/B04/C77", Lot.singleProductDraft(title), startingPrice, endsAt);
         auction.publish(Instant.now());
         auction.start(Instant.now());
         return auction;

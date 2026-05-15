@@ -19,6 +19,8 @@ public class AuctionJpaMapper {
         return Auction.rehydrate(
                 new AuctionId(entity.getId()),
                 new PartyId(entity.getSellerId()),
+                entity.getCreatedByUserId(),
+                entity.getCreatedByOrganisationCode(),
                 Lot.singleProductDraft(entity.getTitle()),
                 new Price(entity.getStartingPrice(), entity.getCurrency()),
                 entity.getEndsAt(),
@@ -34,6 +36,8 @@ public class AuctionJpaMapper {
     AuctionJpaEntity toEntity(Auction auction, AuctionJpaEntity entity) {
         entity.setId(auction.id().value());
         entity.setSellerId(auction.sellerId().value());
+        entity.setCreatedByUserId(auction.createdByUserId());
+        entity.setCreatedByOrganisationCode(auction.createdByOrganisationCode());
         entity.setTitle(auction.lot().title());
         entity.setProductName(auction.lot().title());
         entity.setStartingPrice(auction.startingPrice().amount());

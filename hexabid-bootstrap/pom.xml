@@ -138,6 +138,11 @@
             <dependencies>
                 <dependency>
                     <groupId>com.github.hexabid</groupId>
+                    <artifactId>hexabid-adapter-in-authz</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>com.github.hexabid</groupId>
                     <artifactId>hexabid-adapter-in-auth-local</artifactId>
                     <version>${project.version}</version>
                 </dependency>
