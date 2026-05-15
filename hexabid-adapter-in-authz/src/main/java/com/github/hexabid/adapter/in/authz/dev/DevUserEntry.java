@@ -18,14 +18,6 @@ public class DevUserEntry {
     public DevUserEntry() {
     }
 
-    public DevUserEntry(String username, String password, List<String> roles, String organisationCode, String displayName) {
-        this.username = username;
-        this.password = password;
-        this.roles = roles;
-        this.organisationCode = organisationCode;
-        this.displayName = displayName;
-    }
-
     public String getUsername() {
         return username;
     }
