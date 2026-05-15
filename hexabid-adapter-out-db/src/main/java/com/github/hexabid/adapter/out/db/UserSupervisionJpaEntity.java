@@ -47,33 +47,4 @@ public class UserSupervisionJpaEntity {
     public void setSubordinateUserId(String subordinateUserId) {
         this.subordinateUserId = subordinateUserId;
     }
-
-    /**
-     * Composite key dla user_supervision.
-     */
-    public static class UserSupervisionId implements java.io.Serializable {
-        private String managerUserId;
-        private String subordinateUserId;
-
-        public UserSupervisionId() {
-        }
-
-        public UserSupervisionId(String managerUserId, String subordinateUserId) {
-            this.managerUserId = managerUserId;
-            this.subordinateUserId = subordinateUserId;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof UserSupervisionId that)) return false;
-            return Objects.equals(managerUserId, that.managerUserId)
-                    && Objects.equals(subordinateUserId, that.subordinateUserId);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(managerUserId, subordinateUserId);
-        }
-    }
 }

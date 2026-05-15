@@ -1,6 +1,7 @@
 package com.github.hexabid.adapter.in.authz.config;
 
 import com.github.hexabid.adapter.in.authz.jwt.JwtTokenUtil;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -13,7 +14,7 @@ import org.springframework.context.annotation.Profile;
 public class LocalJwtConfiguration {
 
     @Bean
-    public JwtTokenUtil jwtTokenUtil(DevUserConfiguration.JwtProperties jwtProperties) {
+    public JwtTokenUtil jwtTokenUtil(@Qualifier("authzJwtProperties") DevUserConfiguration.JwtProperties jwtProperties) {
         return new JwtTokenUtil(jwtProperties.getSecret(), jwtProperties.getExpirationHours());
     }
 }

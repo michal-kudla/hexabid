@@ -64,7 +64,7 @@
         </dependency>
         <dependency>
             <groupId>com.github.hexabid</groupId>
-            <artifactId>hexabid-adapter-in-authz</artifactId>
+            <artifactId>hexabid-adapter-out-db</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
