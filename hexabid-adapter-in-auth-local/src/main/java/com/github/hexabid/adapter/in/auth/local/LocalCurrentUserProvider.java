@@ -21,10 +21,17 @@ public class LocalCurrentUserProvider implements CurrentUserProvider {
         }
         
         Object principal = authentication.getPrincipal();
+        if (principal instanceof com.github.hexabid.authorization.core.principal.model.PrincipalContext pc) {
+            return Optional.of(new AuthenticatedUser(
+                    new PartyId(pc.userId()), "jwt", pc.userId(), pc.userId(), null, pc.roles()));
+        }
         if (principal instanceof UserDetails userDetails) {
             String username = userDetails.getUsername();
             PartyId partyId = new PartyId("local:" + username);
-            return Optional.of(new AuthenticatedUser(partyId, "local", username, username, username + "@example.com"));
+            java.util.Set<String> roles = userDetails.getAuthorities().stream()
+                    .map(a -> a.getAuthority().replace("ROLE_", ""))
+                    .collect(java.util.stream.Collectors.toSet());
+            return Optional.of(new AuthenticatedUser(partyId, "local", username, username, username + "@example.com", roles));
         }
         
         return Optional.empty();

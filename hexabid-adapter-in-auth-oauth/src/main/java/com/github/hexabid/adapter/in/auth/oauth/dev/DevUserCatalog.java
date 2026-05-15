@@ -46,7 +46,8 @@ public class DevUserCatalog {
                     "dev",
                     username,
                     displayName,
-                    email
+                    email,
+                    java.util.Set.of()
             );
         }
     }

@@ -99,6 +99,18 @@ public final class Auction {
         return new AuctionPublishedEvent(id, publishedAt);
     }
 
+    /**
+     * Edytuje aukcję (tylko DRAFT). Zwraca nową instancję z zaktualizowanymi polami.
+     */
+    public Auction edit(String newTitle, Price newStartingPrice) {
+        ensureStatusIs(AuctionStatus.DRAFT);
+        Objects.requireNonNull(newTitle, "newTitle must not be null");
+        Objects.requireNonNull(newStartingPrice, "newStartingPrice must not be null");
+        Lot updatedLot = Lot.singleProductDraft(newTitle);
+        return new Auction(id, sellerId, createdByUserId, createdByOrganisationCode, updatedLot, newStartingPrice, endsAt,
+                version, status, biddingHistory, participationPolicyTemplate);
+    }
+
     public AuctionDomainEvent start(Instant startedAt) {
         ensureStatusIs(AuctionStatus.PUBLISHED);
         Objects.requireNonNull(startedAt, "startedAt must not be null");

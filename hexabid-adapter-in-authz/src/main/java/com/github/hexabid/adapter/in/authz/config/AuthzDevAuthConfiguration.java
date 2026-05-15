@@ -18,7 +18,7 @@ import java.util.List;
  */
 @Configuration
 @Profile("local")
-public class DevAuthConfiguration {
+public class AuthzDevAuthConfiguration {
 
     @Bean
     public PasswordEncoder passwordEncoder() {

@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -52,28 +54,26 @@ public class LocalSecurityConfiguration {
     @org.springframework.core.annotation.Order(1)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            @Autowired(required = false) com.github.hexabid.adapter.in.auth.oauth.dev.DevOAuth2UserService devOauth2UserService
+            @Autowired(required = false) com.github.hexabid.adapter.in.auth.oauth.dev.DevOAuth2UserService devOauth2UserService,
+            @Autowired(required = false) com.github.hexabid.adapter.in.authz.filter.JwtAuthorizationFilter jwtFilter
     ) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        .requestMatchers("/", "/error", "/login", "/login/**", "/logout", "/dev-auth/**").permitAll()
-                        .requestMatchers("/h2-console/**", "/ws-auctions/**").permitAll()
+                        .requestMatchers("/api/authz/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/*", "/api/auth/providers").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(basic -> basic.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .formLogin(form -> form.defaultSuccessUrl("/", true))
-                .oauth2Login(oauth2 -> {
-                    oauth2.defaultSuccessUrl("/", true);
-                    if (devOauth2UserService != null) {
-                        oauth2.userInfoEndpoint(userInfo -> userInfo.userService(devOauth2UserService));
-                    }
-                })
-                .logout(logout -> logout.logoutSuccessUrl("/"))
+                .httpBasic(Customizer.withDefaults())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+
+        if (jwtFilter != null) {
+            http.addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        }
+
         return http.build();
     }
 

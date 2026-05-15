@@ -485,6 +485,45 @@ paths:
           description: Only the seller can activate the auction
         '404':
           description: Auction not found
+  /api/auctions/{auctionId}/edit:
+    put:
+      operationId: editAuction
+      tags:
+        - Auctions
+      summary: Edit a draft auction
+      description: |
+        Updates title and starting price of a draft auction.
+        Only the owner or a manager with appropriate permissions can edit.
+        Published or active auctions cannot be edited.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditAuctionRequest'
+      responses:
+        '200':
+          description: Auction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionResponse'
+        '400':
+          description: Invalid request or auction not in editable state
+        '401':
+          description: Authentication required
+        '403':
+          description: Insufficient permissions to edit this auction
+        '404':
+          description: Auction not found
   /api/auctions/{auctionId}/wadium:
     post:
       operationId: depositWadium
@@ -1790,3 +1829,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/QualificationProfileSummary'
+    EditAuctionRequest:
+      type: object
+      required:
+        - title
+        - startingPrice
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          example: "Updated auction title"
+        startingPrice:
+          $ref: '#/components/schemas/Money'
