@@ -7,32 +7,39 @@ import static org.junit.jupiter.api.Assertions.*;
 class RolePermissionCatalogTest {
 
     @Test
-    void authorRoleMapsToOwnReadAndEdit() {
+    void authorRoleMapsToOwnCreateReadEdit() {
         var permissions = RolePermissionCatalog.permissionsFor("AUCTION_AUTHOR");
 
-        assertEquals(2, permissions.size());
+        assertEquals(3, permissions.size());
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.CREATE, Relation.OWN)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.READ, Relation.OWN)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.EDIT, Relation.OWN)));
     }
 
     @Test
-    void managerRoleMapsToDirectSubordinateAndOrgRead() {
+    void managerRoleMapsToSubordinateAndOrgRead() {
         var permissions = RolePermissionCatalog.permissionsFor("AUCTION_MANAGER");
 
-        assertEquals(3, permissions.size());
+        assertEquals(7, permissions.size());
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.CREATE, Relation.OWN)));
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.READ, Relation.OWN)));
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.EDIT, Relation.OWN)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.READ, Relation.DIRECT_SUBORDINATE)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.EDIT, Relation.DIRECT_SUBORDINATE)));
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.APPROVE, Relation.DIRECT_SUBORDINATE)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.READ, Relation.ORG_SUBTREE)));
     }
 
     @Test
-    void adminRoleMapsToAllReadEditDelete() {
+    void adminRoleMapsToAllActionsAndRelations() {
         var permissions = RolePermissionCatalog.permissionsFor("AUCTION_ADMIN");
 
-        assertEquals(3, permissions.size());
+        assertEquals(5, permissions.size());
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.CREATE, Relation.ALL)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.READ, Relation.ALL)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.EDIT, Relation.ALL)));
         assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.DELETE, Relation.ALL)));
+        assertTrue(permissions.contains(new Permission(ResourceType.AUCTION, Action.APPROVE, Relation.ALL)));
     }
 
     @Test

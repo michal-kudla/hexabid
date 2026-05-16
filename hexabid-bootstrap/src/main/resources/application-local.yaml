@@ -33,6 +33,9 @@ hexabid:
     jwt:
       secret: hexabid-local-development-secret-key-at-least-256-bits-long-for-hmac-sha
       expiration-hours: 8
+    supervision:
+      - manager: dev:piotr
+        subordinates: [dev:anna, dev:marek]
     dev-users:
       - username: anna
         password: password
