@@ -1,5 +1,6 @@
 package com.github.hexabid.adapter.in.rest;
 
+import com.github.hexabid.adapter.in.authz.principal.SpringAuthenticationPrincipalContextProvider;
 import com.github.hexabid.auth.core.identityaccess.port.in.FindCurrentUserProfileUseCase;
 import com.github.hexabid.auth.core.identityaccess.port.out.CurrentUserProvider;
 import com.github.hexabid.contract.model.*;
@@ -18,6 +19,9 @@ import com.github.hexabid.core.auctioning.port.in.BrowseAuctionsUseCase;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionResult;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionCommand;
 import com.github.hexabid.core.auctioning.port.in.CreateAuctionUseCase;
+import com.github.hexabid.core.auctioning.port.in.EditAuctionCommand;
+import com.github.hexabid.core.auctioning.port.in.EditAuctionResult;
+import com.github.hexabid.core.auctioning.port.in.EditAuctionUseCase;
 import com.github.hexabid.core.auctioning.port.in.FindAuctionDetailsUseCase;
 import com.github.hexabid.core.auctioning.port.in.SubmitDocumentCommand;
 import com.github.hexabid.core.auctioning.port.in.SubmitDocumentResult;
@@ -48,10 +52,12 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
 
     private final CreateAuctionUseCase createAuctionUseCase;
     private final ActivateAuctionUseCase activateAuctionUseCase;
+    private final EditAuctionUseCase editAuctionUseCase;
     private final FindAuctionDetailsUseCase findAuctionDetailsUseCase;
     private final BrowseAuctionsUseCase browseAuctionsUseCase;
     private final FindCurrentUserProfileUseCase findCurrentUserProfileUseCase;
     private final CurrentUserProvider currentUserProvider;
+    private final SpringAuthenticationPrincipalContextProvider authContextProvider;
     private final RestAuctionContractMapper mapper;
     private final AuctionPricingFacade auctionPricingFacade;
     private final AuctionRuleEvaluator ruleEvaluator;
@@ -69,10 +75,12 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     public RestAuctionApiDelegate(
             CreateAuctionUseCase createAuctionUseCase,
             ActivateAuctionUseCase activateAuctionUseCase,
+            EditAuctionUseCase editAuctionUseCase,
             FindAuctionDetailsUseCase findAuctionDetailsUseCase,
             BrowseAuctionsUseCase browseAuctionsUseCase,
             FindCurrentUserProfileUseCase findCurrentUserProfileUseCase,
             CurrentUserProvider currentUserProvider,
+            SpringAuthenticationPrincipalContextProvider authContextProvider,
             RestAuctionContractMapper mapper,
             AuctionPricingFacade auctionPricingFacade,
             AuctionRuleEvaluator ruleEvaluator,
@@ -81,10 +89,12 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     ) {
         this.createAuctionUseCase = createAuctionUseCase;
         this.activateAuctionUseCase = activateAuctionUseCase;
+        this.editAuctionUseCase = editAuctionUseCase;
         this.findAuctionDetailsUseCase = findAuctionDetailsUseCase;
         this.browseAuctionsUseCase = browseAuctionsUseCase;
         this.findCurrentUserProfileUseCase = findCurrentUserProfileUseCase;
         this.currentUserProvider = currentUserProvider;
+        this.authContextProvider = authContextProvider;
         this.mapper = mapper;
         this.auctionPricingFacade = auctionPricingFacade;
         this.ruleEvaluator = ruleEvaluator;
@@ -117,8 +127,16 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             createAuctionRejectedCounter.increment();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        String orgCode;
+        try {
+            orgCode = authContextProvider.current().organisationCode().value();
+        } catch (IllegalStateException e) {
+            orgCode = authenticatedUser.partyId().value();
+        }
         CreateAuctionResult result = createAuctionUseCase.createAuction(new CreateAuctionCommand(
                 authenticatedUser.partyId(),
+                authenticatedUser.partyId().value(),
+                orgCode,
                 request.getTitle(),
                 toPrice(request.getStartingPrice().getAmount(), request.getStartingPrice().getCurrency()),
                 request.getEndsAt().toInstant(),
@@ -172,6 +190,29 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         throw new RestRequestRejectedException(HttpStatus.BAD_REQUEST, rejected.message());
+    }
+
+    @Override
+    public ResponseEntity<AuctionResponse> editAuction(UUID auctionId, EditAuctionRequest request, String xApiVersion) {
+        var authenticatedUser = currentUserProvider.maybeCurrentUser().orElse(null);
+        if (authenticatedUser == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        EditAuctionResult result = editAuctionUseCase.editAuction(new EditAuctionCommand(
+                new AuctionId(auctionId),
+                request.getTitle(),
+                toPrice(request.getStartingPrice().getAmount(), request.getStartingPrice().getCurrency())
+        ));
+
+        if (result instanceof EditAuctionResult.AuctionEdited edited) {
+            return ResponseEntity.ok(mapper.toResponse(edited.auction()));
+        }
+        if (result instanceof EditAuctionResult.AuctionNotFound) {
+            return ResponseEntity.notFound().build();
+        }
+        EditAuctionResult.EditNotAllowed notAllowed = (EditAuctionResult.EditNotAllowed) result;
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @Override

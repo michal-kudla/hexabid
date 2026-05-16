@@ -45,6 +45,8 @@ public final class CreateAuctionService implements CreateAuctionUseCase {
         Auction created = Auction.create(
                 AuctionId.newId(),
                 command.sellerId(),
+                command.createdByUserId(),
+                command.createdByOrganisationCode(),
                 Lot.singleProductDraft(command.title()),
                 command.startingPrice(),
                 command.endsAt()

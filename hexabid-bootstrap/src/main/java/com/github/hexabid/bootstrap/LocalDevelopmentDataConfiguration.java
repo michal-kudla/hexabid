@@ -7,6 +7,8 @@ import com.github.hexabid.core.auctioning.port.in.AuctionSort;
 import com.github.hexabid.core.auctioning.port.in.BrowseAuctionsQuery;
 import com.github.hexabid.core.auctioning.port.out.AuctionReadModel;
 import com.github.hexabid.core.auctioning.port.out.AuctionRepository;
+import com.github.hexabid.adapter.out.db.SpringDataUserSupervisionRepository;
+import com.github.hexabid.adapter.out.db.UserSupervisionJpaEntity;
 import com.github.hexabid.core.lot.model.Lot;
 import com.github.hexabid.core.party.model.PartyId;
 import org.springframework.beans.factory.annotation.Value;
@@ -158,6 +160,8 @@ class LocalDevelopmentDataConfiguration {
         Auction auction = Auction.create(
                 AuctionId.newId(),
                 new PartyId(sellerId),
+                "dev:" + sellerId,
+                "A12/B04/C77",
                 Lot.singleProductDraft(title),
                 startingPrice,
                 endsAt
@@ -187,5 +191,17 @@ class LocalDevelopmentDataConfiguration {
     }
 
     private record BidSeed(String bidderId, String amount, Instant placedAt) {
+    }
+
+    @Bean
+    ApplicationRunner userSupervisionSeeder(SpringDataUserSupervisionRepository supervisionRepository) {
+        return args -> {
+            if (supervisionRepository.count() > 0) {
+                return;
+            }
+            // Piotr (manager at A12/B04) manages Anna and Marek (both at A12/B04/C77)
+            supervisionRepository.save(new UserSupervisionJpaEntity("dev:piotr", "dev:anna"));
+            supervisionRepository.save(new UserSupervisionJpaEntity("dev:piotr", "dev:marek"));
+        };
     }
 }

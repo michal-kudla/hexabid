@@ -764,6 +764,25 @@ export enum DocumentType {
 /**
  * 
  * @export
+ * @interface EditAuctionRequest
+ */
+export interface EditAuctionRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof EditAuctionRequest
+     */
+    title: string;
+    /**
+     * 
+     * @type {Money}
+     * @memberof EditAuctionRequest
+     */
+    startingPrice: Money;
+}
+/**
+ * 
+ * @export
  * @interface InventoryInstanceListResponse
  */
 export interface InventoryInstanceListResponse {

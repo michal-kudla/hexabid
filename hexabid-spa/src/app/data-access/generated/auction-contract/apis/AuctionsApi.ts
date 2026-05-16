@@ -23,6 +23,7 @@ import type {
     CreateLotRequest,
     CurrentUserProfileResponse,
     DepositWadiumRequest,
+    EditAuctionRequest,
     LotListResponse,
     LotResponse,
     RefundWadiumRequest,
@@ -85,6 +86,12 @@ export interface CreateLotOperationRequest {
 export interface DepositWadiumOperationRequest {
     auctionId: string;
     depositWadiumRequest: DepositWadiumRequest;
+    xAPIVersion?: string;
+}
+
+export interface EditAuctionOperationRequest {
+    auctionId: string;
+    editAuctionRequest: EditAuctionRequest;
     xAPIVersion?: string;
 }
 
@@ -571,6 +578,67 @@ export class AuctionsApi extends runtime.BaseAPI {
      */
     async depositWadium(requestParameters: DepositWadiumOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WadiumResponse> {
         const response = await this.depositWadiumRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for editAuction without sending the request
+     */
+    async editAuctionRequestOpts(requestParameters: EditAuctionOperationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['auctionId'] == null) {
+            throw new runtime.RequiredError(
+                'auctionId',
+                'Required parameter "auctionId" was null or undefined when calling editAuction().'
+            );
+        }
+
+        if (requestParameters['editAuctionRequest'] == null) {
+            throw new runtime.RequiredError(
+                'editAuctionRequest',
+                'Required parameter "editAuctionRequest" was null or undefined when calling editAuction().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['xAPIVersion'] != null) {
+            headerParameters['X-API-Version'] = String(requestParameters['xAPIVersion']);
+        }
+
+
+        let urlPath = `/api/auctions/{auctionId}/edit`;
+        urlPath = urlPath.replace('{auctionId}', encodeURIComponent(String(requestParameters['auctionId'])));
+
+        return {
+            path: urlPath,
+            method: 'PUT',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['editAuctionRequest'],
+        };
+    }
+
+    /**
+     * Updates title and starting price of a draft auction. Only the owner or a manager with appropriate permissions can edit. Published or active auctions cannot be edited. 
+     * Edit a draft auction
+     */
+    async editAuctionRaw(requestParameters: EditAuctionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AuctionResponse>> {
+        const requestOptions = await this.editAuctionRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Updates title and starting price of a draft auction. Only the owner or a manager with appropriate permissions can edit. Published or active auctions cannot be edited. 
+     * Edit a draft auction
+     */
+    async editAuction(requestParameters: EditAuctionOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AuctionResponse> {
+        const response = await this.editAuctionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

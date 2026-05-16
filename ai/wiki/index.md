@@ -20,6 +20,7 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-05-10-statement-collection-system-codex-proposal]] - Alternatywna propozycja Codex: rozdzielenie formatu aukcji od wersjonowanego szablonu polityki dopuszczenia, profile kwalifikacyjne kategorii, zweryfikowane z archetypami Graphs/Party/Rules/Plan-vs-Execution
 - [[decisions/2026-05-10-statements-ux-design]] - Projekt UX oświadczeń i szablonów kwalifikacji w SPA: wizard tworzenia aukcji, bramka kwalifikacji licytanta, DAG-driven statement wizard, integracja z rules panel
 - [[decisions/2026-05-11-statements-ui-ux-codex-proposal]] - Propozycja Codex dla UI/UX kwalifikacji: Auction Setup Studio, Participation Center, QualificationTask VM, rozdzielenie oświadczeń od wymogów, dowodów i weryfikacji
+- [[decisions/2026-05-15-authorization-rbac-scope-final]] - **AKTUALNY ADR**: Autoryzacja RBAC + Scope przez `JWT roles + organisationCode`, permission model bez eksplozji i authorized query w DB
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
@@ -27,9 +28,12 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[concepts/package-migration]] - Migracja pakietów z com.acme.auctions
 - [[concepts/pricing-spa-layers]] - Warstwy frontendowe modułu pricing (data-access, feature, e2e)
 
-### 🔧 Konfiguracje i Setup
+### 📋 Konfiguracje i Setup
 - [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych + systemd user services
 - [[DOCUMENTATION_STRUCTURE]] - Organizacja dokumentacji w projekcie
+
+### 📐 Plany wdrożeniowe
+- [[plans/authorization-rbac-scope-final]] - **AKTUALNY PLAN**: Implementacja autoryzacji przez `PrincipalContext`, `Permission(ResourceType, Action, Relation)` i authorized queries
 
 ## 📝 Procedura Pielęgnacji
 
@@ -49,4 +53,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-05-11*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-05-15*

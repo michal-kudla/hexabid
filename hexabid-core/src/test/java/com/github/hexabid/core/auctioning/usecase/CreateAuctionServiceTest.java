@@ -36,6 +36,8 @@ class CreateAuctionServiceTest {
 
         CreateAuctionResult result = service.createAuction(new CreateAuctionCommand(
                 new PartyId("seller-1"),
+                "dev:seller-1",
+                "A12/B04/C77",
                 "Painting",
                 new Price(new BigDecimal("300.00"), "PLN"),
                 now.plusSeconds(3600),
@@ -56,6 +58,8 @@ class CreateAuctionServiceTest {
 
         CreateAuctionResult result = service.createAuction(new CreateAuctionCommand(
                 new PartyId("seller-1"),
+                "dev:seller-1",
+                "A12/B04/C77",
                 "Painting",
                 new Price(new BigDecimal("300.00"), "PLN"),
                 now.plusSeconds(3600),

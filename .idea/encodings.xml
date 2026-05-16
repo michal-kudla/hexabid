@@ -25,6 +25,7 @@
     <file url="file://$PROJECT_DIR$/auctions-payment-core/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-adapter-in-auth-local/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-adapter-in-auth-oauth/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexabid-adapter-in-authz/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-adapter-in-job/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-adapter-in-rest/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-adapter-in-ws/src/main/java" charset="UTF-8" />
@@ -35,6 +36,7 @@
     <file url="file://$PROJECT_DIR$/hexabid-api-contract/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-architecture-tests/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-auth-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexabid-authorization-core/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-bom/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-bom/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/hexabid-bootstrap/src/main/java" charset="UTF-8" />

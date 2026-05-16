@@ -3,6 +3,7 @@ package com.github.hexabid.adapter.in.rest;
 import com.github.hexabid.core.auctioning.exception.AuctionBusinessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -27,6 +28,11 @@ public class RestAuctionExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     ProblemDetail handleIllegalState(IllegalStateException exception) {
         return problem(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ProblemDetail handleAccessDenied(AccessDeniedException exception) {
+        return problem(HttpStatus.FORBIDDEN, exception);
     }
 
     private ProblemDetail problem(HttpStatus status, RuntimeException exception) {

@@ -305,3 +305,15 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - `mvn clean verify -Plocal -DskipTests` pass, `npm run build` pass
 - Link: [[decisions/2026-05-11-statements-ui-ux-codex-proposal]]
 - Tagi: #phase5 #task-kind #stages #party-reference #my-participations #spa #angular #e2e
+
+## [2026-05-15] [DESIGN] Finalny model autoryzacji RBAC + Scope przez authorized query
+- Uporzadkowano wiki autoryzacji: zostawiono jedna finalna wersje ADR i jedna finalna wersje planu, usunieto poprzednie warianty `OrganizationPath`, prefix w `PartyId` oraz JWT-only assignments
+- Przyjeto rekomendacje: JWT nie jest zrodlem pelnej decyzji zasobowej; niesie tylko `sub`, `roles`, `organisationCode`
+- Role mapowane sa w aplikacji na `Permission(ResourceType, Action, Relation)`, aby uniknac eksplozji plaskich permissionow
+- Zasob aukcyjny ma przechowywac `created_by_user_id` i `created_by_organisation_code`
+- Relacja manager-podwladny pozostaje w DB w tabeli `user_supervision`
+- Centralnym mechanizmem jest authorized query: zasob pobierany jest z DB razem z warunkiem autoryzacyjnym
+- `organisationCode` jest kanonicznym path code porownywanym przez `equals` albo `LIKE code/%`, z kontrola granicy segmentu
+- ADR: [[decisions/2026-05-15-authorization-rbac-scope-final]]
+- Plan: [[plans/authorization-rbac-scope-final]]
+- Tagi: #authorization #rbac #scope #jwt #organisation-code #authorized-query #final

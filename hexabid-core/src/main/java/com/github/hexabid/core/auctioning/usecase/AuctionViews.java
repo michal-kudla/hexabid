@@ -7,12 +7,12 @@ import com.github.hexabid.core.auctioning.port.in.BidView;
 
 import java.util.List;
 
-final class AuctionViews {
+public final class AuctionViews {
 
     private AuctionViews() {
     }
 
-    static AuctionView from(Auction auction) {
+    public static AuctionView from(Auction auction) {
         String leader = auction.maybeWinnerId().map(Object::toString).orElse(null);
         return new AuctionView(
                 auction.id().value(),

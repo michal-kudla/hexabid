@@ -24,10 +24,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Atrybuty autoryzacyjne (createdByUserId, createdByOrganisationCode) są snapshotem
+ * autora zasobu w momencie tworzenia. Nie zmieniają się po edycji.
+ * Używane przez authorized query do sprawdzania dostępu.
+ */
 public final class Auction {
 
     private final AuctionId id;
     private final PartyId sellerId;
+    private final String createdByUserId;
+    private final String createdByOrganisationCode;
     private final Lot lot;
     private final Price startingPrice;
     private final Instant endsAt;
@@ -39,6 +46,8 @@ public final class Auction {
     private Auction(
             AuctionId id,
             PartyId sellerId,
+            String createdByUserId,
+            String createdByOrganisationCode,
             Lot lot,
             Price startingPrice,
             Instant endsAt,
@@ -49,6 +58,8 @@ public final class Auction {
     ) {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.sellerId = Objects.requireNonNull(sellerId, "sellerId must not be null");
+        this.createdByUserId = Objects.requireNonNull(createdByUserId, "createdByUserId must not be null");
+        this.createdByOrganisationCode = Objects.requireNonNull(createdByOrganisationCode, "createdByOrganisationCode must not be null");
         this.lot = Objects.requireNonNull(lot, "lot must not be null");
         this.startingPrice = Objects.requireNonNull(startingPrice, "startingPrice must not be null");
         this.endsAt = Objects.requireNonNull(endsAt, "endsAt must not be null");
@@ -58,13 +69,17 @@ public final class Auction {
         this.participationPolicyTemplate = participationPolicyTemplate;
     }
 
-    public static Auction create(AuctionId id, PartyId sellerId, Lot lot, Price startingPrice, Instant endsAt) {
-        return new Auction(id, sellerId, lot, startingPrice, endsAt, null, AuctionStatus.DRAFT, List.of(), null);
+    public static Auction create(AuctionId id, PartyId sellerId, String createdByUserId,
+                                  String createdByOrganisationCode, Lot lot, Price startingPrice, Instant endsAt) {
+        return new Auction(id, sellerId, createdByUserId, createdByOrganisationCode, lot, startingPrice, endsAt,
+                null, AuctionStatus.DRAFT, List.of(), null);
     }
 
     public static Auction rehydrate(
             AuctionId id,
             PartyId sellerId,
+            String createdByUserId,
+            String createdByOrganisationCode,
             Lot lot,
             Price startingPrice,
             Instant endsAt,
@@ -73,7 +88,8 @@ public final class Auction {
             List<Bid> biddingHistory,
             @Nullable String participationPolicyTemplate
     ) {
-        return new Auction(id, sellerId, lot, startingPrice, endsAt, version, status, biddingHistory, participationPolicyTemplate);
+        return new Auction(id, sellerId, createdByUserId, createdByOrganisationCode, lot, startingPrice, endsAt,
+                version, status, biddingHistory, participationPolicyTemplate);
     }
 
     public AuctionDomainEvent publish(Instant publishedAt) {
@@ -81,6 +97,18 @@ public final class Auction {
         Objects.requireNonNull(publishedAt, "publishedAt must not be null");
         status = AuctionStatus.PUBLISHED;
         return new AuctionPublishedEvent(id, publishedAt);
+    }
+
+    /**
+     * Edytuje aukcję (tylko DRAFT). Zwraca nową instancję z zaktualizowanymi polami.
+     */
+    public Auction edit(String newTitle, Price newStartingPrice) {
+        ensureStatusIs(AuctionStatus.DRAFT);
+        Objects.requireNonNull(newTitle, "newTitle must not be null");
+        Objects.requireNonNull(newStartingPrice, "newStartingPrice must not be null");
+        Lot updatedLot = Lot.singleProductDraft(newTitle);
+        return new Auction(id, sellerId, createdByUserId, createdByOrganisationCode, updatedLot, newStartingPrice, endsAt,
+                version, status, biddingHistory, participationPolicyTemplate);
     }
 
     public AuctionDomainEvent start(Instant startedAt) {
@@ -188,6 +216,14 @@ public final class Auction {
 
     public PartyId sellerId() {
         return sellerId;
+    }
+
+    public String createdByUserId() {
+        return createdByUserId;
+    }
+
+    public String createdByOrganisationCode() {
+        return createdByOrganisationCode;
     }
 
     public String title() {

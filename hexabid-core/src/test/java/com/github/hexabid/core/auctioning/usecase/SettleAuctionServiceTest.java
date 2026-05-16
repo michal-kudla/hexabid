@@ -31,7 +31,7 @@ class SettleAuctionServiceTest {
     private static Auction createAuctionPendingSettlement(AuctionId id, PartyId sellerId, String title,
                                                            Price startingPrice, Instant endsAt) {
         var beforeEnd = endsAt.minusSeconds(600);
-        var auction = Auction.create(id, sellerId, Lot.singleProductDraft(title), startingPrice, endsAt);
+        var auction = Auction.create(id, sellerId, sellerId.value(), "A12/B04/C77", Lot.singleProductDraft(title), startingPrice, endsAt);
         auction.publish(beforeEnd);
         auction.start(beforeEnd);
         auction.placeBid(new PartyId("bidder-1"), new Price(new BigDecimal("150.00"), "PLN"), beforeEnd.plusSeconds(60));
@@ -87,6 +87,8 @@ class SettleAuctionServiceTest {
         var auction = Auction.create(
                 AuctionId.newId(),
                 new PartyId("seller-1"),
+                "dev:seller-1",
+                "A12/B04/C77",
                 Lot.singleProductDraft("Draft item"),
                 new Price(new BigDecimal("100.00"), "PLN"),
                 now.plusSeconds(3600)

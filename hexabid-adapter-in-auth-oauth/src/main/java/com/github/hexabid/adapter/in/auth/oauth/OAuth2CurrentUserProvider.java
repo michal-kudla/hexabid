@@ -40,7 +40,7 @@ public class OAuth2CurrentUserProvider implements CurrentUserProvider {
         PartyId partyId = new PartyId(provider + ":" + subject);
         String displayName = displayNameOf(oauth2User);
         @Nullable String email = oauth2User.getAttribute("email");
-        return Optional.of(new AuthenticatedUser(partyId, provider, subject, displayName, email));
+        return Optional.of(new AuthenticatedUser(partyId, provider, subject, displayName, email, java.util.Set.of()));
     }
 
     private static String subjectOf(OAuth2User oauth2User) {
