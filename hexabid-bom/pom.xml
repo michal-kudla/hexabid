@@ -68,6 +68,16 @@
             </dependency>
             <dependency>
                 <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-authorization-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-adapter-in-authz</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.hexabid</groupId>
                 <artifactId>hexabid-api-contract</artifactId>
                 <version>${project.version}</version>
             </dependency>

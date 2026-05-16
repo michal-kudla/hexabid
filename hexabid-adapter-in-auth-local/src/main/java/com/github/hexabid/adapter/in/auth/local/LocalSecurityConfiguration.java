@@ -94,6 +94,7 @@ public class LocalSecurityConfiguration {
     }
 
     @Bean
+    @org.springframework.context.annotation.Primary
     public InMemoryUserDetailsManager localUserDetailsService() {
         UserDetails user1 = User.withDefaultPasswordEncoder()
                 .username("user")
@@ -105,11 +106,37 @@ public class LocalSecurityConfiguration {
                 .password("password")
                 .roles("USER", "ADMIN")
                 .build();
-        return new InMemoryUserDetailsManager(user1, admin);
+        UserDetails anna = User.withDefaultPasswordEncoder()
+                .username("anna")
+                .password("password")
+                .roles("AUCTION_AUTHOR")
+                .build();
+        UserDetails marek = User.withDefaultPasswordEncoder()
+                .username("marek")
+                .password("password")
+                .roles("AUCTION_AUTHOR")
+                .build();
+        UserDetails piotr = User.withDefaultPasswordEncoder()
+                .username("piotr")
+                .password("password")
+                .roles("AUCTION_MANAGER")
+                .build();
+        UserDetails barbara = User.withDefaultPasswordEncoder()
+                .username("barbara")
+                .password("password")
+                .roles("REPORT_VIEWER")
+                .build();
+        return new InMemoryUserDetailsManager(user1, admin, anna, marek, piotr, barbara);
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
+    }
+
+    @Bean
+    @org.springframework.context.annotation.Primary
+    public org.springframework.security.crypto.password.PasswordEncoder localPasswordEncoder() {
+        return org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 }

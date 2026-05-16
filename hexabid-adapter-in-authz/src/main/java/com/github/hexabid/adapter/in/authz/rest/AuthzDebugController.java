@@ -4,6 +4,7 @@ import com.github.hexabid.adapter.in.authz.principal.SpringAuthenticationPrincip
 import com.github.hexabid.authorization.core.context.model.AuthorizationContext;
 import com.github.hexabid.authorization.core.context.usecase.AuthorizationContextFactory;
 import com.github.hexabid.authorization.core.principal.model.PrincipalContext;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
  * Tylko dla dev/local.
  */
 @RestController
+@Profile("local")
 public class AuthzDebugController {
 
     private final SpringAuthenticationPrincipalContextProvider contextProvider;

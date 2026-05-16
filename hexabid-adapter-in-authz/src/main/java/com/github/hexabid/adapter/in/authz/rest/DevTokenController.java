@@ -3,6 +3,7 @@ package com.github.hexabid.adapter.in.authz.rest;
 import com.github.hexabid.adapter.in.authz.dev.DevUserCatalog;
 import com.github.hexabid.adapter.in.authz.dev.DevUserEntry;
 import com.github.hexabid.adapter.in.authz.jwt.JwtTokenUtil;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import java.util.Map;
  * Token jest używany w headerze "Authorization: Bearer <token>".
  */
 @RestController
+@Profile("local")
 public class DevTokenController {
 
     private final DevUserCatalog devUserCatalog;

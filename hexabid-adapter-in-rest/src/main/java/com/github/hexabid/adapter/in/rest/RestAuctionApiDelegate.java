@@ -1,5 +1,6 @@
 package com.github.hexabid.adapter.in.rest;
 
+import com.github.hexabid.adapter.in.authz.principal.SpringAuthenticationPrincipalContextProvider;
 import com.github.hexabid.auth.core.identityaccess.port.in.FindCurrentUserProfileUseCase;
 import com.github.hexabid.auth.core.identityaccess.port.out.CurrentUserProvider;
 import com.github.hexabid.contract.model.*;
@@ -56,6 +57,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
     private final BrowseAuctionsUseCase browseAuctionsUseCase;
     private final FindCurrentUserProfileUseCase findCurrentUserProfileUseCase;
     private final CurrentUserProvider currentUserProvider;
+    private final SpringAuthenticationPrincipalContextProvider authContextProvider;
     private final RestAuctionContractMapper mapper;
     private final AuctionPricingFacade auctionPricingFacade;
     private final AuctionRuleEvaluator ruleEvaluator;
@@ -78,6 +80,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             BrowseAuctionsUseCase browseAuctionsUseCase,
             FindCurrentUserProfileUseCase findCurrentUserProfileUseCase,
             CurrentUserProvider currentUserProvider,
+            SpringAuthenticationPrincipalContextProvider authContextProvider,
             RestAuctionContractMapper mapper,
             AuctionPricingFacade auctionPricingFacade,
             AuctionRuleEvaluator ruleEvaluator,
@@ -91,6 +94,7 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
         this.browseAuctionsUseCase = browseAuctionsUseCase;
         this.findCurrentUserProfileUseCase = findCurrentUserProfileUseCase;
         this.currentUserProvider = currentUserProvider;
+        this.authContextProvider = authContextProvider;
         this.mapper = mapper;
         this.auctionPricingFacade = auctionPricingFacade;
         this.ruleEvaluator = ruleEvaluator;
@@ -123,10 +127,16 @@ public class RestAuctionApiDelegate implements AuctionsApiDelegate {
             createAuctionRejectedCounter.increment();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+        String orgCode;
+        try {
+            orgCode = authContextProvider.current().organisationCode().value();
+        } catch (IllegalStateException e) {
+            orgCode = authenticatedUser.partyId().value();
+        }
         CreateAuctionResult result = createAuctionUseCase.createAuction(new CreateAuctionCommand(
                 authenticatedUser.partyId(),
                 authenticatedUser.partyId().value(),
-                "A12/B04/C77",
+                orgCode,
                 request.getTitle(),
                 toPrice(request.getStartingPrice().getAmount(), request.getStartingPrice().getCurrency()),
                 request.getEndsAt().toInstant(),

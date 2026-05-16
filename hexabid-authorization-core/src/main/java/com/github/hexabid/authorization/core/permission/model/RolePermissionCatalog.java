@@ -17,18 +17,25 @@ public final class RolePermissionCatalog {
 
     private static final Map<String, Set<Permission>> ROLE_PERMISSIONS = Map.of(
             "AUCTION_AUTHOR", Set.of(
+                    new Permission(ResourceType.AUCTION, Action.CREATE, Relation.OWN),
                     new Permission(ResourceType.AUCTION, Action.READ, Relation.OWN),
                     new Permission(ResourceType.AUCTION, Action.EDIT, Relation.OWN)
             ),
             "AUCTION_MANAGER", Set.of(
+                    new Permission(ResourceType.AUCTION, Action.CREATE, Relation.OWN),
+                    new Permission(ResourceType.AUCTION, Action.READ, Relation.OWN),
                     new Permission(ResourceType.AUCTION, Action.READ, Relation.DIRECT_SUBORDINATE),
+                    new Permission(ResourceType.AUCTION, Action.EDIT, Relation.OWN),
                     new Permission(ResourceType.AUCTION, Action.EDIT, Relation.DIRECT_SUBORDINATE),
+                    new Permission(ResourceType.AUCTION, Action.APPROVE, Relation.DIRECT_SUBORDINATE),
                     new Permission(ResourceType.AUCTION, Action.READ, Relation.ORG_SUBTREE)
             ),
             "AUCTION_ADMIN", Set.of(
+                    new Permission(ResourceType.AUCTION, Action.CREATE, Relation.ALL),
                     new Permission(ResourceType.AUCTION, Action.READ, Relation.ALL),
                     new Permission(ResourceType.AUCTION, Action.EDIT, Relation.ALL),
-                    new Permission(ResourceType.AUCTION, Action.DELETE, Relation.ALL)
+                    new Permission(ResourceType.AUCTION, Action.DELETE, Relation.ALL),
+                    new Permission(ResourceType.AUCTION, Action.APPROVE, Relation.ALL)
             ),
             "REPORT_VIEWER", Set.of(
                     new Permission(ResourceType.REPORT, Action.READ, Relation.ORG_SUBTREE)
