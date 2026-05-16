@@ -1,0 +1,92 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - link "HB Hexabid reference auction SPA" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e7]: HB
+      - generic [ref=e8]:
+        - text: Hexabid
+        - generic [ref=e9]: reference auction SPA
+    - navigation [ref=e10]:
+      - link "Rynek" [ref=e11] [cursor=pointer]:
+        - /url: /
+      - link "Wystaw aukcję" [ref=e12] [cursor=pointer]:
+        - /url: /sell
+      - link "Moje dopuszczenia" [ref=e13] [cursor=pointer]:
+        - /url: /me/participations
+      - link "Moje konto" [ref=e14] [cursor=pointer]:
+        - /url: /dashboard
+    - generic [ref=e16]:
+      - link "GitHub" [ref=e17] [cursor=pointer]:
+        - /url: /oauth2/authorization/github
+      - link "dev" [ref=e18] [cursor=pointer]:
+        - /url: /oauth2/authorization/dev
+      - link "Google" [ref=e19] [cursor=pointer]:
+        - /url: /oauth2/authorization/google
+  - main [ref=e20]:
+    - generic [ref=e22]:
+      - article [ref=e23]:
+        - generic [ref=e24]: Auction Setup Studio
+        - heading "Konfiguracja aukcji" [level=1] [ref=e25]
+        - paragraph [ref=e26]: "Przeprowadź aukcję przez konfigurację: przedmiot, kwalifikacja licytantów, cena i podgląd procesu dopuszczenia. Na koniec zapiszesz szkic i będziesz mógł uruchomić licytację."
+      - navigation [ref=e27]:
+        - button "1 Przedmiot i kategoria" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]: "1"
+          - generic [ref=e30]: Przedmiot i kategoria
+        - button "2 Tryb sprzedaży" [ref=e31] [cursor=pointer]:
+          - generic [ref=e32]: "2"
+          - generic [ref=e33]: Tryb sprzedaży
+        - button "3 Kwalifikacja licytantów" [ref=e34] [cursor=pointer]:
+          - generic [ref=e35]: "3"
+          - generic [ref=e36]: Kwalifikacja licytantów
+        - button "4 Cena i zabezpieczenia" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: "4"
+          - generic [ref=e39]: Cena i zabezpieczenia
+        - button "5 Podsumowanie" [ref=e40] [cursor=pointer]:
+          - generic [ref=e41]: "5"
+          - generic [ref=e42]: Podsumowanie
+      - article [ref=e43]:
+        - heading "Przedmiot i kategoria" [level=2] [ref=e44]
+        - paragraph [ref=e45]: Wskaż kategorię przedmiotu. Kategoria jest wejściem do profili kwalifikacyjnych — system zaproponuje odpowiedni profil na kolejnym kroku.
+        - generic [ref=e46]:
+          - generic [ref=e47]:
+            - generic [ref=e48]: Tytuł aukcji
+            - textbox "Tytuł aukcji" [ref=e49]:
+              - /placeholder: Komiks z limitowanej serii
+          - generic [ref=e50]:
+            - generic [ref=e51]: Kategoria przedmiotu
+            - combobox "Kategoria przedmiotu" [ref=e52]:
+              - option "Ogólny" [selected]
+              - option "Grunt / Nieruchomość"
+              - option "Alkohol"
+              - option "Lek / Produkt farmaceutyczny"
+              - option "Substancja kontrolowana"
+              - option "Pojazd"
+              - option "Sztuka / Antyki"
+              - option "Elektronika"
+          - generic [ref=e53]:
+            - generic [ref=e54]: Jurysdykcja sprzedaży
+            - combobox "Jurysdykcja sprzedaży" [ref=e55]:
+              - option "Polska" [selected]
+              - option "Unia Europejska"
+              - option "EOG"
+              - option "Świat"
+          - generic [ref=e56]:
+            - generic [ref=e57]: Cena wywoławcza
+            - textbox "Cena wywoławcza" [ref=e58]: "100.00"
+          - generic [ref=e59]:
+            - generic [ref=e60]: Waluta
+            - combobox "Waluta" [ref=e61]:
+              - option "PLN" [selected]
+              - option "EUR"
+              - option "USD"
+          - generic [ref=e62]:
+            - generic [ref=e63]: Koniec aukcji
+            - textbox "Koniec aukcji" [ref=e64]
+        - complementary [ref=e65]:
+          - strong [ref=e66]: "Wykryte wymagania dla: Ogólny"
+          - paragraph [ref=e67]: Na kolejnym kroku wybierzesz profil kwalifikacyjny licytantów.
+        - button "Dalej" [ref=e69] [cursor=pointer]
+```
