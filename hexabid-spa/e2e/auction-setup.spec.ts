@@ -15,13 +15,14 @@ async function loginAsSeller(page: Page) {
 }
 
 test.describe('Auction Setup Studio — step-by-step wizard', () => {
-  test('wizard loads with 4 steps and starts on subject step', async ({ page }) => {
+  test('wizard loads with 5 steps and starts on subject step', async ({ page }) => {
     await page.goto('/sell');
-    await expect(page.getByText('Auction Setup Studio')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Konfiguracja aukcji' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Przedmiot i kategoria' })).toBeVisible();
-    await expect(page.getByText('Kwalifikacja licytantów')).toBeVisible();
-    await expect(page.getByText('Cena i zabezpieczenia')).toBeVisible();
-    await expect(page.getByText('Podsumowanie')).toBeVisible();
+    await expect(page.locator('.step-tab').filter({ hasText: 'Tryb sprzedaży' })).toBeVisible();
+    await expect(page.locator('.step-tab').filter({ hasText: 'Kwalifikacja' })).toBeVisible();
+    await expect(page.locator('.step-tab').filter({ hasText: 'Cena i zabezpieczenia' })).toBeVisible();
+    await expect(page.locator('.step-tab').filter({ hasText: 'Podsumowanie' })).toBeVisible();
     await snapshot(page, '01-setup-step-subject');
   });
 
@@ -39,6 +40,7 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
 
     await page.locator('select[formcontrolname="category"]').selectOption('LAND');
     await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
 
     await expect(page.getByRole('heading', { name: 'Kwalifikacja licytantów' })).toBeVisible();
     await expect(page.getByText('Nabywca regulowany')).toBeVisible();
@@ -49,6 +51,7 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
     await page.goto('/sell');
 
     await page.locator('select[formcontrolname="category"]').selectOption('ALCOHOL');
+    await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
 
     await expect(page.getByRole('heading', { name: 'Kwalifikacja licytantów' })).toBeVisible();
@@ -71,6 +74,7 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
 
     await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
 
     await expect(page.getByRole('heading', { name: 'Cena i zabezpieczenia' })).toBeVisible();
     await page.getByRole('button', { name: 'Dodaj konfigurację ceny' }).click();
@@ -90,11 +94,11 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
     await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
 
     await expect(page.getByRole('heading', { name: 'Podsumowanie' })).toBeVisible();
     await expect(page.getByText('E2E test aukcja pełna')).toBeVisible();
-    await expect(page.getByText('Standardowy konsument')).toBeVisible();
-    await expect(page.getByText('Ścieżka licytanta')).toBeVisible();
+    await expect(page.locator('.review-section').getByText('Standardowy konsument')).toBeVisible();
     await snapshot(page, '06-review-summary');
   });
 
@@ -102,7 +106,7 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
     await page.goto('/sell');
 
     await page.getByRole('button', { name: 'Dalej' }).click();
-    await expect(page.getByRole('heading', { name: 'Kwalifikacja licytantów' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tryb sprzedaży' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Wstecz' }).click();
     await expect(page.getByRole('heading', { name: 'Przedmiot i kategoria' })).toBeVisible();
@@ -111,7 +115,7 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
   test('step navigation tabs work', async ({ page }) => {
     await page.goto('/sell');
 
-    await page.locator('.step-tab').nth(2).click();
+    await page.locator('.step-tab').nth(3).click();
     await expect(page.getByRole('heading', { name: 'Cena i zabezpieczenia' })).toBeVisible();
 
     await page.locator('.step-tab').nth(0).click();
@@ -132,20 +136,24 @@ test.describe('Auction Setup Studio — step-by-step wizard', () => {
     await snapshot(page, '07-wizard-step1-filled');
 
     await page.getByRole('button', { name: 'Dalej' }).click();
+    await expect(page.getByRole('heading', { name: 'Tryb sprzedaży' })).toBeVisible();
+    await snapshot(page, '08-wizard-step2-format');
+
+    await page.getByRole('button', { name: 'Dalej' }).click();
     await expect(page.getByRole('heading', { name: 'Kwalifikacja licytantów' })).toBeVisible();
-    await snapshot(page, '08-wizard-step2-qualification');
+    await snapshot(page, '09-wizard-step3-qualification');
 
     await page.getByRole('button', { name: 'Dalej' }).click();
     await expect(page.getByRole('heading', { name: 'Cena i zabezpieczenia' })).toBeVisible();
-    await snapshot(page, '09-wizard-step3-pricing');
+    await snapshot(page, '10-wizard-step4-pricing');
 
     await page.getByRole('button', { name: 'Dalej' }).click();
     await expect(page.getByRole('heading', { name: 'Podsumowanie' })).toBeVisible();
-    await snapshot(page, '10-wizard-step4-review');
+    await snapshot(page, '11-wizard-step5-review');
 
     await page.getByRole('button', { name: 'Zapisz szkic aukcji' }).click();
     await page.waitForURL(/\/auction\/[^/]+$/, { timeout: 15_000 });
     await expect(page.locator('app-auction-details-page')).toBeVisible();
-    await snapshot(page, '11-wizard-created-auction');
+    await snapshot(page, '12-wizard-created-auction');
   });
 });

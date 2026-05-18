@@ -22,8 +22,10 @@ async function loginAsBidder(page: Page) {
 }
 
 test.describe('Phase 4: Qualification Profile Contract', () => {
-  test('qualification profiles API returns profile catalog', async ({ request }) => {
-    const response = await request.get('/api/qualification-profiles', {
+  test('qualification profiles API returns profile catalog', async ({ page }) => {
+    await loginAsSeller(page);
+
+    const response = await page.request.get('/api/qualification-profiles', {
       headers: { 'X-API-Version': '1' }
     });
 
@@ -45,9 +47,11 @@ test.describe('Phase 4: Qualification Profile Contract', () => {
     expect(light.abandonmentRisk).toBe('low');
   });
 
-  test('creating auction with participationPolicyTemplate stores it on the auction', async ({ request }) => {
+  test('creating auction with participationPolicyTemplate stores it on the auction', async ({ page }) => {
+    await loginAsSeller(page);
+
     const endsAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
-    const createResponse = await request.post('/api/auctions', {
+    const createResponse = await page.request.post('/api/auctions', {
       headers: { 'X-API-Version': '1', 'Content-Type': 'application/json' },
       data: {
         title: `E2E Phase4 auction ${Date.now()}`,
@@ -66,9 +70,11 @@ test.describe('Phase 4: Qualification Profile Contract', () => {
     expect(auction.qualificationSummary.templateLabel).toBe('Standardowy konsument');
   });
 
-  test('starting participation program without templateName uses auction profile', async ({ request }) => {
+  test('starting participation program without templateName uses auction profile', async ({ page }) => {
+    await loginAsSeller(page);
+
     const endsAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString();
-    const createResponse = await request.post('/api/auctions', {
+    const createResponse = await page.request.post('/api/auctions', {
       headers: { 'X-API-Version': '1', 'Content-Type': 'application/json' },
       data: {
         title: `E2E Phase4 program auction ${Date.now()}`,
@@ -85,7 +91,7 @@ test.describe('Phase 4: Qualification Profile Contract', () => {
     const auction = await createResponse.json();
     const auctionId = auction.auctionId;
 
-    const startResponse = await request.post(`/api/auctions/${auctionId}/participation/program`, {
+    const startResponse = await page.request.post(`/api/auctions/${auctionId}/participation/program`, {
       headers: { 'X-API-Version': '1', 'Content-Type': 'application/json' },
       data: {}
     });
@@ -113,9 +119,10 @@ test.describe('Phase 4: SPA qualification profile integration', () => {
     await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
 
     await expect(page.getByRole('heading', { name: 'Podsumowanie' })).toBeVisible();
-    await expect(page.getByText('Standardowy konsument')).toBeVisible();
+    await expect(page.locator('.review-section').getByText('Standardowy konsument')).toBeVisible();
     await expect(page.getByText(/zostanie przypisany do aukcji/)).toBeVisible();
     await snapshot(page, '01-phase4-profile-assignment-note');
   });

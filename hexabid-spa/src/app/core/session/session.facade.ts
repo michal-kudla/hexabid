@@ -48,7 +48,8 @@ export class SessionFacade {
   async logout(): Promise<void> {
     await fetch('/logout', {
       method: 'POST',
-      credentials: 'include'
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     });
 
     this.profile.set(null);
@@ -57,7 +58,7 @@ export class SessionFacade {
 
   private async loadLoginProviders(): Promise<void> {
     try {
-      const authApi = new AuthApi(new Configuration({ basePath: '', credentials: 'include' }));
+      const authApi = new AuthApi(new Configuration({ basePath: '', credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }));
       const providers = await authApi.getAuthProviders();
       this.loginProviders.set(
         providers.map(p => ({

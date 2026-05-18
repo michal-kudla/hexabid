@@ -131,3 +131,23 @@ npm run contract:sync
 ## Dokumentacja dla Agentów AI
 
 Czytaj najpierw `ai/wiki/index.md`, a dla lokalnych profili `ai/wiki/PROFIL_LOCAL_GUIDE.md`. Aktualizuj `ai/wiki/log.md` i decyzje w `ai/wiki/decisions/` po istotnych zmianach.
+
+---
+
+## **NIE PSUJ UWIERZYTELNIANIA**
+
+**Ta sekcja jest krytyczna. Uwierzytelnianie było psute wielokrotnie przez nieświadome zmiany. Przeczytaj i stosuj.**
+
+**ZABRONIONE zmiany w `LocalSecurityConfiguration`:**
+
+- **NIE UŻYWAJ `SessionCreationPolicy.STATELESS`** — formLogin i `/login/dev` wymagają sesji HTTP. JWT jest dodatkowym mechanizmem, NIE zastępuje sesji.
+- **NIE UŻYWAJ `httpBasic` W OGÓLE** — Spring Security 7 ignoruje `HttpStatusEntryPoint` w `httpBasic()` i wysyła `WWW-Authenticate: Basic`, co: (1) wywołuje natywny dialog logowania w przeglądarce, (2) blokuje OAuth2 redirecty (Chrome: `ERR_INVALID_AUTH_CREDENTIALS`). Profil local używa formLogin + oauth2Login — httpBasic nie jest potrzebny.
+- **NIE USUWAJ `exceptionHandling` z `HttpStatusEntryPoint(UNAUTHORIZED)`** — bez tego Spring Security przekierowuje na `/login` zamiast zwrócić 401 dla API, co psuje SPA.
+- **NIE USUWAJ `formLogin`** — formLogin jest wymagane dla działania `/login/dev`.
+- **NIE USUWAJ `oauth2Login`** — oauth2Login jest wymagane dla `/oauth2/authorization/dev`.
+- **NIE USUWAJ `permitAll()` dla `/login/**`, `/logout`, `/dev-auth/**`** — te endpointy muszą być publicznie dostępne.
+- **NIE USUWAJ `PasswordEncoder` bean** — `User.withDefaultPasswordEncoder()` używa `DelegatingPasswordEncoder` (`{bcrypt}` prefix). Bez tego bean'a Basic auth nie działa.
+
+**Testy zabezpieczające** (`AuthSecurityIT`): SEC11 weryfikuje brak `WWW-Authenticate` na API 401; SEC12 weryfikuje że OAuth2 redirect nie jest blokowany. Jeśli te testy nie przechodzą — uwierzytelnianie jest psute.
+
+**Szczegóły**: `ai/wiki/decisions/2026-05-05-dev-auth-e2e.md`

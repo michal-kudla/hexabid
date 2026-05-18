@@ -14,7 +14,8 @@ export class SessionApiService {
   private readonly client = new AuctionsApi(
     new Configuration({
       basePath: '',
-      credentials: 'include'
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
   );
 

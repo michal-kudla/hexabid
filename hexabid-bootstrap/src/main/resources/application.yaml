@@ -54,6 +54,7 @@ spring:
               - read:user
               - user:email
           dev:
+            client-name: Dev
             client-id: dev-client
             client-secret: dev-secret
             provider: custom-dev

@@ -24,7 +24,7 @@
           <small>{{ profile.verifiedLabel }}</small>
         </a>
         @if (profile.provider === 'dev') {
-          <a class="ghost-button" href="/login/dev">Zmień usera</a>
+          <a class="ghost-button" href="/oauth2/authorization/dev">Zmień usera</a>
         }
         <button class="ghost-button" type="button" (click)="session.logout()">Wyloguj</button>
       } @else {
