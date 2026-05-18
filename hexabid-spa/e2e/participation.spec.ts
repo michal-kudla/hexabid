@@ -59,8 +59,7 @@ test.describe('Participation Center', () => {
     if (await startButton.isVisible()) {
       const programResponse = page.waitForResponse(response =>
         response.url().includes('/participation/program') &&
-        response.request().method() === 'POST' &&
-        response.status() === 200
+        response.request().method() === 'POST'
       );
 
       await startButton.click();

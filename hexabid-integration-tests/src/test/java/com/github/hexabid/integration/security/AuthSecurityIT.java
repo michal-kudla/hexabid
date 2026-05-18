@@ -107,7 +107,7 @@ class AuthSecurityIT extends IntegrationTestBase {
     }
 
     @Nested
-    @DisplayName("SEC4 - Auth providers endpoint is public")
+    @DisplayName("SEC4 - Auth providers endpoint is public and returns OAuth2 providers")
     class IT_SEC4_AuthProvidersPublic {
 
         @Test
@@ -122,7 +122,24 @@ class AuthSecurityIT extends IntegrationTestBase {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             assertThat(response.statusCode()).isEqualTo(200);
-            assertThat(response.body()).contains("local");
+            assertThat(response.body()).contains("dev");
+            assertThat(response.body()).contains("google");
+            assertThat(response.body()).contains("github");
+        }
+
+        @Test
+        @DisplayName("Should not contain duplicate 'Local Development Account' provider")
+        void shouldNotContainDuplicateLocalProvider() throws Exception {
+            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RAW_BASE_URL + "/api/auth/providers"))
+                    .header("X-API-Version", API_VERSION)
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            assertThat(response.body()).doesNotContain("Local Development Account");
+            assertThat(response.body()).doesNotContain("\"local\"");
         }
     }
 
@@ -232,6 +249,61 @@ class AuthSecurityIT extends IntegrationTestBase {
             assertThatThrownBy(() -> anonApi.depositWadium(auction.getAuctionId(), depositReq, API_VERSION))
                     .isInstanceOf(ApiException.class)
                     .satisfies(ex -> assertThat(((ApiException) ex).getCode()).isEqualTo(401));
+        }
+    }
+
+    @Nested
+    @DisplayName("SEC11 - API 401 responses must NOT contain WWW-Authenticate header")
+    class IT_SEC11_NoWwwAuthenticateHeader {
+
+        @Test
+        @DisplayName("Unauthenticated API request must not return WWW-Authenticate header")
+        void shouldNotReturnWwwAuthenticateOnApi401() throws Exception {
+            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RAW_BASE_URL + "/api/me"))
+                    .header("X-Requested-With", "XMLHttpRequest")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            assertThat(response.statusCode()).isEqualTo(401);
+            assertThat(response.headers().allValues("WWW-Authenticate")).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Unauthenticated API request without X-Requested-With must not return WWW-Authenticate header")
+        void shouldNotReturnWwwAuthenticateEvenWithoutXhrHeader() throws Exception {
+            HttpClient httpClient = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RAW_BASE_URL + "/api/me"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            assertThat(response.statusCode()).isEqualTo(401);
+            assertThat(response.headers().allValues("WWW-Authenticate")).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("SEC12 - OAuth2 authorization redirect must work (not blocked by Basic auth)")
+    class IT_SEC12_OAuth2RedirectNotBlocked {
+
+        @Test
+        @DisplayName("OAuth2 authorization endpoint should redirect, not return 401")
+        void shouldRedirectOAuth2Authorization() throws Exception {
+            HttpClient httpClient = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RAW_BASE_URL + "/oauth2/authorization/dev"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            assertThat(response.statusCode()).isIn(200, 302);
+            assertThat(response.headers().firstValue("WWW-Authenticate")).isEmpty();
         }
     }
 }

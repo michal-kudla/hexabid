@@ -9,12 +9,6 @@ import java.util.List;
 @Component
 public class LocalAuthProviderDiscoverer implements AuthProviderDiscoverer {
 
-    private final LocalAuthProviderDescriptor descriptor;
-
-    public LocalAuthProviderDiscoverer(LocalAuthProviderDescriptor descriptor) {
-        this.descriptor = descriptor;
-    }
-
     @Override
     public List<AuthProviderDescriptor> getProviders() {
         return List.of();

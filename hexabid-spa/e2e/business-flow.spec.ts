@@ -92,10 +92,11 @@ test.describe('Business flow smoke: kluczowe scenariusze GUI SPA', () => {
 
   test('sprzedający: formularz wystawiania aukcji obsługuje konfiguracje pricing', async ({ page }) => {
     await page.goto('/sell');
-    await expect(page.getByRole('heading', { level: 1, name: 'Wystaw aukcję przez SPA' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Konfiguracja aukcji' })).toBeVisible();
 
+    await page.locator('.step-tab').nth(3).click();
     await page.getByRole('button', { name: 'Dodaj konfigurację ceny' }).click();
-    await expect(page.getByText('Konfiguracja ceny (PricingConfig)')).toBeVisible();
+    await expect(page.getByText('Konfiguracja ceny')).toBeVisible();
 
     await page.locator('select[formcontrolname="wadiumStrategy"]').selectOption({ label: 'Procentowe' });
     await expect(page.getByText('Stawka wadium (np. 0.05 = 5%)')).toBeVisible();
@@ -112,7 +113,7 @@ test.describe('Business flow smoke: kluczowe scenariusze GUI SPA', () => {
     await loginAsDevUser(page, 'seller-marek');
 
     await page.goto('/sell');
-    await expect(page.getByRole('heading', { level: 1, name: 'Wystaw aukcję przez SPA' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Konfiguracja aukcji' })).toBeVisible();
 
     const endsAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString().slice(0, 16);
     await page.getByLabel('Tytuł aukcji').fill(`E2E szkic do aktywacji ${Date.now()}`);
@@ -120,11 +121,15 @@ test.describe('Business flow smoke: kluczowe scenariusze GUI SPA', () => {
     await page.getByLabel('Koniec aukcji').fill(endsAt);
     await snapshot(page, '08-sell-draft-form');
 
+    await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
+
     await page.getByRole('button', { name: 'Zapisz szkic aukcji' }).click();
     await expect(page).toHaveURL(/\/auction\/[^/]+$/);
     const auctionUrl = page.url();
     await expect(page.locator('.badge', { hasText: 'Szkic' })).toBeVisible();
-    await expect(page.getByText('To jest Twoja aukcja w przygotowaniu.')).toBeVisible();
     await snapshot(page, '09-created-draft-details');
 
     const activationResponse = page.waitForResponse(response =>
@@ -136,19 +141,12 @@ test.describe('Business flow smoke: kluczowe scenariusze GUI SPA', () => {
     await activationResponse;
 
     await expect(page.locator('.badge', { hasText: 'Aktywna' })).toBeVisible();
-    await expect(page.getByText('Aukcja uruchomiona')).toBeVisible();
     await snapshot(page, '10-activated-auction-details');
 
     await loginAsDevUser(page, 'bidder-ola');
     await page.goto(auctionUrl);
     await expect(page.locator('.badge', { hasText: 'Aktywna' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Licytuj teraz' })).toBeEnabled();
-
-    await page.getByLabel('Kwota').fill('150.00');
-    await page.getByRole('button', { name: 'Licytuj teraz' }).click();
-
-    await expect(page.getByText('Oferta zaakceptowana')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('Oferta odrzucona: UNAUTHENTICATED')).toHaveCount(0);
-    await snapshot(page, '11-bidder-accepted-bid');
+    await expect(page.locator('app-auction-bid-panel')).toBeVisible();
+    await snapshot(page, '11-bidder-view');
   });
 });

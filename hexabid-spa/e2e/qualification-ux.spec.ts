@@ -79,6 +79,7 @@ test.describe('Phase 5: Full UX — task kind differentiation and category flows
     await expect(page.getByText('Wykryte wymagania dla: Grunt / Nieruchomość')).toBeVisible();
 
     await page.getByRole('button', { name: 'Dalej' }).click();
+    await page.getByRole('button', { name: 'Dalej' }).click();
     await expect(page.getByRole('heading', { name: 'Kwalifikacja licytantów' })).toBeVisible();
 
     const regulatedProfile = page.locator('.profile-card').filter({ hasText: 'Nabywca regulowany' });
@@ -91,6 +92,7 @@ test.describe('Phase 5: Full UX — task kind differentiation and category flows
     await page.goto('/sell');
 
     await page.locator('select[formcontrolname="category"]').selectOption('ALCOHOL');
+    await page.getByRole('button', { name: 'Dalej' }).click();
     await page.getByRole('button', { name: 'Dalej' }).click();
 
     await expect(page.getByRole('heading', { name: 'Kwalifikacja licytantów' })).toBeVisible();

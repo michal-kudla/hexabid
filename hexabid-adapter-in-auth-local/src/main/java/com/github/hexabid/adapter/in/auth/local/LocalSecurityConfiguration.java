@@ -2,26 +2,22 @@ package com.github.hexabid.adapter.in.auth.local;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,17 +25,21 @@ import java.util.List;
  *
  * Dostarcza:
  * - InMemoryUserDetailsManager z testowymi użytkownikami
- * - SecurityFilterChain z formLogin (tylko jeśli żaden inny łańcuch nie jest zdefiniowany,
- *   np. gdy adapter auth-oauth NIE jest na classpath)
- * - Konfigurację CORS odczytaną z właściwości aplikacji (profil dev)
+ * - SecurityFilterChain z formLogin + OAuth2 + JWT
+ * - Konfigurację CORS odczytaną z właściwości aplikacji (profil local)
  *
- * Wzorzec LISTY: ta wtyczka może współistnieć z innymi dostawcami uwierzytelniania
- * (np. OAuth2). Gdy OAuth2 jest obecny, jego SecurityFilterChain ma pierwszeństwo,
- * a ta klasa dostarcza jedynie użytkowników lokalnych.
+ * KLUCZOWE ZASADY (NIE ZMIENIAJ BEZ ZGODY OWNERA):
+ * 1. NIE UŻYWAJ httpBasic — Spring Security 7 wysyła WWW-Authenticate header
+ *    nawet z HttpStatusEntryPoint, co blokuje OAuth2 redirecty w przeglądarce
+ *    (ERR_INVALID_AUTH_CREDENTIALS) i wywołuje natywny dialog logowania.
+ * 2. NIE UŻYWAJ SessionCreationPolicy.STATELESS — formLogin i /login/dev wymagają
+ *    sesji HTTP. JWT jest dodatkowym mechanizmem, NIE zastępuje sesji.
+ * 3. formLogin + oauth2Login są wymagane dla działania /login/dev.
+ * 4. /login/**, /logout, /dev-auth/** muszą być permitAll.
+ * 5. exceptionHandling musi używać HttpStatusEntryPoint(UNAUTHORIZED) — NIE
+ *    przekierowania na /login dla API paths, bo SPA oczekuje 401.
  *
- * CORS jest aktywny wyłącznie gdy właściwość {@code spring.cors.allowed-origins}
- * jest zdefiniowana (profil dev). Na produkcji brak CORS — frontend i backend
- * powinny być serwowane z tej samej domeny.
+ * Patrz: ai/wiki/decisions/2026-05-05-dev-auth-e2e.md
  */
 @Configuration
 public class LocalSecurityConfiguration {
@@ -60,14 +60,25 @@ public class LocalSecurityConfiguration {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/", "/error", "/login", "/login/**", "/logout", "/dev-auth/**").permitAll()
+                        .requestMatchers("/h2-console/**", "/ws-auctions/**").permitAll()
                         .requestMatchers("/api/authz/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/*", "/api/auth/providers").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults())
+                .formLogin(form -> form.defaultSuccessUrl("/", true))
+                .oauth2Login(oauth2 -> {
+                    oauth2.defaultSuccessUrl("/", true);
+                    if (devOauth2UserService != null) {
+                        oauth2.userInfoEndpoint(userInfo -> userInfo.userService(devOauth2UserService));
+                    }
+                })
+                .logout(logout -> logout.logoutSuccessUrl("/").permitAll())
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(
+                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                ))
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
         if (jwtFilter != null) {
