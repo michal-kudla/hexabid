@@ -317,3 +317,15 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - ADR: [[decisions/2026-05-15-authorization-rbac-scope-final]]
 - Plan: [[plans/authorization-rbac-scope-final]]
 - Tagi: #authorization #rbac #scope #jwt #organisation-code #authorized-query #final
+
+## [2026-06-07] [UPGRADE] Angular 22 upgrade for hexabid-spa
+- Upgraded Angular from 20.3.0 to 22.0.0 with TypeScript 6.0.3
+- Updated all @angular/* packages to 22.0.0 in hexabid-spa/package.json
+- Updated devDependencies: @angular/build, @angular/cli, @angular/compiler-cli to 22.0.0
+- Required Node.js >=24.15.0 (installed via nvm)
+- All 53 Playwright e2e tests pass
+- Angular dev server runs successfully on port 14200
+- Build warnings: NG8112 (unused @let), NG8113 (unused RouterLink), NG8107 (optional chain simplification) - non-breaking
+- No @angular/mcp package exists; module communication uses standard Angular patterns
+- Updated AGENTS.md stack techniczny to Angular 22
+- Tag: #angular22 #upgrade #frontend #typescript6

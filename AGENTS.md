@@ -45,7 +45,7 @@ Hexabid to aplikacja aukcyjna wzorcowa z **architekturą heksagonalną** (hexago
 
 **Warstwy techniczne**: `hexabid-api-contract`, `hexabid-payment-api-contract`, `hexabid-bootstrap`, `hexabid-architecture-tests`, `hexabid-integration-tests`.
 
-**Frontend**: `hexabid-spa` - Angular 20 SPA z wygenerowanym klientem TypeScript z OpenAPI.
+**Frontend**: `hexabid-spa` - Angular 22 SPA z wygenerowanym klientem TypeScript z OpenAPI.
 
 ### Reguły architektury
 
@@ -124,7 +124,7 @@ npm run contract:sync
 - **Spring Data JPA** (Hibernate) w outbound adapter
 - **Spring WebSocket** + STOMP w inbound adapter
 - **OpenAPI Generator 7.14.0** (spring i typescript-fetch)
-- **Angular 20** w frontend
+- **Angular 22** w frontend (z TypeScript 6.0.3, zone.js 0.15.0)
 - **Maven** multi-module
 - **ArchUnit 1.4.1** dla architecture tests
 

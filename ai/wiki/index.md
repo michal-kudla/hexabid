@@ -21,6 +21,7 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[decisions/2026-05-10-statements-ux-design]] - Projekt UX oświadczeń i szablonów kwalifikacji w SPA: wizard tworzenia aukcji, bramka kwalifikacji licytanta, DAG-driven statement wizard, integracja z rules panel
 - [[decisions/2026-05-11-statements-ui-ux-codex-proposal]] - Propozycja Codex dla UI/UX kwalifikacji: Auction Setup Studio, Participation Center, QualificationTask VM, rozdzielenie oświadczeń od wymogów, dowodów i weryfikacji
 - [[decisions/2026-05-15-authorization-rbac-scope-final]] - **AKTUALNY ADR**: Autoryzacja RBAC + Scope przez `JWT roles + organisationCode`, permission model bez eksplozji i authorized query w DB
+- [[decisions/2026-06-07-angular22-upgrade]] - Angular 22 upgrade: v20→v22, TypeScript 6.0.3, all 53 e2e tests pass
 
 ### 📋 Koncepcje i Definicje
 - [[concepts/hexagonal-architecture]] - Architektura heksagonalna w Hexabid
@@ -53,4 +54,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-05-15*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-06-07*
