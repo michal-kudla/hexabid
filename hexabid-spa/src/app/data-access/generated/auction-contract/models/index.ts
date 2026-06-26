@@ -591,29 +591,10 @@ export interface CreateInventoryInstanceRequest {
     serialNumber?: string;
     /**
      * 
-     * @type {CreateInventoryInstanceRequestQuantity}
+     * @type {CreateBatchRequestQuantity}
      * @memberof CreateInventoryInstanceRequest
      */
-    quantity: CreateInventoryInstanceRequestQuantity;
-}
-/**
- * 
- * @export
- * @interface CreateInventoryInstanceRequestQuantity
- */
-export interface CreateInventoryInstanceRequestQuantity {
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateInventoryInstanceRequestQuantity
-     */
-    amount: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateInventoryInstanceRequestQuantity
-     */
-    unit: string;
+    quantity: CreateBatchRequestQuantity;
 }
 /**
  * 
