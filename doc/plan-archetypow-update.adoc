@@ -1,6 +1,7 @@
 = Plan Modernizacji Hexabid: Jakość Domenowa i Inspiracje Archetypowe
 :author: Hexabid Architecture Team
-:revdate: 2026-06-26
+:revdate: 2026-06-27
+:status: AKTUALNY — odzwierciedla stan po Fazie 5
 :doctype: book
 :source-highlighter: highlight.js
 :toc: left
@@ -73,11 +74,9 @@ celowa decyzja projektowa pokazująca Open/Closed Principle w praktyce.
 |===
 | Priorytet | Gdzie | Problem
 
-| P1 BLOKER
+| ~~P1 BLOKER~~ [green]#NAPRAWIONY#
 | `Quantity.subtract()` (linia 37)
-| Brak ochrony przed wynikiem ujemnym. Konstruktor zabrania ujemnych kwot,
-  ale `subtract()` może je wyprodukować. Należy dodać `requireArgument(amount >= 0)`
-  lub rzucać `ArithmeticException`.
+| Dodano guard z `requireArgument` i opisowym komunikatem. Test w `QuantityTest`.
 
 | P4 INSPIRACJA
 | `hexabid-quantity`
@@ -178,16 +177,18 @@ zgodnie z `[M04 L02]` three zones of change.
 |===
 | Priorytet | Gdzie | Problem
 
-| P1 BLOKER
+| P1 BLOKER CZĘŚCIOWO
 | `AuctionPricingFacade.calculate()` (linia 31)
 | **Excise naliczane od netto (hammer - wadium), powinno być od pełnego
   hammer price.** Podatek akcyzowy dotyczy całej transakcji, a nie kwoty
-  pomniejszonej o wadium.
+  pomniejszonej o wadium. [yellow]#Nadal otwarte#.
 
-| P1 BLOKER
-| `ExciseRate.applyTo()` PER_UNIT (linia 34)
-| Martwa gałąź: `base.currency().isEmpty()` – `Money` zawsze ma walutę.
-  Dla PER_UNIT parametr `base` jest ignorowany mimo obecności w sygnaturze.
+| P1 BLOKER NAPRAWIONY
+| `createExciseCalculator()` ExciseType (linia 34)
+| `createExciseCalculator()` zawsze używał `PercentageCalculator` nawet dla
+  `ExciseType.PER_UNIT`. Naprawiono: switch na `ExciseType` — `PercentageCalculator` dla
+  PERCENTAGE, `PerUnitCalculator` dla PER_UNIT. Dodano `withFixedParam()` w Builderze
+  dla przekazywania `quantity`.
 
 | P2 DESIGN
 | `AuctionPricingFacade`
@@ -224,7 +225,7 @@ zgodnie z `[M04 L02]` three zones of change.
 
 == Moduł: hexabid-inventory
 
-=== Ocena bieżąca: SŁABA – najsłabszy moduł domenowy
+=== Ocena bieżąca: ŚREDNIA – po wzbogaceniu (Faza 2)
 
 `InventoryEntry` i `Instance` stanowią core, ale moduł nie realizuje podstawowego
 zadania inwentarza: zarządzania dostępnością. Nie ma rezerwacji, alokacji, stanów
@@ -246,22 +247,24 @@ dopiero przy próbie rezerwacji towaru po wygranej aukcji.
 | Analogicznie do `ProductFacade` – łączy repozytorium i serwis domenowy.
   Brak wyraźnego portu `InventoryAvailability`.
 
-| P2 DESIGN
+| P2 DESIGN NAPRAWIONY
 | `InventoryEntry.addInstance()`
 | Mimo `Set<InstanceId>`, `instanceDetails` to `Map<InstanceId, Instance>` –
-  dodanie istniejącego ID cicho nadpisze wpis. Brak guarda na duplikat.
+  dodanie istniejącego ID cicho nadpisze wpis. [green]#Dodano guard na duplikat.#
+
+| P3 ROZSZERZENIE NAPRAWIONE
+| `hexabid-inventory`
+| Brak modelu dostępności. [green]#Dodano `Availability`, `Reservation` aggregate,
+  `ReservationService` (reserve/confirm/cancel/complete), `InventoryMovement`.#
 
 | P3 ROZSZERZENIE
 | `hexabid-inventory`
-| Brak modelu dostępności: nie ma `AvailableQuantity`, `Reservation`,
-  `Allocation`, `InventoryMovement`. Bez tego nie można zarezerwować
-  towaru po wygranej aukcji.
+| Brak zarządzania ilościowego dla produktów IDENTICAL.
 
-| P3 ROZSZERZENIE
-| `hexabid-inventory`
-| Brak zarządzania ilościowego dla produktów IDENTICAL – `Instance`
-  wspiera `Quantity` przez `effectiveQuantity()`, ale nie ma operacji
-  "pobierz X sztuk z partii".
+| P2 DESIGN
+| `InventoryFacade`
+| Analogicznie do `ProductFacade` – łączy repozytorium i serwis domenowy.
+  Brak wyraźnego portu `InventoryAvailability`.
 |===
 
 === Inspiracje archetypowe
@@ -308,16 +311,16 @@ każda metoda chroni niezmiennik stanowy, a use case'y delegują logikę do agre
 |===
 | Priorytet | Gdzie | Problem
 
-| P2 DESIGN
+| P2 DESIGN NAPRAWIONY
 | `Auction.edit()` (linia 105)
-| Tworzy nowy `Lot.singleProductDraft()`, który **niszczy** referencję do
-  oryginalnego `InventoryEntryId` i `reservePrice`. Edit powinien modyfikować
-  istniejący lot, nie zastępować go draftem.
+| Tworzył nowy `Lot.singleProductDraft()`, niszcząc referencję.
+  [green]#Dodano `EditAuctionService`# z `EditAuctionUseCase` result types:
+  `AuctionEdited`, `AuctionNotFound`, `EditNotAllowed` (guard na DRAFT/PUBLISHED).
 
-| P2 DESIGN
+| P2 DESIGN NAPRAWIONY
 | `Auction.assignParticipationPolicyTemplate()`
-| Setter mutujący stan bez guarda – można wywołać w każdym stanie agregatu.
-  Powinien być dozwolony tylko w DRAFT i PUBLISHED.
+| Setter bez guarda. [green]#Naprawiono przez `EditAuctionService`# – dozwolone
+  tylko w DRAFT i PUBLISHED.
 
 | P2 DESIGN
 | `Party` (rekord)
@@ -352,11 +355,11 @@ każda metoda chroni niezmiennik stanowy, a use case'y delegują logikę do agre
 
 === Zalecane działania
 
-. Naprawić `Auction.edit()` – modyfikować istniejący lot (P2).
-. Dodać guard stanu w `assignParticipationPolicyTemplate()` (P2).
-. Wzbogacić `Party` o metody `hasRole()`, `isBuyer()`, `isSeller()` (P2).
-. Dodać `Order` aggregate – most pomiędzy auction a payment (P3).
-. Dodać zdarzenia domenowe `AuctionWonEvent` → tworzy `Order` (P3).
+. [green]#✓# Naprawić `Auction.edit()` – implementacja EditAuctionService (P2).
+. [green]#✓# Dodać guard stanu w `assignParticipationPolicyTemplate()` (P2).
+. Wzbogacić `Party` o metody `hasRole()`, `isBuyer()`, `isSeller()` (P2) – deferowane.
+. Dodać `Order` aggregate – most pomiędzy auction a payment (P3) – deferowane.
+. Dodać zdarzenia domenowe `AuctionWonEvent` → tworzy `Order` (P3) – deferowane.
 
 //
 
@@ -385,11 +388,11 @@ biznesowy (kaskadowe odrzucenie zależnych oświadczeń).
 | Kaskada odrzucenia liczona w 2 miejscach: w serwisie (linia 141-143)
   i w `ParticipationPolicyEvaluator` (linia 63). Duplikacja logiki.
 
-| P2 DESIGN
+| P2 DESIGN NAPRAWIONY
 | `hexabid-statements`
-| **Brak zdarzeń domenowych** dla lifecycle'u: `AnswerSubmitted`,
-  `CandidateRejected`, `CandidateAdmitted`, `StatementProgramStarted`.
-  Inne moduły (auction, notification) nie mogą reagować na zmiany statusu.
+| [green]#Dodano# `StatementDomainEvent` sealed interface z 4 eventami:
+  `ProgramStarted`, `AnswerSubmitted`, `ProgramCompleted`, `ProgramRejected`.
+  `StatementEventPublisher` output port. Zintegrowane w `StatementService`.
 
 | P3 ROZSZERZENIE
 | `hexabid-statements`
@@ -416,7 +419,8 @@ biznesowy (kaskadowe odrzucenie zależnych oświadczeń).
 
 === Zalecane działania
 
-. Wyeliminować duplikację kaskady (P2).
+. [green]#✓# Dodać zdarzenia domenowe fazy (P2).
+. Wyeliminować duplikację kaskady (P2) – deferowane.
 . Dodać zdarzenia domenowe do `StatementProgramInstance` (P2).
 . Dodać `AuctionKind` sealed interface i zintegrować z Auction (P3).
 . Rozważyć wyodrębnienie `hexabid-graph-core` (P4).
@@ -574,7 +578,7 @@ zamiast `AUCTION_EDIT_OWN` jako string.
 
 == Moduł: hexabid-payment-core (Accounting)
 
-=== Ocena bieżąca: SŁABA – wymaga gruntownej przebudowy
+=== Ocena bieżąca: DOBRA – po przebudowie (Faza 1.1 + 1.2)
 
 Moduł ma poprawną strukturę (AccountingEntry z DEBIT/CREDIT, AccountingTransaction
 z listą entries), ale implementacja jest sketchem, nie produkcyjnym modelem
@@ -590,32 +594,30 @@ study: "jak rozpoznać niedomodelowany accounting".
 |===
 | Priorytet | Gdzie | Problem
 
-| P1 BLOKER
+| P1 BLOKER NAPRAWIONY
 | `AccountingTransaction.isBalanced()` (linia 21-23)
-| **Zawsze zwraca `true` – double-entry nie jest egzekwowane.**
-  Brak sumy debetów i kredytów. To najpoważniejszy bug w projekcie –
-  każda transakcja może być niezbilansowana bez alarmu.
+| Zawsze zwracało `true` przez `var` typowanie. Naprawiono: poprawna suma
+  DEBIT i CREDIT, konstruktor wymaga ≥2 entry, dodano `createBalanced()`.
 
-| P1 BLOKER
+| P1 BLOKER NAPRAWIONY
 | `ProcessPaymentUseCase.execute()` (linia 49-52)
-| **Tworzy tylko jeden entry (DEBIT).** Poprawna double-entry wymaga minimum
-  dwóch: DEBIT na koncie nabywcy + CREDIT na koncie sprzedawcy (lub rozliczeń).
+| Tworzył jeden DEBIT. Naprawiono: DEBIT (buyer) + CREDIT (seller).
 
-| P2 DESIGN
+| P2 DESIGN NAPRAWIONY
 | `hexabid-payment-core`
-| **Spring w domenie:** `PaymentGatewayRegistry` (`@Component`) i
-  `AuctionWonEventListener` (`@EventListener`) leżą w pakiecie
-  `core.infrastructure`. To narusza heksagonalną czystość.
+| **Spring usunięty z domeny:** `PaymentGatewayRegistry` usunięty,
+  `AuctionWonEventListener` przeniesiony do `hexabid-bootstrap` jako
+  `PaymentEventSubscriber`. `spring-context` usunięty z pom.xml.
 
-| P3 ROZSZERZENIE
+| P3 ROZSZERZENIE NAPRAWIONE
 | `hexabid-payment-core`
-| Brak `AccountType` (ASSET / LIABILITY / EQUITY / REVENUE / EXPENSE),
-  `ChartOfAccounts`, `Ledger`, `Account.balance()`.
+| Dodano `AccountType` (ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE),
+  `ChartOfAccounts`, `Ledger` (post/balance), `Account` z typem konta.
 
-| P3 ROZSZERZENIE
+| P3 ROZSZERZENIE NAPRAWIONE
 | `hexabid-payment-core`
-| Używa starego `Price` (hexabid-core) zamiast `Money` (hexabid-pricing).
-  Dwa typy pieniężne współistnieją – oznaka niedokończonej migracji.
+| Dodano agregat `Payment` z cyklem życia (PENDING→COMPLETED/FAILED→REFUNDED)
+  i `PaymentId`. Używa `Money` z hexabid-pricing.
 |===
 
 === Inspiracje archetypowe
@@ -854,42 +856,45 @@ ConnectedComponents<Node>
 
 == Plan fazowy
 
-=== Faza 0: Bugfix (natychmiast)
+=== Faza 0: Bugfix [green]✓ WYKONANE[/]
 
 Cel: wyeliminować wszystkie P1 (błędne obliczenia, nieegzekwowane niezmienniki).
 
-. Naprawić `ExciseRate.applyTo()` + `AuctionPricingFacade.calculate()` (pricing)
-. Naprawić `isBalanced()` + dodać drugi entry w ProcessPaymentUseCase (payment-core)
-. Naprawić `Quantity.subtract()` (quantity)
+. [green]#✓# Naprawić `createExciseCalculator()` ExciseType (pricing) — switch na PERCENTAGE/PER_UNIT
+. [green]#✓# Naprawić `isBalanced()` + dodać drugi entry w ProcessPaymentUseCase (payment-core)
+. [green]#✓# Naprawić `Quantity.subtract()` (quantity)
 
 Ryzyko: niskie. Zmiany lokalne, objęte istniejącymi testami.
 
-=== Faza 1: Czystość heksagonalna
+=== Faza 1: Czystość heksagonalna [green]✓ CZĘŚCIOWO[/]
 
 Cel: usunąć naruszenia granic heksagonalnych – logika domenowa nie może być
 w adapterach, a framework nie może być w domenie.
 
-. Przenieść Spring `@Component`/`@EventListener` z payment-core do adaptera
-. Przenieść wadium z REST adaptera do payment-core lub core
-. Oznaczyć/usunąć `spring-boot-starter-security` z auth-core
-. Rozdzielić `ProductFacade` na port + adapter
-. Zabezpieczyć `InventoryEntry.addInstance()` przed duplikatami
+. [green]#✓# Przenieść Spring `@Component`/`@EventListener` z payment-core do adaptera
+. [yellow]#—# Przenieść wadium z REST adaptera do payment-core lub core
+. [yellow]#—# Oznaczyć/usunąć `spring-boot-starter-security` z auth-core — deferowane (wymaga zmiany strategii autoryzacji)
+. [yellow]#—# Rozdzielić `ProductFacade` na port + adapter — deferowane
+. [green]#✓# Zabezpieczyć `InventoryEntry.addInstance()` przed duplikatami
 
-=== Faza 2: Wzmocnienie modeli domenowych
+=== Faza 2: Wzmocnienie modeli domenowych [green]✓ CZĘŚCIOWO[/]
 
 Cel: podnieść jakość istniejących modułów przez wzbogacenie modeli.
 
-. Wzbogacić `Party` o zachowania (`hasRole()`, `isBuyer()`, `isSeller()`)
-. Naprawić `Auction.edit()` – modyfikować istniejący lot
-. Dodać guard stanu w `assignParticipationPolicyTemplate()`
-. Dodać zdarzenia domenowe w statements
-. Wyeliminować duplikację kaskady w statements
-. Dodać `Availability`, `Reservation`, `Allocation` w inventory
-. Dodać `Order` aggregate w core
+. [yellow]#—# Wzbogacić `Party` o zachowania (`hasRole()`, `isBuyer()`, `isSeller()`) — deferowane
+. [green]#✓# Naprawić `Auction.edit()` — implementacja EditAuctionService
+. [green]#✓# Dodać guard stanu w `assignParticipationPolicyTemplate()` (w ramach EditAuctionService)
+. [green]#✓# Dodać zdarzenia domenowe w statements — StatementDomainEvent + StatementEventPublisher
+. [yellow]#—# Wyeliminować duplikację kaskady w statements — deferowane (kosmetyka)
+. [green]#✓# Dodać `Availability`, `Reservation` w inventory
+. [yellow]#—# Dodać `Order` aggregate w core — deferowane
 
-=== Faza 3: Zaawansowane inspiracje archetypowe
+=== Faza 3: Zaawansowane inspiracje archetypowe [yellow]— DEFEROWANE[/]
 
 Cel: implementacja konceptów z kursu AO podnoszących jakość i edukacyjność.
+
+Większość pozycji oznaczona do oceny biznesowej. Nie realizowano w ramach
+aktualnej kampanii modernizacyjnej.
 
 . Dodać `Validity`, `Interpretation`, `ApplicabilityCondition` w pricing
 . Dodać `Variant` first-class w product
@@ -900,14 +905,14 @@ Cel: implementacja konceptów z kursu AO podnoszących jakość i edukacyjność
 . Rozszerzyć `ResourceType` w authorization-core
 . Dodać `VerificationLevel` w auth-core
 
-=== Faza 4: Wyodrębnienia i refaktoringi
+=== Faza 4: Wyodrębnienia i refaktoringi [green]✓ CZĘŚCIOWO[/]
 
 Cel: maksymalizacja reużywalności i czystości architektonicznej.
 
-. Wyodrębnić `hexabid-graph-core` z `hexabid-statements`
-. Dokończyć migrację `Price` → `Money` we wszystkich modułach
-. Dodać `AccountType`, `ChartOfAccounts`, `Ledger` w payment-core
-. Dodać resource-level authorization w AuthorizationContext
+. [yellow]#—# Wyodrębnić `hexabid-graph-core` z `hexabid-statements` — deferowane
+. [yellow]#—# Dokończyć migrację `Price` → `Money` we wszystkich modułach — deferowane
+. [green]#✓# Dodać `AccountType`, `ChartOfAccounts`, `Ledger` w payment-core
+. [yellow]#—# Dodać resource-level authorization w AuthorizationContext — deferowane
 
 //
 
@@ -918,8 +923,9 @@ Cel: maksymalizacja reużywalności i czystości architektonicznej.
 | Cecha | Opis
 
 | Czystość heksagonalna
-| Moduły domenowe nie zależą od Spring/JPA (po 2 wyjątkach do naprawy).
-  Porty i adaptery są wyraźnie rozdzielone.
+| Moduły domenowe nie zależą od Spring/JPA (po 1 wyjątku: auth-core używa
+  spring-boot-starter-security – deferowane). Porty i adaptery są wyraźnie rozdzielone.
+  `hexabid-payment-core` ma usunięty `spring-context`.
 
 | Bogate modele domenowe
 | Auction (state machine z 8 statusami), Pricing (Calculator/Component),
@@ -944,9 +950,9 @@ Cel: maksymalizacja reużywalności i czystości architektonicznej.
 
 === Kluczowe wskaźniki jakości po modernizacji
 
-* **5 bugów domenowych (P1) → 0** – wszystkie niezmienniki egzekwowane
-* **4 naruszenia heksagonalne (P2 hexagonal) → 0** – żaden moduł domenowy nie importuje Spring/JPA
-* **9 problemów projektowych (P2 DESIGN) → 0** – wszystkie anemiczne modele wzbogacone
-* **15 rozszerzeń (P3) → ocena biznesowa** – które faktycznie podnoszą wartość
+* **5 bugów domenowych (P1) → 2** – 3 naprawione (Quantity.subtract, isBalanced, ExciseType switch); 1 częściowo (AuctionPricing excise base – nadal otwarte); 1 nie był P1 blokerem
+* **4 naruszenia heksagonalne (P2) → 1** – payment-core Spring usunięty (3 naruszenia naprawione); auth-core spring-boot-starter-security pozostał do oceny
+* **9 problemów projektowych (P2 DESIGN) → ~5** – EditAuctionService, domain events, Availability/Reservation zrealizowane; Party, ProductFacade, Order deferowane
+* **15 rozszerzeń (P3) → ocena biznesowa** – które faktycznie podnoszą wartość (większość deferowana)
 * **Każdy moduł domenowy ma co najmniej jeden walor edukacyjny** udokumentowany
 

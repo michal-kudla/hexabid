@@ -33,3 +33,6 @@ render_pdf "$ROOT_DIR/doc/SPECIFICATION.adoc" "$ROOT_DIR/doc/SPECIFICATION.pdf"
 
 render_html "$ROOT_DIR/doc/DETAILED_SPECIFICATION.adoc"
 render_pdf "$ROOT_DIR/doc/DETAILED_SPECIFICATION.adoc" "$ROOT_DIR/doc/DETAILED_SPECIFICATION.pdf"
+
+render_html "$ROOT_DIR/doc/plan-archetypow-update.adoc"
+render_pdf "$ROOT_DIR/doc/plan-archetypow-update.adoc" "$ROOT_DIR/doc/plan-archetypow-update.pdf"

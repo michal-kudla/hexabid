@@ -467,6 +467,20 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </li>
 <li><a href="#_zalecany_przebieg_po_błędzie">7. Zalecany przebieg po błędzie</a></li>
 <li><a href="#_uwagi_integracyjne">8. Uwagi integracyjne</a></li>
+<li><a href="#_kalkulacja_ceny_pricing">9. Kalkulacja ceny (Pricing)</a>
+<ul class="sectlevel2">
+<li><a href="#_formuła_kalkulacji">9.1. Formuła kalkulacji</a></li>
+<li><a href="#_pobranie_kalkulacji_ceny">9.2. Pobranie kalkulacji ceny</a></li>
+<li><a href="#_wadium">9.3. Wadium</a>
+<ul class="sectlevel3">
+<li><a href="#_wpłata_wadium">9.3.1. Wpłata wadium</a></li>
+<li><a href="#_zwrot_wadium">9.3.2. Zwrot wadium</a></li>
+</ul>
+</li>
+<li><a href="#_konfiguracja_cenowa_przy_tworzeniu_aukcji">9.4. Konfiguracja cenowa przy tworzeniu aukcji</a></li>
+<li><a href="#_interfejs_spa">9.5. Interfejs SPA</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -882,10 +896,285 @@ Content-Type: application/json
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_kalkulacja_ceny_pricing">9. Kalkulacja ceny (Pricing)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>System kalkuluje cenę końcową aukcji na podstawie konfiguracji cenowej (<code>PricingConfig</code>), która może obejmować: wadium, VAT, akcyzę i cło.</p>
+</div>
+<div class="sect2">
+<h3 id="_formuła_kalkulacji">9.1. Formuła kalkulacji</h3>
+<div class="literalblock">
+<div class="content">
+<pre>netto = hammerPrice - wadiumOffset
+excise = netto * exciseRate         (jeśli isExcisable=true)
+customsDuty = (netto + excise) * customsDutyRate   (jeśli isImported=true)
+vat = (netto + excise + customsDuty) * vatRate
+totalDue = netto + excise + customsDuty + vat</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_pobranie_kalkulacji_ceny">9.2. Pobranie kalkulacji ceny</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-http hljs" data-lang="http">GET /api/auctions/{auctionId}/price</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Odpowiedź <code>200 OK</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "hammerPrice": { "amount": "50000.00", "currency": "PLN" },
+  "wadiumOffset": { "amount": "2500.00", "currency": "PLN" },
+  "netto": { "amount": "47500.00", "currency": "PLN" },
+  "excise": { "amount": "1472.50", "currency": "PLN" },
+  "customsDuty": { "amount": "0.00", "currency": "PLN" },
+  "vat": { "amount": "11281.78", "currency": "PLN" },
+  "totalDue": { "amount": "60254.28", "currency": "PLN" },
+  "appliedRates": {
+    "vatRate": "23%",
+    "exciseRate": "3.1%",
+    "customsDutyRate": null,
+    "wadiumType": "PERCENTAGE"
+  }
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_wadium">9.3. Wadium</h3>
+<div class="paragraph">
+<p>Wadium to depozyt bezpieczeństwa wymagany przed licytacją. Jest:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>zwracane</strong> po przegranej aukcji</p>
+</li>
+<li>
+<p><strong>odliczane</strong> od ceny końcowej po wygranej</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Strategie wadium:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>PERCENTAGE</code> - procent ceny młotka (np. 5% = rate 0.05)</p>
+</li>
+<li>
+<p><code>FIXED</code> - stała kwota (np. 50 PLN)</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_wpłata_wadium">9.3.1. Wpłata wadium</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-http hljs" data-lang="http">POST /api/auctions/{auctionId}/wadium
+Content-Type: application/json
+
+{
+  "amount": { "amount": "2500.00", "currency": "PLN" }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Odpowiedź <code>200 OK</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "wadiumId": "uuid",
+  "auctionId": "uuid",
+  "status": "PAID",
+  "amount": { "amount": "2500.00", "currency": "PLN" },
+  "refundableOnLoss": true,
+  "deductibleOnWin": true
+}</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_zwrot_wadium">9.3.2. Zwrot wadium</h4>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-http hljs" data-lang="http">POST /api/auctions/{auctionId}/wadium/refund
+Content-Type: application/json
+
+{
+  "partyId": "uuid-przegranego-uczestnika"
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Odpowiedź <code>200 OK</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "wadiumId": "uuid",
+  "auctionId": "uuid",
+  "status": "REFUNDED",
+  "refundAmount": { "amount": "2500.00", "currency": "PLN" }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_konfiguracja_cenowa_przy_tworzeniu_aukcji">9.4. Konfiguracja cenowa przy tworzeniu aukcji</h3>
+<div class="paragraph">
+<p>Opcjonalne pole <code>pricingConfig</code> w żądaniu tworzenia aukcji:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-json hljs" data-lang="json">{
+  "title": "Samochód importowany",
+  "startingPrice": { "amount": "50000.00", "currency": "PLN" },
+  "endsAt": "2026-06-01T12:00:00Z",
+  "pricingConfig": {
+    "wadiumStrategy": "PERCENTAGE",
+    "wadiumRate": "0.05",
+    "vatRate": "0.23",
+    "isExcisable": true,
+    "exciseRate": "0.031",
+    "exciseType": "PERCENTAGE",
+    "isImported": true,
+    "customsDutyRate": "0.05"
+  }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Pola <code>pricingConfig</code>:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pole</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Typ</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Opis</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>wadiumStrategy</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>FIXED</code> | <code>PERCENTAGE</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Strategia obliczania wadium</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>wadiumRate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stawka procentowa wadium (np. <code>0.05</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>wadiumFixedAmount</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Money</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stała kwota wadium (gdy FIXED)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>vatRate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stawka VAT jako ułamek (np. <code>0.23</code>)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>isExcisable</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Czy produkt podlega akcyzie</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>exciseRate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stawka akcyzy (ułamek lub kwota/jednostkę)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>exciseType</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>PERCENTAGE</code> | <code>PER_UNIT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Typ stawki akcyzy</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>isImported</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">boolean</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Czy produkt jest importowany</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>customsDutyRate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">string</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stawka cła jako ułamek (np. <code>0.05</code>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_interfejs_spa">9.5. Interfejs SPA</h3>
+<div class="paragraph">
+<p>W aplikacji Angular SPA:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Strona kalkulacji ceny</strong> (<code>/auction/{auctionId}/pricing</code>):</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Tabela ze składnikami ceny: młotek, wadium, netto, akcyza, cło, VAT, należne</p>
+</li>
+<li>
+<p>Panel stawek zastosowanych</p>
+</li>
+<li>
+<p>Formuła kalkulacji (edukacyjna)</p>
+</li>
+<li>
+<p>Formularz wpłaty i zwrotu wadium</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Tworzenie aukcji z ceną</strong> (<code>/sell</code>):</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Przycisk "Dodaj konfigurację ceny"</p>
+</li>
+<li>
+<p>Dynamiczne pola: strategia wadium, stawka VAT, akcyza, cło</p>
+</li>
+<li>
+<p>Warunkowe wyświetlanie zależne od wybranych opcji</p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p><strong>Link ze szczegółów aukcji</strong> (<code>/auction/{auctionId}</code>):</p>
+<div class="ulist">
+<ul>
+<li>
+<p>"Zobacz kalkulację ceny →" przechodzi do strony kalkulacji</p>
+</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-03-15 17:54:09 +0100
+Last updated 2026-05-05 21:38:02 +0200
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>

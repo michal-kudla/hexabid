@@ -1,5 +1,9 @@
 # Plan Finalny: Autoryzacja przez JWT, Permissions i Authorized Query
 
+> [!IMPORTANT]
+> **STATUS: IMPLEMENTED** — Plan w pełni zrealizowany. Model autoryzacji działa w produkcji.
+> Ostatnia aktualizacja: 2026-06-27.
+
 ## Tytuł
 
 Plan wdrożenia autoryzacji RBAC + Scope przez authorized query

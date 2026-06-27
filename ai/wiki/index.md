@@ -34,12 +34,19 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[DOCUMENTATION_STRUCTURE]] - Organizacja dokumentacji w projekcie
 
 ### 🧹 Ostatnie zmiany
-- [[decisions/2026-06-26-payment-core-faza1]] - Spring removal + Faza 1.2: AccountType, ChartOfAccounts, Ledger, Payment aggregate
-- [[log#2026-06-26]] - Quantity.subtract() P1 bugfix + payment-core refactor + Faza 2/3/4/5
-- [[log#2026-06-27]] - URGENT: LocalSecurityConfiguration fix — Dev OAuth2 login repair (httpBasic→oauth2Login)
+- [[log#2026-06-27]] - Full quality-update rebase onto main + Chrome verification + documentation cleanup
 
-### 📐 Plany wdrożeniowe
-- [[plans/authorization-rbac-scope-final]] - **AKTUALNY PLAN**: Implementacja autoryzacji przez `PrincipalContext`, `Permission(ResourceType, Action, Relation)` i authorized queries
+### ✅ Zrealizowane inicjatywy
+- [[decisions/2026-06-26-payment-core-faza1]] - Spring removal + Faza 1.2: AccountType, ChartOfAccounts, Ledger, Payment aggregate
+- [[decisions/2026-06-26-inventory-faza2]] - Faza 2: Availability, Reservation, InventoryMovement
+- [[decisions/2026-06-26-pricing-faza3]] - Faza 3: Excise bugfix (PERCENTAGE/PER_UNIT switch)
+- [[decisions/2026-06-26-core-edit-auction]] - Faza 4: EditAuctionService
+- [[decisions/2026-06-26-statements-domain-events]] - Faza 5: StatementDomainEvent + StatementEventPublisher
+- [[decisions/2026-06-27-security-fix]] - LocalSecurityConfiguration fix: httpBasic→oauth2Login
+- [[decisions/2026-06-27-rebase-quality]] - Rebase quality-update onto main
+
+### 📐 Plany wdrożeniowe (zrealizowane)
+- [[plans/authorization-rbac-scope-final]] - **IMPLEMENTED**: RBAC + Scope authorization
 
 ## 📝 Procedura Pielęgnacji
 
@@ -59,4 +66,4 @@ Po zakończeniu każdej istotnej sesji agent wykonuje:
 
 ---
 
-*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-06-07*
+*Automatycznie zarządzane przez agentów AI. Ostatnia aktualizacja: 2026-06-27*

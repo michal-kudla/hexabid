@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.26">
+<meta name="author" content="Hexabid Architecture Team">
+<title>Plan Modernizacji Hexabid: Jakość Domenowa i Inspiracje Archetypowe</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment the following line when using as a custom stylesheet */
+/* @import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700"; */
+html{font-family:sans-serif;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+b,strong{font-weight:bold}
+abbr{font-size:.9em}
+abbr[title]{cursor:help;border-bottom:1px dotted #dddddf;text-decoration:none}
+dfn{font-style:italic}
+hr{height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type=checkbox],input[type=radio]{padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,::before,::after{box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;line-height:1;position:relative;cursor:auto;-moz-tab-size:4;-o-tab-size:4;tab-size:4;word-wrap:anywhere;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ul.square{list-style-type:square}
+ul.circle ul:not([class]),ul.disc ul:not([class]),ul.square ul:not([class]){list-style:inherit}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:1px solid #dedede;word-wrap:normal}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre).nobreak{word-wrap:normal}
+:not(pre).nowrap{white-space:nowrap}
+:not(pre).pre-wrap{white-space:pre-wrap}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.2),inset 0 0 0 .1em #fff;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin:0 auto;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child{border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border:1px solid #e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:none;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:hsla(0,0%,100%,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details{margin-left:1.25rem}
+details>summary{cursor:pointer;display:block;position:relative;line-height:1.6;margin-bottom:.625rem;outline:none;-webkit-tap-highlight-color:transparent}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"";border:solid transparent;border-left:solid;border-width:.3em 0 .3em .5em;position:absolute;top:.5em;left:-1.25rem;transform:translateX(15%)}
+details[open]>summary::before{border:solid transparent;border-top:solid;border-width:.5em .3em 0;transform:translateY(15%)}
+details>summary::after{content:"";width:1.25rem;height:1em;position:absolute;top:.3em;left:-1.25rem}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class=paragraph]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6);word-wrap:anywhere}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border:1px solid #e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;border-radius:4px}
+.sidebarblock{border:1px solid #dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;border-radius:4px}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:first-child,.sidebarblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child,.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{border-radius:4px;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock pre>code{display:block}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos,pre.pygments .linenos{border-right:1px solid;opacity:.35;padding-right:.5em;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+pre.pygments span.linenos{display:inline-block;margin-right:.75em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans-serif;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;font-size:.85rem;text-align:left;margin-right:0}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:1.25em;word-wrap:anywhere}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>*>tr>*{border-width:1px}
+table.grid-cols>*>tr>*{border-width:0 1px}
+table.grid-rows>*>tr>*{border-width:1px 0}
+table.frame-all{border-width:1px}
+table.frame-ends{border-width:1px 0}
+table.frame-sides{border-width:0 1px}
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>*{border-top-width:0}
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>*{border-bottom-width:0}
+table.frame-none>*>tr>:first-child,table.frame-ends>*>tr>:first-child{border-left-width:0}
+table.frame-none>*>tr>:last-child,table.frame-ends>*>tr>:last-child{border-right-width:0}
+table.stripes-all>*>tr,table.stripes-odd>*>tr:nth-of-type(odd),table.stripes-even>*>tr:nth-of-type(even),table.stripes-hover>*>tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+li>p:empty:only-child::before{content:"";display:inline-block}
+ul.checklist>li>p:first-child{margin-left:-1em}
+ul.checklist>li>p:first-child>.fa-square-o:first-child,ul.checklist>li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist>li>p:first-child>input[type=checkbox]:first-child{margin-right:.25em}
+ul.inline{display:flex;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+td.hdlist2{word-wrap:anywhere}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:4px solid #fff;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active,#footnotes .footnote a:first-of-type:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);border-radius:50%;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt,summary{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,td.hdlist1,span.alt,summary{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]{border-bottom:1px dotted}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#header,#content,#footnotes,#footer{max-width:none}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media amzn-kf8,print{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/styles/github.min.css">
+</head>
+<body class="book toc2 toc-left">
+<div id="header">
+<h1>Plan Modernizacji Hexabid: Jakość Domenowa i Inspiracje Archetypowe</h1>
+<div class="details">
+<span id="author" class="author">Hexabid Architecture Team</span><br>
+<span id="revdate">2026-06-27</span>
+</div>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_wprowadzenie">Wprowadzenie</a>
+<ul class="sectlevel2">
+<li><a href="#_kryteria_oceny">Kryteria oceny</a></li>
+<li><a href="#_konwencje_zapisu">Konwencje zapisu</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_quantity">Moduł: hexabid-quantity</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_bardzo_dobra">Ocena bieżąca: BARDZO DOBRA</a></li>
+<li><a href="#_znalezione_problemy">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_product">Moduł: hexabid-product</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_dobra">Ocena bieżąca: DOBRA</a></li>
+<li><a href="#_znalezione_problemy_2">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_2">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_2">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_pricing">Moduł: hexabid-pricing</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_bardzo_dobra_wzorcowy">Ocena bieżąca: BARDZO DOBRA – wzorcowy</a></li>
+<li><a href="#_znalezione_problemy_3">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_3">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_3">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_inventory">Moduł: hexabid-inventory</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_średnia_po_wzbogaceniu_faza_2">Ocena bieżąca: ŚREDNIA – po wzbogaceniu (Faza 2)</a></li>
+<li><a href="#_znalezione_problemy_4">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_4">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_4">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_core_auction_lot_party_domain_events">Moduł: hexabid-core (Auction, Lot, Party, Domain Events)</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_dobra_auction_słaba_party">Ocena bieżąca: DOBRA (Auction) / SŁABA (Party)</a></li>
+<li><a href="#_znalezione_problemy_5">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_5">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_5">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_statements">Moduł: hexabid-statements</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_bardzo_dobra_wzorcowy_2">Ocena bieżąca: BARDZO DOBRA – wzorcowy</a></li>
+<li><a href="#_znalezione_problemy_6">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_6">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_6">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_rules_hexabid_rules_adapter">Moduł: hexabid-rules (+ hexabid-rules-adapter)</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_bardzo_dobra_wzorcowy_3">Ocena bieżąca: BARDZO DOBRA – wzorcowy</a></li>
+<li><a href="#_znalezione_problemy_7">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_7">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_7">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_auth_core">Moduł: hexabid-auth-core</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_dobra_2">Ocena bieżąca: DOBRA</a></li>
+<li><a href="#_znalezione_problemy_8">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_8">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_8">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_authorization_core">Moduł: hexabid-authorization-core</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_bardzo_dobra_wzorcowy_4">Ocena bieżąca: BARDZO DOBRA – wzorcowy</a></li>
+<li><a href="#_znalezione_problemy_9">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_9">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_9">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_moduł_hexabid_payment_core_accounting">Moduł: hexabid-payment-core (Accounting)</a>
+<ul class="sectlevel2">
+<li><a href="#_ocena_bieżąca_dobra_po_przebudowie_faza_1_1_1_2">Ocena bieżąca: DOBRA – po przebudowie (Faza 1.1 + 1.2)</a></li>
+<li><a href="#_znalezione_problemy_10">Znalezione problemy</a></li>
+<li><a href="#_inspiracje_archetypowe_10">Inspiracje archetypowe</a></li>
+<li><a href="#_zalecane_działania_10">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_nowy_moduł_hexabid_variance_core_planowany">Nowy moduł: hexabid-variance-core (planowany)</a>
+<ul class="sectlevel2">
+<li><a href="#_inspiracja_archetypowa_m10_variance_plan_execution_delta">Inspiracja archetypowa: M10 – Variance (Plan / Execution / Delta)</a></li>
+<li><a href="#_propozycja">Propozycja</a></li>
+<li><a href="#_zalecane_działania_11">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_nowy_moduł_hexabid_graph_core_planowane_wyodrębnienie">Nowy moduł: hexabid-graph-core (planowane wyodrębnienie)</a>
+<ul class="sectlevel2">
+<li><a href="#_inspiracja_m05_graph">Inspiracja: M05 – Graph</a></li>
+<li><a href="#_propozycja_2">Propozycja</a></li>
+<li><a href="#_zalecane_działania_12">Zalecane działania</a></li>
+</ul>
+</li>
+<li><a href="#_macierz_priorytetów">Macierz priorytetów</a></li>
+<li><a href="#_plan_fazowy">Plan fazowy</a>
+<ul class="sectlevel2">
+<li><a href="#_faza_0_bugfix_green_wykonane">Faza 0: Bugfix [green]✓ WYKONANE[/]</a></li>
+<li><a href="#_faza_1_czystość_heksagonalna_green_częściowo">Faza 1: Czystość heksagonalna [green]✓ CZĘŚCIOWO[/]</a></li>
+<li><a href="#_faza_2_wzmocnienie_modeli_domenowych_green_częściowo">Faza 2: Wzmocnienie modeli domenowych [green]✓ CZĘŚCIOWO[/]</a></li>
+<li><a href="#_faza_3_zaawansowane_inspiracje_archetypowe_yellow_deferowane">Faza 3: Zaawansowane inspiracje archetypowe [yellow]— DEFEROWANE[/]</a></li>
+<li><a href="#_faza_4_wyodrębnienia_i_refaktoringi_green_częściowo">Faza 4: Wyodrębnienia i refaktoringi [green]✓ CZĘŚCIOWO[/]</a></li>
+</ul>
+</li>
+<li><a href="#_podsumowanie_co_sprawia_że_hexabid_jest_może_być_wzorcowy">Podsumowanie: Co sprawia, że Hexabid jest (może być) wzorcowy</a>
+<ul class="sectlevel2">
+<li><a href="#_kluczowe_wskaźniki_jakości_po_modernizacji">Kluczowe wskaźniki jakości po modernizacji</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_wprowadzenie">Wprowadzenie</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Cel tego dokumentu jest odwrócony względem typowego podejścia "wdróż archetyp X w module Y".</p>
+</div>
+<div class="paragraph">
+<p>Zaczynamy od <strong>każdego modułu Hexabid z osobna</strong> i oceniamy:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Poprawność domenowa</strong> – czy model chroni niezmienniki, czy logika biznesowa jest tam,
+gdzie powinna, czy występują bugi.</p>
+</li>
+<li>
+<p><strong>Czystość heksagonalna</strong> – czy moduł domenowy nie zależy od Spring/JPA, czy granice
+portów i adapterów są zachowane.</p>
+</li>
+<li>
+<p><strong>Bogactwo modelu</strong> – czy obiekty domenowe mają zachowania, czy są anemiczne.</p>
+</li>
+<li>
+<p><strong>Wartość edukacyjna</strong> – czego może nauczyć się programista czytający ten kod.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Dokumentacja kursu <a href="#AO">Archetypy Oprogramowania</a> (M01–M10) służy jako <strong>katalog inspiracji</strong> –
+nie jako lista wymagań. Każda inspiracja jest opatrzona adnotacją, czy i jak podnosi
+jakość architektury.</p>
+</div>
+<div class="sect2">
+<h3 id="_kryteria_oceny">Kryteria oceny</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 28.5714%;">
+<col style="width: 57.1429%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Poziom</th>
+<th class="tableblock halign-left valign-top">Etykieta</th>
+<th class="tableblock halign-left valign-top">Opis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BLOKER</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bug domenowy – system może policzyć/zaksięgować błędną wartość</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Naruszenie czystości heksagonalnej, logika domenowa w adapterze, anemiczny model</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak funkcji, która wg archetypu podniosłaby jakość/edukacyjność, ale nie powoduje błędów</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">INSPIRACJA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Koncept z kursu AO wart rozważenia przy okazji większych zmian</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_konwencje_zapisu">Konwencje zapisu</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[archetyp: M02]</code> – odniesienie do modułu kursu Archetypy Oprogramowania</p>
+</li>
+<li>
+<p><code>[BUG]</code> – krytyczny problem wymagający natychmiastowej naprawy</p>
+</li>
+<li>
+<p><code>[hexagonal]</code> – naruszenie architektury heksagonalnej</p>
+</li>
+<li>
+<p><code>[edu]</code> – walor edukacyjny wart podkreślenia/zachowania</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_quantity">Moduł: hexabid-quantity</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_bardzo_dobra">Ocena bieżąca: BARDZO DOBRA</h3>
+<div class="paragraph">
+<p><code>Quantity(amount, unit)</code> i <code>Unit(symbol, name)</code> to wzorcowe value objecty:
+immutable (record), chronią niezmienniki (<code>Objects.requireNonNull</code>, brak ujemnych
+wartości), mają własny <code>compareTo</code> z walidacją kompatybilności jednostek.</p>
+</div>
+<div class="paragraph">
+<p><code>Unit</code> jako record (nie enum) pozwala na rozszerzanie bez modyfikacji –
+celowa decyzja projektowa pokazująca Open/Closed Principle w praktyce.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">~~P1 BLOKER~~ <span class="green">NAPRAWIONY</span></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Quantity.subtract()</code> (linia 37)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dodano guard z <code>requireArgument</code> i opisowym komunikatem. Test w <code>QuantityTest</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P4 INSPIRACJA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-quantity</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>Quantity.multiply(BigDecimal)</code> / <code>divide(BigDecimal)</code>. Przydatne przy
+  wycenie per-unit – ale to już pokrywa <code>hexabid-pricing</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M02]</code> Product tracking strategy używa Quantity w kontekście identyfikowalności
+– warto pokazać w dokumentacji, jak Quantity łączy product i inventory.</p>
+</li>
+<li>
+<p><code>[M08]</code> Inventory może operować na <code>QuantityRange(min, max)</code> zamiast gołego
+<code>Quantity</code> – to rozszerzenie warte rozważenia przy przebudowie inventory.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Dodać guard w <code>subtract()</code> – najwyższy priorytet.</p>
+</li>
+<li>
+<p>Dodać <code>Quantity.ZERO</code> jako stałą.</p>
+</li>
+<li>
+<p>Dodać <code>multiply(BigDecimal)</code> i <code>divide(BigDecimal)</code> – niski koszt, wysoka
+przydatność edukacyjna.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_product">Moduł: hexabid-product</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_dobra">Ocena bieżąca: DOBRA</h3>
+<div class="paragraph">
+<p>Moduł rozróżnia definicję produktu (<code>ProductType</code>) od oferty komercyjnej
+(<code>CatalogEntry</code>). Sealed interface <code>Product</code> z <code>ProductType</code> (leaf) i
+<code>PackageType</code> (composite) to poprawna implementacja wzorca Composite.</p>
+</div>
+<div class="paragraph">
+<p><code>ProductTrackingStrategy</code> (UNIQUE / INDIVIDUALLY_TRACKED / BATCH_TRACKED /
+IDENTICAL) to rzadko spotykana w projektach dbałość o warianty śledzenia
+produktów – doskonały materiał do nauki modelowania domenowego.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_2">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ProductFacade</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Łączy rolę repozytorium, serwisu domenowego i fasady aplikacyjnej.
+  W heksagonalnej architekturze powinien być rozdzielony na:
+  <code>ProductCatalog</code> (port in) + adapter in-memory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>CatalogEntry</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak jawnego <code>Applicability</code> – przydatność oferty jest albo <code>Validity</code>
+  (zakres dat) albo nie ma jej wcale. Kurs M02 sugeruje osobny obiekt
+  <code>Applicability</code> dla warunków kontekstowych.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Produkt</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>Variance</code> jako first-class obiektu. Warianty produktu są modelowane
+  przez <code>ProductFeatureType</code> + <code>ProductFeatureInstance</code>, ale nie ma formalnej
+  relacji "wariant bazuje na produkcie bazowym".</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_2">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M02]</code> <strong>ProductDefinition / CatalogEntry / ProductInstance</strong> – kurs wyraźnie
+rozdziela trzy światy. Hexabid ma ProductType (definicja) i CatalogEntry (katalog),
+ale ProductInstance jest w <code>hexabid-inventory</code>. To <strong>poprawne</strong> rozdzielenie
+modułowe, warte podkreślenia w dokumentacji.</p>
+</li>
+<li>
+<p><code>[M02 L06]</code> <strong>Kremenaros</strong> – model trzech granic (definicja / sprzedaż /
+realizacja) jest w Hexabid zrealizowany przez trzy osobne moduły. To wzorcowe.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_2">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Rozdzielić <code>ProductFacade</code> na <code>ProductCatalog</code> (port in) + adapter in-memory.</p>
+</li>
+<li>
+<p>Dodać <code>Variant</code> jako value object łączący <code>ProductType</code> z zestawem cech
+(<code>Map&lt;ProductFeatureType, ProductFeatureValue&gt;</code>).</p>
+</li>
+<li>
+<p>Przenieść mapowanie <code>CatalogEntry.validity</code> do osobnego obiektu <code>Validity</code>
+(obecnie inline).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_pricing">Moduł: hexabid-pricing</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_bardzo_dobra_wzorcowy">Ocena bieżąca: BARDZO DOBRA – wzorcowy</h3>
+<div class="paragraph">
+<p>To najlepiej zaprojektowany moduł domenowy w projekcie. Separacja
+<code>PriceCalculator</code> (matematyka) od <code>PricingComponent</code> (semantyka) i
+<code>CompositePriceComponent</code> (agregacja) to tekstbookowa implementacja
+wzorca Strategy + Composite. <code>Money</code> to pełnoprawny value object z
+arytmetyką.</p>
+</div>
+<div class="paragraph">
+<p><strong>Trzy warstwy ceny</strong> (Calculator / Component / Composite) można pokazać
+studentom jako praktyczny przykład, jak uniknąć anemicznego <code>price</code> pola.
+Każda warstwa ma inną odpowiedzialność i inną częstotliwość zmian –
+zgodnie z <code>[M04 L02]</code> three zones of change.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_3">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1 BLOKER CZĘŚCIOWO</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AuctionPricingFacade.calculate()</code> (linia 31)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Excise naliczane od netto (hammer - wadium), powinno być od pełnego
+  hammer price.</strong> Podatek akcyzowy dotyczy całej transakcji, a nie kwoty
+  pomniejszonej o wadium. <span class="yellow">Nadal otwarte</span>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1 BLOKER NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>createExciseCalculator()</code> ExciseType (linia 34)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>createExciseCalculator()</code> zawsze używał <code>PercentageCalculator</code> nawet dla
+  <code>ExciseType.PER_UNIT</code>. Naprawiono: switch na <code>ExciseType</code> — <code>PercentageCalculator</code> dla
+  PERCENTAGE, <code>PerUnitCalculator</code> dla PER_UNIT. Dodano <code>withFixedParam()</code> w Builderze
+  dla przekazywania <code>quantity</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AuctionPricingFacade</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">If-else chain dla <code>isExcisable()</code> / <code>isImported()</code> to logika warunków
+  zastosowania (applicability) rozsmarowana w kodzie proceduralnym.
+  Powinna być modelem – patrz inspiracje poniżej.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>VatRate</code>, <code>ExciseRate</code>, <code>CustomsDutyRate</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>validFrom</code> / <code>validTo</code> – stawki nie są wersjonowane w czasie.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_3">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M03 L03]</code> <strong>Calculator / Component / Interpretation</strong> – Hexabid ma Calculator
+i Component, ale brak jawnego <code>Interpretation</code> enum (TOTAL/UNIT/MARGINAL).
+Dodanie go pozwoliłoby usunąć if-y na typie kalkulatora.</p>
+</li>
+<li>
+<p><code>[M03 L04]</code> <strong>Applicability</strong> – warunki zastosowania komponentu pricingowego
+powinny być modelowane jako <code>PricingComponent.applicability()</code> zwracające
+<code>ApplicabilityRule</code>, a nie if-else w fasadzie.</p>
+</li>
+<li>
+<p><code>[M03 L05]</code> <strong>Validity</strong> – wersjonowanie stawek w czasie to naturalne
+rozszerzenie zwiększające realizm produkcyjny.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_3">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Natychmiast</strong>: naprawić bug Excise (P1).</p>
+</li>
+<li>
+<p><strong>Natychmiast</strong>: naprawić dead code w <code>ExciseRate.applyTo()</code> (P1).</p>
+</li>
+<li>
+<p>Dodać <code>Validity(Instant validFrom, Instant validTo)</code> do stawek (P3).</p>
+</li>
+<li>
+<p>Dodać <code>Interpretation</code> enum i powiązać z kalkulatorami (P3).</p>
+</li>
+<li>
+<p>Dodać <code>ApplicabilityCondition</code> jako first-class obiekt przy <code>PricingComponent</code> (P3).</p>
+</li>
+<li>
+<p>Dodać <code>PricingCatalog</code> port do lookupu stawek (P3).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_inventory">Moduł: hexabid-inventory</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_średnia_po_wzbogaceniu_faza_2">Ocena bieżąca: ŚREDNIA – po wzbogaceniu (Faza 2)</h3>
+<div class="paragraph">
+<p><code>InventoryEntry</code> i <code>Instance</code> stanowią core, ale moduł nie realizuje podstawowego
+zadania inwentarza: zarządzania dostępnością. Nie ma rezerwacji, alokacji, stanów
+magazynowych ani ruchów inwentarzowych.</p>
+</div>
+<div class="paragraph">
+<p>Moduł można pokazać jako <strong>antywzorzec modelowania dosłownego</strong> (<code>[M08 L02]</code>) –
+zamiast abstrakcyjnego "Inventory = ograniczony zasób w czasie", mamy dosłowne
+"lista instancji w mapie". To celowe niedomodelowanie, które uwidacznia się
+dopiero przy próbie rezerwacji towaru po wygranej aukcji.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_4">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>InventoryFacade</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Analogicznie do <code>ProductFacade</code> – łączy repozytorium i serwis domenowy.
+  Brak wyraźnego portu <code>InventoryAvailability</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>InventoryEntry.addInstance()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mimo <code>Set&lt;InstanceId&gt;</code>, <code>instanceDetails</code> to <code>Map&lt;InstanceId, Instance&gt;</code> –
+  dodanie istniejącego ID cicho nadpisze wpis. <span class="green">Dodano guard na duplikat.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE NAPRAWIONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-inventory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak modelu dostępności. <span class="green">Dodano <code>Availability</code>, <code>Reservation</code> aggregate,
+  <code>ReservationService</code> (reserve/confirm/cancel/complete), <code>InventoryMovement</code>.</span></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-inventory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak zarządzania ilościowego dla produktów IDENTICAL.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>InventoryFacade</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Analogicznie do <code>ProductFacade</code> – łączy repozytorium i serwis domenowy.
+  Brak wyraźnego portu <code>InventoryAvailability</code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_4">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M08 L03]</code> <strong>Availability = total - allocated</strong> – fundament, który w Hexabid
+nie istnieje. Należy dodać <code>Availability(ProductIdentifier, Quantity total,
+Quantity allocated)</code> z metodą <code>available() &#8594; Quantity</code>.</p>
+</li>
+<li>
+<p><code>[M08 L04]</code> <strong>Reservation</strong> – tymczasowa blokada zasobu na czas trwania aukcji.
+Powinna wygasać (TTL) i być powiązana z <code>AuctionId</code>.</p>
+</li>
+<li>
+<p><code>[M08 L05]</code> <strong>Allocation</strong> – trwałe przypisanie zasobu do zamówienia po wygranej.</p>
+</li>
+<li>
+<p><code>[M08]</code> Inventory to nie magazyn – to <strong>dowolny ograniczony zasób</strong>: czas lekarza,
+miejsce w paczkomacie, pula kredytowa. Hexabid powinien modelować Inventory
+właśnie tak abstrakcyjnie, a nie jako "lista rzeczy w magazynie".</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_4">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Dodać <code>Availability</code> z <code>total()</code>, <code>allocated()</code>, <code>available()</code> (P3).</p>
+</li>
+<li>
+<p>Dodać <code>Reservation(reservedBy, reservedAt, expiresAt, quantity)</code> (P3).</p>
+</li>
+<li>
+<p>Dodać <code>Allocation(allocatedTo, allocatedAt, quantity)</code> (P3).</p>
+</li>
+<li>
+<p>Dodać <code>InventoryMovement(movementType, quantity, reason, timestamp)</code> (P3).</p>
+</li>
+<li>
+<p>Zabezpieczyć <code>addInstance()</code> przed duplikatami (P2).</p>
+</li>
+<li>
+<p>Rozdzielić <code>InventoryFacade</code> na port + adapter (P2).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_core_auction_lot_party_domain_events">Moduł: hexabid-core (Auction, Lot, Party, Domain Events)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_dobra_auction_słaba_party">Ocena bieżąca: DOBRA (Auction) / SŁABA (Party)</h3>
+<div class="paragraph">
+<p>Auction aggregate to bogaty model ze stanową maszyną (8 statusów), chronionymi
+tranzycjami (<code>ensureStatusIs</code>, <code>ensureInProgressAt</code>), zdarzeniami domenowymi
+(10 typów) i czystą separacją use case&#8217;ów od logiki agregatu.</p>
+</div>
+<div class="paragraph">
+<p>Natomiast <code>Party</code> to anemiczny rekord (tylko partyId + displayName + roles),
+a <code>Auction.edit()</code> ma podejrzaną implementację niszczącą oryginalny lot.</p>
+</div>
+<div class="paragraph">
+<p>Auction aggregate to wzorcowy przykład <strong>bogatego modelu domenowego</strong> z DDD:
+każda metoda chroni niezmiennik stanowy, a use case&#8217;y delegują logikę do agregatu.
+<code>PlaceBidService</code> pokazuje, jak łączyć KYC, reguły i domenę bez rozlewania logiki.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_5">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Auction.edit()</code> (linia 105)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tworzył nowy <code>Lot.singleProductDraft()</code>, niszcząc referencję.
+  <span class="green">Dodano <code>EditAuctionService</code></span> z <code>EditAuctionUseCase</code> result types:
+  <code>AuctionEdited</code>, <code>AuctionNotFound</code>, <code>EditNotAllowed</code> (guard na DRAFT/PUBLISHED).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Auction.assignParticipationPolicyTemplate()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Setter bez guarda. <span class="green">Naprawiono przez <code>EditAuctionService</code></span> – dozwolone
+  tylko w DRAFT i PUBLISHED.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Party</code> (rekord)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Anemiczny – tylko dane, zero zachowań. Brak <code>hasRole(PartyRole)</code>,
+  <code>isBuyer()</code>, <code>isSeller()</code>, <code>isActive()</code>, <code>displayName()</code> formatter.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>Order</code> aggregate po wygranej aukcji. Winner zostaje wyłoniony,
+  ale nie ma obiektu reprezentującego "zakup" łączącego aukcję z płatnością
+  i wysyłką.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Bid</code> jako value object jest OK, ale w momencie gdy trzeba obsłużyć
+  retrakcję (wycofanie oferty), brak własnego ID boli – nie ma jak
+  odwołać się do konkretnej oferty.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_5">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M07]</code> <strong>Party</strong> – Kurs AO pokazuje, że "user to za mało". <code>Party</code> powinno
+wspierać: <code>PartyType</code> (PERSON/ORGANIZATION), hierarchię (<code>parentPartyId</code>),
+relacje (<code>PartyRelationship</code>), kontakt (<code>email</code>, <code>phone</code>). To naturalne
+rozszerzenie dla aukcji z udziałem firm i pełnomocników.</p>
+</li>
+<li>
+<p><code>[M09]</code> <strong>Ordering</strong> – <code>Order</code> jako osobny aggregate pojawia się po wygranej
+aukcji i łączy <code>AuctionId</code> + <code>BuyerId</code> (PartyId) + <code>LotId</code> + <code>Price</code> (Money)<br>
+<code>PaymentDeadline</code>. To pomost pomiędzy <code>hexabid-core</code> a <code>hexabid-payment-core</code>.</p>
+</li>
+<li>
+<p><code>[M09 L02]</code> Order jako <strong>wielokrotnego użytku szkielet pojęciowy</strong> – w Hexabid
+rolę ordera pełni Auction, ale tylko do momentu zamknięcia. Po wygranej
+potrzebny jest osobny byt.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_5">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><span class="green">✓</span> Naprawić <code>Auction.edit()</code> – implementacja EditAuctionService (P2).</p>
+</li>
+<li>
+<p><span class="green">✓</span> Dodać guard stanu w <code>assignParticipationPolicyTemplate()</code> (P2).</p>
+</li>
+<li>
+<p>Wzbogacić <code>Party</code> o metody <code>hasRole()</code>, <code>isBuyer()</code>, <code>isSeller()</code> (P2) – deferowane.</p>
+</li>
+<li>
+<p>Dodać <code>Order</code> aggregate – most pomiędzy auction a payment (P3) – deferowane.</p>
+</li>
+<li>
+<p>Dodać zdarzenia domenowe <code>AuctionWonEvent</code> → tworzy <code>Order</code> (P3) – deferowane.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_statements">Moduł: hexabid-statements</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_bardzo_dobra_wzorcowy_2">Ocena bieżąca: BARDZO DOBRA – wzorcowy</h3>
+<div class="paragraph">
+<p><code>StatementDependencyGraph</code> to pełna implementacja DAG-a z DFS reachability,
+sortowaniem topologicznym, detekcją cykli i budowniczym. <code>ParticipationPolicyEvaluator</code>
+poprawnie łączy template + graf + decyzję. <code>PolicyTemplateCatalog</code> z 3 pre-built
+template&#8217;ami pokazuje Factory pattern w praktyce.</p>
+</div>
+<div class="paragraph">
+<p>To najlepszy przykład w projekcie, że <strong>graf to nie tylko algorytmika</strong> (<code>[M05 L01]</code>).
+Problem biznesowy (kolekcja oświadczeń kandydata) jest wprost modelowany jako DAG,
+a nie jako lista kroków w serwisie. Algorytmy grafowe rozwiązują realny problem
+biznesowy (kaskadowe odrzucenie zależnych oświadczeń).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_6">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>StatementService.submitAnswer()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kaskada odrzucenia liczona w 2 miejscach: w serwisie (linia 141-143)
+  i w <code>ParticipationPolicyEvaluator</code> (linia 63). Duplikacja logiki.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><span class="green">Dodano</span> <code>StatementDomainEvent</code> sealed interface z 4 eventami:
+  <code>ProgramStarted</code>, <code>AnswerSubmitted</code>, <code>ProgramCompleted</code>, <code>ProgramRejected</code>.
+  <code>StatementEventPublisher</code> output port. Zintegrowane w <code>StatementService</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>AuctionKind</code> jako sealed interface. ADR zakładał
+  <code>EnglishAscending / SealedBidTender / RestrictedTender / DutchDescending</code>,
+  ale kod ma tylko string <code>participationPolicyTemplate</code> w <code>Auction</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>PhaseTransitionGuard</code> – <code>[M04]</code> RuleAlgebra mogłoby służyć do
+  gatingu przejść między fazami (IDENTITY → QUALIFICATION → CAPABILITY → COMMITMENT).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_6">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M05]</code> <strong>Graph jako archetyp myślowy</strong> – <code>StatementDependencyGraph</code> to gotowy
+materiał na osobny moduł <code>hexabid-graph-core</code> z generycznym DAG + algorytmami,
+z którego korzysta <code>hexabid-statements</code>. To podniosłoby reużywalność.</p>
+</li>
+<li>
+<p><code>[M04 L02]</code> <strong>Three zones of change</strong> – w statements widać to naturalnie:
+stabilne (StatementDependencyGraph, algorytmy), domknięcia (ParticipationPolicyEvaluator),
+konfiguracja (PolicyTemplateCatalog). Warto to wyeksponować w dokumentacji.</p>
+</li>
+<li>
+<p><code>[M04]</code> <strong>RuleAlgebra</strong> – <code>hexabid-rules</code> ma Boolean/Compliance/Explained algebra.
+Statements mógłby użyć ComplianceAlgebra do phase gating zamiast if-else na statusach.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_6">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><span class="green">✓</span> Dodać zdarzenia domenowe fazy (P2).</p>
+</li>
+<li>
+<p>Wyeliminować duplikację kaskady (P2) – deferowane.</p>
+</li>
+<li>
+<p>Dodać zdarzenia domenowe do <code>StatementProgramInstance</code> (P2).</p>
+</li>
+<li>
+<p>Dodać <code>AuctionKind</code> sealed interface i zintegrować z Auction (P3).</p>
+</li>
+<li>
+<p>Rozważyć wyodrębnienie <code>hexabid-graph-core</code> (P4).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_rules_hexabid_rules_adapter">Moduł: hexabid-rules (+ hexabid-rules-adapter)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_bardzo_dobra_wzorcowy_3">Ocena bieżąca: BARDZO DOBRA – wzorcowy</h3>
+<div class="paragraph">
+<p><code>Expression</code> sealed interface z 7 typami + <code>ExpressionVisitor</code> + <code>RuleAlgebra&lt;R&gt;</code>
+to najczystsza implementacja wzorca Interpreter + Visitor w projekcie. Trzy
+implementacje algebry (Boolean, Compliance, Explained) pokazują, jak jeden AST
+może być ewaluowany na różne sposoby w zależności od potrzeby.</p>
+</div>
+<div class="paragraph">
+<p>To moduł, który powinien obowiązkowo obejrzeć każdy programista uczący się
+wzorców projektowych. Pokazuje:
+* <strong>Interpreter pattern</strong> – AST dla reguł biznesowych
+* <strong>Visitor pattern</strong> – separacja struktury od operacji
+* <strong>Algebra</strong> – abstrakcja semantyki ewaluacji
+* <strong>Three zones of change</strong> (<code>[M04 L02]</code>) – stabilny AST, domknięcia (algebry),
+  selekcja (RuleCatalog + RuleDefinition)</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_7">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-rules</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak <code>RuleVersion</code> – reguły nie mają wersjonowania, nie można śledzić
+  zmian w definicji reguły w czasie.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-rules</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak persistencji – <code>RuleCatalog</code> to <code>CopyOnWriteArrayList</code> w pamięci.
+  Dla produkcyjnego użycia reguły muszą być ładowane z bazy/serwera.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-rules-adapter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Moduł nie jest podpięty do <code>hexabid-pricing</code> (applicability pricing rules)
+  ani do <code>hexabid-statements</code> (phase gating). Potencjał cross-modułowy
+  niewykorzystany.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_7">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M04 L05]</code> <strong>Dynamiczne reguły</strong> – biznes zmienia reguły bez deploy&#8217;u.
+W Hexabid to byłoby możliwe przez serializację <code>Expression</code> AST do JSON/YAML
+i hot-reload w RuleCatalog.</p>
+</li>
+<li>
+<p><code>[M04 L06]</code> <strong>Reguły jako osobna bounded context</strong> – <code>hexabid-rules</code> już jest
+osobnym modułem. Warto pokazać, że nie ma zależności od Spring/JPA, co czyni
+go idealnym kandydatem do wyodrębnienia jako microserwis.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_7">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Dodać <code>RuleVersion(validFrom, validTo, versionNumber)</code> (P3).</p>
+</li>
+<li>
+<p>Dodać serializację <code>Expression</code> do JSON (P3).</p>
+</li>
+<li>
+<p>Podpiąć <code>RuleAlgebra</code> do applicability w pricing (P3).</p>
+</li>
+<li>
+<p>Podpiąć <code>RuleAlgebra</code> do phase gating w statements (P3).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_auth_core">Moduł: hexabid-auth-core</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_dobra_2">Ocena bieżąca: DOBRA</h3>
+<div class="paragraph">
+<p>Moduł czysty – <strong>nie znaleziono zależności od Springa</strong> (wbrew ostrzeżeniu w
+AGENTS.md, które prawdopodobnie dotyczy starszej wersji kodu). <code>AuthenticatedUser</code>
+to poprawny rekord DTO dla principala. <code>CurrentUserProvider</code> jako port out jest
+właściwą abstrakcją.</p>
+</div>
+<div class="paragraph">
+<p><code>CurrentUserProvider</code> jako <strong>port</strong> (interfejs w domenie) z <strong>adapterami</strong>
+(RestCurrentUserProvider w REST, WebSocketCurrentUserProvider w WS) to
+tekstbookowy przykład Ports &amp; Adapters w warstwie autoryzacji.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_8">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-auth-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zależność <code>spring-boot-starter-security</code> w <code>pom.xml</code> – choć kod nie importuje
+  Springa, sama zależność w domyślnym classpath może ciągnąć niechciane
+  transitive dependencies. Należy usunąć lub oznaczyć <code>&lt;scope&gt;provided&lt;/scope&gt;</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-auth-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak modelu weryfikacji tożsamości – <code>UserVerificationStatusPort</code> istnieje,
+  ale nie ma enum <code>VerificationLevel</code> (NONE / BASIC / ADVANCED / BIOMETRIC).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_8">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M07]</code> <strong>Tożsamość ≠ rola</strong> – <code>AuthenticatedUser</code> jest tymczasowym kontekstem
+sesji. Stała tożsamość użytkownika powinna być w <code>Party</code>. Hexabid to rozdziela
+(auth-core vs core.Party) – poprawnie.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_8">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Oznaczyć <code>spring-boot-starter-security</code> jako <code>provided</code> lub usunąć (P2).</p>
+</li>
+<li>
+<p>Dodać <code>VerificationLevel</code> enum do portu weryfikacji (P3).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_authorization_core">Moduł: hexabid-authorization-core</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_bardzo_dobra_wzorcowy_4">Ocena bieżąca: BARDZO DOBRA – wzorcowy</h3>
+<div class="paragraph">
+<p><code>Permission(ResourceType, Action, Relation)</code> to elegancki model 3D unikający
+eksplozji płaskich nazw. <code>OrganisationCode</code> z <code>isSameOrBelow()</code> do hierarchicznej
+kontroli dostępu. <code>AuthorizationContextFactory</code> jako czysta Java z portem
+<code>SubordinateQueryPort</code>.</p>
+</div>
+<div class="paragraph">
+<p><strong>Model 3D uprawnień</strong> to rzadko spotykana w projektach dojrzałość. Większość
+systemów ma <code>Role.ADMIN / Role.USER</code> (płaskie role). Hexabid pokazuje, że
+przestrzeń uprawnień to iloczyn kartezjański: <strong>co?</strong> (ResourceType) × <strong>jaka
+operacja?</strong> (Action) × <strong>czyj zasób?</strong> (Relation). To daje <code>Permission(AUCTION, EDIT, OWN)</code>
+zamiast <code>AUCTION_EDIT_OWN</code> jako string.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_9">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ResourceType</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tylko <code>AUCTION</code> i <code>REPORT</code> – zbyt mało dla pełnego systemu. Brak
+  <code>PRODUCT</code>, <code>INVENTORY</code>, <code>PAYMENT</code>, <code>PARTY</code>, <code>STATEMENT</code>, <code>SETTINGS</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-authorization-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">AuthorizationContext sprawdza <strong>czy użytkownik ma prawo edytować aukcje</strong>,
+  ale nie <strong>czy użytkownik może edytować tę konkretną aukcję</strong>.
+  Resource-level enforcement jest w use case&#8217;ach (ręcznie w ActivateAuctionService
+  linia 34) – powinien być w AuthorizationContext.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_9">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M07]</code> <strong>Party + Scope</strong> – <code>OrganisationCode</code> to praktyczna implementacja
+hierarchicznego scope&#8217;u. Warto pokazać w dokumentacji, że to wariant wzorca
+"scope" z <code>[M07]</code> Party Relationship.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_9">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Rozszerzyć <code>ResourceType</code> o brakujące zasoby (P3).</p>
+</li>
+<li>
+<p>Dodać resource-level checking do <code>AuthorizationContext</code> (P3).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_moduł_hexabid_payment_core_accounting">Moduł: hexabid-payment-core (Accounting)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_ocena_bieżąca_dobra_po_przebudowie_faza_1_1_1_2">Ocena bieżąca: DOBRA – po przebudowie (Faza 1.1 + 1.2)</h3>
+<div class="paragraph">
+<p>Moduł ma poprawną strukturę (AccountingEntry z DEBIT/CREDIT, AccountingTransaction
+z listą entries), ale implementacja jest sketchem, nie produkcyjnym modelem
+księgowym.</p>
+</div>
+<div class="paragraph">
+<p>Moduł można pokazać jako <strong>etap pośredni modelowania</strong> – widać, że autor zna
+koncepcję double-entry, ale nie dokończył implementacji. To materiał na case
+study: "jak rozpoznać niedomodelowany accounting".</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_znalezione_problemy_10">Znalezione problemy</h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Gdzie</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1 BLOKER NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>AccountingTransaction.isBalanced()</code> (linia 21-23)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zawsze zwracało <code>true</code> przez <code>var</code> typowanie. Naprawiono: poprawna suma
+  DEBIT i CREDIT, konstruktor wymaga ≥2 entry, dodano <code>createBalanced()</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1 BLOKER NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>ProcessPaymentUseCase.execute()</code> (linia 49-52)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tworzył jeden DEBIT. Naprawiono: DEBIT (buyer) + CREDIT (seller).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2 DESIGN NAPRAWIONY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Spring usunięty z domeny:</strong> <code>PaymentGatewayRegistry</code> usunięty,
+  <code>AuctionWonEventListener</code> przeniesiony do <code>hexabid-bootstrap</code> jako
+  <code>PaymentEventSubscriber</code>. <code>spring-context</code> usunięty z pom.xml.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE NAPRAWIONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dodano <code>AccountType</code> (ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE),
+  <code>ChartOfAccounts</code>, <code>Ledger</code> (post/balance), <code>Account</code> z typem konta.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3 ROZSZERZENIE NAPRAWIONE</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dodano agregat <code>Payment</code> z cyklem życia (PENDING→COMPLETED/FAILED→REFUNDED)
+  i <code>PaymentId</code>. Używa <code>Money</code> z hexabid-pricing.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_inspiracje_archetypowe_10">Inspiracje archetypowe</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><code>[M06 L02]</code> <strong>Rzeczywista struktura wartości</strong> – kwota to nie pole <code>amount</code>.
+Accounting powinien mieć: komponenty, semantykę, kontekst. <code>AccountingEntry.type</code>
+(DEBIT/CREDIT) to dopiero początek.</p>
+</li>
+<li>
+<p><code>[M06 L04]</code> <strong>Double-entry ledger</strong> – każda transakcja musi mieć co najmniej
+dwa wpisy. <code>isBalanced()</code> musi faktycznie sprawdzać: <code>sum(debits) == sum(credits)</code>.</p>
+</li>
+<li>
+<p><code>[M06 L06]</code> <strong>Audit trail</strong> – append-only log wpisów księgowych. Hexabid powinien
+mieć zasadę: "entries are never updated, only appended".</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_10">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong>Natychmiast</strong>: naprawić <code>isBalanced()</code> (P1).</p>
+</li>
+<li>
+<p><strong>Natychmiast</strong>: dodać drugi entry (CREDIT) w <code>ProcessPaymentUseCase</code> (P1).</p>
+</li>
+<li>
+<p>Przenieść <code>PaymentGatewayRegistry</code> i <code>AuctionWonEventListener</code> do adaptera (P2).</p>
+</li>
+<li>
+<p>Dodać <code>AccountType</code>, <code>ChartOfAccounts</code>, <code>Ledger</code> (P3).</p>
+</li>
+<li>
+<p>Zmigrować z <code>Price</code> na <code>Money</code> (P3).</p>
+</li>
+<li>
+<p>Dodać <code>Payment</code> aggregate (INITIATED → PENDING → CONFIRMED → REFUNDED) (P3).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_nowy_moduł_hexabid_variance_core_planowany">Nowy moduł: hexabid-variance-core (planowany)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_inspiracja_archetypowa_m10_variance_plan_execution_delta">Inspiracja archetypowa: M10 – Variance (Plan / Execution / Delta)</h3>
+<div class="paragraph">
+<p>Kurs AO pokazuje, że w każdym biznesie istnieją dwa światy: <strong>plan</strong> (co miało się
+wydarzyć) i <strong>execution</strong> (co się wydarzyło), a kluczową wartością biznesową jest
+<strong>delta</strong> – różnica między nimi.</p>
+</div>
+<div class="paragraph">
+<p>W Hexabid ten archetyp nie jest obecnie zaimplementowany w ogólnej formie.
+Konkretne przypadki (np. planned hammer price vs actual hammer price, planned
+close date vs actual close date) są rozsmarowane w logice use case&#8217;ów.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_propozycja">Propozycja</h3>
+<div class="paragraph">
+<p>Nowy moduł <code>hexabid-variance-core</code> z generycznym modelem:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">Plan&lt;T&gt;(T target, Instant plannedAt)
+Execution&lt;T&gt;(T actual, Instant executedAt)
+Delta&lt;T&gt;(Plan&lt;T&gt; plan, Execution&lt;T&gt; execution, VarianceComputation&lt;T&gt; computation)</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>gdzie <code>VarianceComputation&lt;T&gt;</code> to interfejs z metodą <code>compute(Plan&lt;T&gt;, Execution&lt;T&gt;) &#8594; VarianceResult</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_11">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Stworzyć <code>hexabid-variance-core</code> jako pure Java module.</p>
+</li>
+<li>
+<p>Zaimplementować generyczny <code>Plan</code>, <code>Execution</code>, <code>Delta</code> (P3).</p>
+</li>
+<li>
+<p>Zastosować w kontekście aukcji: <code>AuctionPriceVariance</code>, <code>AuctionScheduleVariance</code> (P3).</p>
+</li>
+<li>
+<p>Dodać testy pokazujące różne typy wariancji (kwotowa, czasowa, stanowa) (P3).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_nowy_moduł_hexabid_graph_core_planowane_wyodrębnienie">Nowy moduł: hexabid-graph-core (planowane wyodrębnienie)</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_inspiracja_m05_graph">Inspiracja: M05 – Graph</h3>
+<div class="paragraph">
+<p><code>StatementDependencyGraph</code> w <code>hexabid-statements</code> to pełna implementacja DAG-a.
+Warto wyodrębnić generyczne algorytmy grafowe do osobnego modułu, z którego
+korzystają statements i potencjalnie inne moduły.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_propozycja_2">Propozycja</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-none hljs">Graph&lt;Node, Edge&gt;(Set&lt;Node&gt;, Set&lt;Edge&gt;)
+Dag&lt;Node, Edge&gt; extends Graph (z detekcją cyklu)
+TopologicalSort&lt;Node&gt;
+Reachability&lt;Node&gt;
+ConnectedComponents&lt;Node&gt;</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_zalecane_działania_12">Zalecane działania</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Wyodrębnić <code>hexabid-graph-core</code> z <code>hexabid-statements</code> (P4).</p>
+</li>
+<li>
+<p>Zrefaktorować <code>StatementDependencyGraph</code> aby używał generycznego DAG-a.</p>
+</li>
+<li>
+<p>Dodać testy dla każdego algorytmu.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_macierz_priorytetów">Macierz priorytetów</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 9.0909%;">
+<col style="width: 18.1818%;">
+<col style="width: 27.2727%;">
+<col style="width: 45.4546%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Priorytet</th>
+<th class="tableblock halign-left valign-top">Moduł</th>
+<th class="tableblock halign-left valign-top">Problem</th>
+<th class="tableblock halign-left valign-top">Typ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-pricing</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Excise naliczany od netto zamiast hammer price</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BUG</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-pricing</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ExciseRate.applyTo() PER_UNIT dead code</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BUG</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">isBalanced() zawsze true</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BUG</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Tylko 1 entry (DEBIT) zamiast 2 (DEBIT+CREDIT)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BUG</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-quantity</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">subtract() może dać ujemny Quantity</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">BUG</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Spring @Component/@EventListener w core</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hexagonal</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Auction.edit() niszczy lot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Party anemiczne</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">assignParticipationPolicyTemplate bez guarda</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-adapter-in-rest</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Wadium w ConcurrentHashMap (logika domenowa w adapterze)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hexagonal</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak eventów domenowych</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Duplikacja kaskady w 2 miejscach</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-inventory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">addInstance() brak guarda na duplikat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DESIGN</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-product</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ProductFacade łączy repo + service</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hexagonal</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-auth-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">spring-boot-starter-security w pom.xml</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">hexagonal</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-inventory</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak Availability/Reservation/Allocation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak Order aggregate</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-pricing</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak Validity na stawkach</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-pricing</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak Interpretation enum</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-pricing</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak ApplicabilityCondition</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak AccountType / ChartOfAccounts / Ledger</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-payment-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stary Price zamiast Money</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-rules</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak RuleVersion / persistencji</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-rules-adapter</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Niepodpięty do pricing / statements</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-statements</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak AuctionKind sealed hierarchy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-authorization-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ResourceType tylko AUCTION/REPORT</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>hexabid-auth-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Brak VerificationLevel</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ROZSZERZENIE</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nowy: <code>hexabid-variance-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Całościowa implementacja M10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NOWY MODUŁ</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">P4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nowy: <code>hexabid-graph-core</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Wyodrębnienie z statements</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">NOWY MODUŁ</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_plan_fazowy">Plan fazowy</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_faza_0_bugfix_green_wykonane">Faza 0: Bugfix [green]✓ WYKONANE[/]</h3>
+<div class="paragraph">
+<p>Cel: wyeliminować wszystkie P1 (błędne obliczenia, nieegzekwowane niezmienniki).</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><span class="green">✓</span> Naprawić <code>createExciseCalculator()</code> ExciseType (pricing) — switch na PERCENTAGE/PER_UNIT</p>
+</li>
+<li>
+<p><span class="green">✓</span> Naprawić <code>isBalanced()</code> + dodać drugi entry w ProcessPaymentUseCase (payment-core)</p>
+</li>
+<li>
+<p><span class="green">✓</span> Naprawić <code>Quantity.subtract()</code> (quantity)</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Ryzyko: niskie. Zmiany lokalne, objęte istniejącymi testami.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_faza_1_czystość_heksagonalna_green_częściowo">Faza 1: Czystość heksagonalna [green]✓ CZĘŚCIOWO[/]</h3>
+<div class="paragraph">
+<p>Cel: usunąć naruszenia granic heksagonalnych – logika domenowa nie może być
+w adapterach, a framework nie może być w domenie.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><span class="green">✓</span> Przenieść Spring <code>@Component</code>/<code>@EventListener</code> z payment-core do adaptera</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Przenieść wadium z REST adaptera do payment-core lub core</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Oznaczyć/usunąć <code>spring-boot-starter-security</code> z auth-core — deferowane (wymaga zmiany strategii autoryzacji)</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Rozdzielić <code>ProductFacade</code> na port + adapter — deferowane</p>
+</li>
+<li>
+<p><span class="green">✓</span> Zabezpieczyć <code>InventoryEntry.addInstance()</code> przed duplikatami</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_faza_2_wzmocnienie_modeli_domenowych_green_częściowo">Faza 2: Wzmocnienie modeli domenowych [green]✓ CZĘŚCIOWO[/]</h3>
+<div class="paragraph">
+<p>Cel: podnieść jakość istniejących modułów przez wzbogacenie modeli.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><span class="yellow">—</span> Wzbogacić <code>Party</code> o zachowania (<code>hasRole()</code>, <code>isBuyer()</code>, <code>isSeller()</code>) — deferowane</p>
+</li>
+<li>
+<p><span class="green">✓</span> Naprawić <code>Auction.edit()</code> — implementacja EditAuctionService</p>
+</li>
+<li>
+<p><span class="green">✓</span> Dodać guard stanu w <code>assignParticipationPolicyTemplate()</code> (w ramach EditAuctionService)</p>
+</li>
+<li>
+<p><span class="green">✓</span> Dodać zdarzenia domenowe w statements — StatementDomainEvent + StatementEventPublisher</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Wyeliminować duplikację kaskady w statements — deferowane (kosmetyka)</p>
+</li>
+<li>
+<p><span class="green">✓</span> Dodać <code>Availability</code>, <code>Reservation</code> w inventory</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Dodać <code>Order</code> aggregate w core — deferowane</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_faza_3_zaawansowane_inspiracje_archetypowe_yellow_deferowane">Faza 3: Zaawansowane inspiracje archetypowe [yellow]— DEFEROWANE[/]</h3>
+<div class="paragraph">
+<p>Cel: implementacja konceptów z kursu AO podnoszących jakość i edukacyjność.</p>
+</div>
+<div class="paragraph">
+<p>Większość pozycji oznaczona do oceny biznesowej. Nie realizowano w ramach
+aktualnej kampanii modernizacyjnej.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Dodać <code>Validity</code>, <code>Interpretation</code>, <code>ApplicabilityCondition</code> w pricing</p>
+</li>
+<li>
+<p>Dodać <code>Variant</code> first-class w product</p>
+</li>
+<li>
+<p>Dodać <code>PricingCatalog</code> port</p>
+</li>
+<li>
+<p>Dodać <code>Variance</code> core module</p>
+</li>
+<li>
+<p>Dodać <code>RuleVersion</code> + persistencję w rules</p>
+</li>
+<li>
+<p>Podpiąć <code>RuleAlgebra</code> do pricing applicability i statements phase gating</p>
+</li>
+<li>
+<p>Rozszerzyć <code>ResourceType</code> w authorization-core</p>
+</li>
+<li>
+<p>Dodać <code>VerificationLevel</code> w auth-core</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_faza_4_wyodrębnienia_i_refaktoringi_green_częściowo">Faza 4: Wyodrębnienia i refaktoringi [green]✓ CZĘŚCIOWO[/]</h3>
+<div class="paragraph">
+<p>Cel: maksymalizacja reużywalności i czystości architektonicznej.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><span class="yellow">—</span> Wyodrębnić <code>hexabid-graph-core</code> z <code>hexabid-statements</code> — deferowane</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Dokończyć migrację <code>Price</code> → <code>Money</code> we wszystkich modułach — deferowane</p>
+</li>
+<li>
+<p><span class="green">✓</span> Dodać <code>AccountType</code>, <code>ChartOfAccounts</code>, <code>Ledger</code> w payment-core</p>
+</li>
+<li>
+<p><span class="yellow">—</span> Dodać resource-level authorization w AuthorizationContext — deferowane</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_podsumowanie_co_sprawia_że_hexabid_jest_może_być_wzorcowy">Podsumowanie: Co sprawia, że Hexabid jest (może być) wzorcowy</h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Cecha</th>
+<th class="tableblock halign-left valign-top">Opis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Czystość heksagonalna</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Moduły domenowe nie zależą od Spring/JPA (po 1 wyjątku: auth-core używa
+  spring-boot-starter-security – deferowane). Porty i adaptery są wyraźnie rozdzielone.
+  <code>hexabid-payment-core</code> ma usunięty <code>spring-context</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bogate modele domenowe</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Auction (state machine z 8 statusami), Pricing (Calculator/Component),
+  Rules (AST + 3 algebry), Statements (DAG) – każdy to tekstbookowy przykład.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Architektura modularna</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">30+ modułów Mavena z jawnymi zależnościami. DAG zależności jest acykliczny
+  (quantity → product → inventory → core; pricing → core; rules → core).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Kontrakt-first API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">OpenAPI YAML → wygenerowany kod (Java + TypeScript). Ręczne implementacje
+  tylko w adapterach.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Testy na każdym poziomie</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Unit (JUnit 5 + AssertJ), architektura (ArchUnit), integracja (REST Assured),
+  E2E (Playwright). Każdy poziom testuje inną warstwę.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Archetypy jako inspiracja</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Nie "wdrożyliśmy archetyp", ale "zobaczyliśmy problem biznesowy i rozwiązaliśmy
+  go w sposób, który pokrywa się z archetypem". To znak dojrzałego modelowania.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="sect2">
+<h3 id="_kluczowe_wskaźniki_jakości_po_modernizacji">Kluczowe wskaźniki jakości po modernizacji</h3>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>5 bugów domenowych (P1) → 2</strong> – 3 naprawione (Quantity.subtract, isBalanced, ExciseType switch); 1 częściowo (AuctionPricing excise base – nadal otwarte); 1 nie był P1 blokerem</p>
+</li>
+<li>
+<p><strong>4 naruszenia heksagonalne (P2) → 1</strong> – payment-core Spring usunięty (3 naruszenia naprawione); auth-core spring-boot-starter-security pozostał do oceny</p>
+</li>
+<li>
+<p><strong>9 problemów projektowych (P2 DESIGN) → ~5</strong> – EditAuctionService, domain events, Availability/Reservation zrealizowane; Party, ProductFacade, Order deferowane</p>
+</li>
+<li>
+<p><strong>15 rozszerzeń (P3) → ocena biznesowa</strong> – które faktycznie podnoszą wartość (większość deferowana)</p>
+</li>
+<li>
+<p><strong>Każdy moduł domenowy ma co najmniej jeden walor edukacyjny</strong> udokumentowany</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2026-06-27 08:01:01 +0200
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.18.3/highlight.min.js"></script>
+<script>
+if (!hljs.initHighlighting.called) {
+  hljs.initHighlighting.called = true
+  ;[].slice.call(document.querySelectorAll('pre.highlight > code[data-lang]')).forEach(function (el) { hljs.highlightBlock(el) })
+}
+</script>
+</body>
+</html>

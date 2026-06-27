@@ -409,3 +409,17 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - **Pominięto**: 9 auth commitów (raw dev wersje), które są w main w postaci squashed (`authorization (#23)` + `Authorization (#24)`)
 - **Weryfikacja**: `mvn clean install -Plocal -DskipTests` → 31 modułów OK; `mvn test` → wszystkie testy OK; SPA działa poprawnie z zalogowanym użytkownikiem
 - Tagi: #git #rebase #quality-update #cherry-pick
+
+## [2026-06-27] [DOCUMENTATION] Documentation cleanup — deleted obsolete plans, updated plan status, wiki refresh
+- **Usunięto nieaktualne pliki**: `doc/domain-modeling/domain-modeling-plan.md`, `doc/reports/*` (4 pliki), `doc/specyfikacja-rozwojowa-hexabid.md`, `doc/localhost.har`, `ai/wiki/.plan-system-regul.adoc.kate-swp`
+- **Zaktualizowano** `doc/plan-archetypow-update.adoc`:
+  - Statusy w Plan fazowy: Faza 0 ✓, Faza 1 ✓ częściowo, Faza 2 ✓ częściowo, Faza 3 — deferowane, Faza 4 ✓ częściowo
+  - Payment-core ocena: SŁABA → DOBRA po przebudowie
+  - Inventory ocena: SŁABA → ŚREDNIA po wzbogaceniu
+  - Wszystkie P1/P2/P3 naprawione oznaczone `NAPRAWIONY` / `[green]#✓#`
+  - Zaktualizowane wskaźniki jakości (realne liczby zamiast aspirujących)
+- **Zaktualizowano dokumenty wiki** dla agentów:
+  - `ai/wiki/index.md`: Ostatnie zmiany → docelowa sekcja z listą zrealizowanych inicjatyw
+  - `ai/wiki/plans/authorization-rbac-scope-final.md` → oznaczony jako IMPLEMENTED
+  - `AGENTS.md` odświeżony kontekst
+- Tagi: #documentation #cleanup #obsolete-files #plan-update #wiki #agent-docs
