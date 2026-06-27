@@ -6,22 +6,20 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -51,7 +49,6 @@ public class LocalSecurityConfiguration {
     private List<String> allowedMethods;
 
     @Bean
-    @org.springframework.core.annotation.Order(1)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             @Autowired(required = false) com.github.hexabid.adapter.in.auth.oauth.dev.DevOAuth2UserService devOauth2UserService,
@@ -60,14 +57,19 @@ public class LocalSecurityConfiguration {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/api/authz/**").permitAll()
+                        .requestMatchers("/login/**", "/logout", "/dev-auth/**").permitAll()
+                        .requestMatchers("/ws-auctions/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/*", "/api/auth/providers").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults())
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .oauth2Login(oauth2 -> oauth2.loginPage("/login/dev")
+                        .userInfoEndpoint(userInfo -> userInfo.userService(devOauth2UserService)))
+                .oauth2Client(Customizer.withDefaults())
+                .logout(logout -> logout.logoutSuccessUrl("/"))
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
 
         if (jwtFilter != null) {

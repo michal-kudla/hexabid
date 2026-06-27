@@ -233,6 +233,25 @@ class AuctionPricingFacadeTest {
         }
 
         @Test
+        void shouldHandlePerUnitExciseInComponentTree() {
+            PricingContext ctx = PricingContext.builder()
+                .hammerPrice(Money.of("2000.00", "PLN"))
+                .quantity(new BigDecimal("50"))
+                .productType("BATCH_TRACKED")
+                .excisable(true)
+                .imported(false)
+                .vatRate(VatRate.TWENTY_THREE)
+                .exciseRate(ExciseRate.perUnit(new BigDecimal("1.17")))
+                .wadium(Wadium.percentage(new BigDecimal("0.05"), Money.of("1800.00", "PLN")))
+                .build();
+
+            var result = facade.calculateWithComponentTree(ctx);
+
+            assertTrue(result.children().containsKey("excise"));
+            assertEquals(Money.of("58.50", "PLN"), result.children().get("excise").value());
+        }
+
+        @Test
         void shouldIncludeCustomsInTreeForImportedProduct() {
             PricingContext ctx = PricingContext.builder()
                 .hammerPrice(Money.of("1000.00", "PLN"))

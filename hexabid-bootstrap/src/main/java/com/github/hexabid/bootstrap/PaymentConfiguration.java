@@ -1,9 +1,13 @@
 package com.github.hexabid.bootstrap;
 
+import com.github.hexabid.core.auctioning.event.AuctionWonEvent;
 import com.github.hexabid.payment.api.PaymentGateway;
 import com.github.hexabid.payment.core.domain.CurrencyConverter;
 import com.github.hexabid.payment.core.domain.SimpleCurrencyConverter;
+import com.github.hexabid.payment.core.model.AccountId;
 import com.github.hexabid.payment.core.usecase.ProcessPaymentUseCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -14,6 +18,8 @@ import java.util.Optional;
 @Configuration
 @Profile("!payment-local")
 public class PaymentConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(PaymentConfiguration.class);
 
     @Bean
     public CurrencyConverter currencyConverter() {

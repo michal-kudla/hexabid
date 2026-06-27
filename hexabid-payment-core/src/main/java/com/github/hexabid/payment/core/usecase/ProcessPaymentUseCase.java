@@ -9,12 +9,8 @@ import com.github.hexabid.payment.core.domain.CurrencyConverter;
 import com.github.hexabid.payment.core.model.*;
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
-/**
- * Use case for processing a payment for a won auction.
- */
 public class ProcessPaymentUseCase {
 
     private final PaymentGateway paymentGateway;
@@ -25,14 +21,12 @@ public class ProcessPaymentUseCase {
         this.currencyConverter = currencyConverter;
     }
 
-    public PaymentResponse execute(AuctionId auctionId, Price amount, String targetCurrency) {
-        // 1. Convert currency if needed
+    public PaymentResponse execute(AuctionId auctionId, Price amount, String targetCurrency, AccountId buyerAccountId, AccountId sellerAccountId) {
         Price finalAmount = currencyConverter.convert(amount, targetCurrency);
 
-        // 2. Initiate payment via gateway
-        String transactionId = UUID.randomUUID().toString();
+        String gatewayTxId = UUID.randomUUID().toString();
         PaymentRequest request = new PaymentRequest(
-                transactionId,
+                gatewayTxId,
                 finalAmount,
                 "Payment for auction " + auctionId.value(),
                 URI.create("https://hexabid.com/payment/callback")
@@ -40,17 +34,23 @@ public class ProcessPaymentUseCase {
 
         PaymentResponse response = paymentGateway.initiatePayment(request);
 
-        // 3. Create accounting entries (Accounting Archetype)
-        // In a real system, we would persist these to a database
         TransactionId txId = TransactionId.next();
-        AccountingEntry entry = new AccountingEntry(
+        var now = Instant.now();
+        AccountingEntry debit = new AccountingEntry(
                 EntryId.next(),
-                AccountId.next(), // Should be fetched from registry
+                buyerAccountId,
                 finalAmount,
                 AccountingEntry.EntryType.DEBIT,
-                Instant.now()
+                now
         );
-        AccountingTransaction tx = new AccountingTransaction(txId, auctionId, List.of(entry));
+        AccountingEntry credit = new AccountingEntry(
+                EntryId.next(),
+                sellerAccountId,
+                finalAmount,
+                AccountingEntry.EntryType.CREDIT,
+                now
+        );
+        AccountingTransaction tx = AccountingTransaction.createBalanced(txId, auctionId, debit, credit);
 
         return response;
     }

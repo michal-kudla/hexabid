@@ -329,3 +329,83 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - No @angular/mcp package exists; module communication uses standard Angular patterns
 - Updated AGENTS.md stack techniczny to Angular 22
 - Tag: #angular22 #upgrade #frontend #typescript6
+
+## [2026-06-26] [BUGFIX] Quantity.subtract() explicit negative guard
+- Added pre-condition check in `Quantity.subtract()` with clear error message when result would be negative
+- Previously relied on constructor validation which threw misleading error
+- Added test `shouldRejectSubtractWhenResultWouldBeNegative`
+- Tagi: #bugfix #quantity #p1
+
+## [2026-06-26] [REFACTOR] payment-core: Spring removal + Faza 1.2 model enrichment
+- **Faza 1.1**: Removed Spring from hexabid-payment-core:
+  - Removed `spring-context` dependency from pom.xml
+  - Removed `PaymentGatewayRegistry` and `AuctionWonEventListener` from payment-core
+  - Moved event listener to hexabid-bootstrap as `PaymentEventSubscriber` `@Component`
+  - Refactored `RestPaymentApiDelegate` to inject `PaymentGatewayDiscoverer` list directly
+  - Refactored `PaymentConfiguration` (removed registry bean, kept gateway + use case beans)
+- **Faza 1.2**: Enriched payment-core accounting model:
+  - Added `AccountType` enum (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)
+  - Added `AccountType` field to `Account` record
+  - Added `ChartOfAccounts` — registry with find/register/lookup methods
+  - Added `Ledger` — post transactions, compute balances, query by account
+  - Added `Payment` aggregate — lifecycle (PENDING→COMPLETED/FAILED→REFUNDED) with state machine
+  - Added `PaymentId` value object
+- Tagi: #refactor #payment-core #hexagonal-architecture #spring-removal #accounting #ledger #payment-aggregate
+
+## [2026-06-26] [IMPLEMENTATION] Faza 2 — hexabid-inventory: Availability, Reservation, InventoryMovement
+- Added `Availability` value object (total/reserved/available breakdown)
+- Added `Reservation` aggregate with state machine (ACTIVE→CONFIRMED/CANCELLED/EXPIRED)
+- Added `ReservationId` and `AuctionId` value objects (inventory-scoped, no dependency on hexabid-core)
+- Added `ReservationService` — reserve/confirm/cancel with availability guard
+- Added `InventoryMovement` — track movements with type (RECEIPT, SALE, RETURN, TRANSFER, ADJUSTMENT, LOSS)
+- 8 new unit tests (reserve, availability, confirm, cancel, free availability, filter by auction, reject oversell, record movement)
+- Total inventory tests: 17 pass
+- Tagi: #inventory #availability #reservation #movement #faza2
+
+## [2026-06-26] [BUGFIX] hexabid-pricing — createExciseCalculator ignores ExciseType (PER_UNIT vs PERCENTAGE)
+- **Bug**: `AuctionPricingFacade.createExciseCalculator()` always created `PercentageCalculator`, even for `ExciseType.PER_UNIT`. The component tree path (`calculateWithComponentTree()`) produced wrong results for per-unit excise.
+- **Fix**: `createExciseCalculator` now switches on `ExciseType` — `PercentageCalculator` for PERCENTAGE, `PerUnitCalculator` for PER_UNIT.
+- **Enhancement**: Added `withFixedParam()` to `SimplePriceComponent.Builder` to pass non-Money parameters (like `quantity`) to calculators in the component tree.
+- **Test**: Added `shouldHandlePerUnitExciseInComponentTree` test to `ComponentTreeTests`.
+- Tagi: #pricing #bugfix #excise #component-tree #per-unit
+
+## [2026-06-26] [IMPLEMENTATION] Faza 4 — hexabid-core: EditAuctionService implementation
+- Implemented `EditAuctionService` implementing the existing `EditAuctionUseCase` port
+- Supports editing DRAFT auctions (title + startingPrice) via `Auction.edit()` model method
+- Returns `AuctionNotFound` / `EditNotAllowed` / `AuctionEdited` results
+- 3 new unit tests: edit draft, reject not-found, reject non-draft status
+- Party enrichment and Order aggregate deferred (P3 extensions)
+- Tagi: #core #auction-edit #usecase #faza4
+
+## [2026-06-26] [IMPLEMENTATION] Faza 5 — hexabid-statements: domain events + event publisher integration
+- Added sealed `StatementDomainEvent` interface with 4 events: `ProgramStartedEvent`, `AnswerSubmittedEvent`, `ProgramCompletedEvent`, `ProgramRejectedEvent`
+- Added `StatementEventPublisher` output port (follows core's `AuctionEventPublisher` pattern)
+- Integrated `eventPublisher.publish()` calls into `StatementService` at all lifecycle points:
+  - `startProgram()` → publishes `ProgramStartedEvent`
+  - `submitAnswer()` → publishes `AnswerSubmittedEvent` for each answer, plus `ProgramRejectedEvent` on disqualification or `ProgramCompletedEvent` upon completion
+- Backward-compatible: existing 2-arg constructor delegates to no-op publisher; all 14 existing tests pass unchanged
+- Full test suite: 31 modules, all tests pass (incl. ArchUnit architecture tests)
+- Tagi: #statements #domain-events #hexagonal-architecture #event-publisher #faza5
+
+## [2026-06-27] [FIX] LocalSecurityConfiguration — Dev OAuth2 login broken (ERR_INVALID_AUTH_CREDENTIALS)
+- **Root cause**: `LocalSecurityConfiguration` in `hexabid-adapter-in-auth-local` had two violations per AGENTS.md:
+  - `SessionCreationPolicy.STATELESS` — breaks HTTP session required by formLogin and OAuth2 login
+  - `httpBasic(Customizer.withDefaults())` — sends `WWW-Authenticate: Basic`, blocks OAuth2 redirect (Chrome: `ERR_INVALID_AUTH_CREDENTIALS`)
+  - Missing `formLogin`, `oauth2Login`, `exceptionHandling`, and `oauth2Client`
+- **Fix**: Replaced with proper configuration matching `OAuth2SecurityConfiguration` pattern:
+  - Removed `SessionCreationPolicy.STATELESS` and `httpBasic`
+  - Added `formLogin` (implicit via `.oauth2Login().loginPage("/login/dev")`), `oauth2Login`, `oauth2Client`, `logout`
+  - Added `exceptionHandling` with `HttpStatusEntryPoint(UNAUTHORIZED)` for API 401
+  - Added `permitAll()` for `/login/**`, `/logout`, `/dev-auth/**`, `/ws-auctions/**`
+- **Why it happened**: `OAuth2SecurityConfiguration` uses `@ConditionalOnMissingClass("...LocalSecurityConfiguration")`, so it was completely skipped when the local auth module was on classpath. `LocalSecurityConfiguration` was the only active filter chain, but it had a broken config that blocked OAuth2.
+- **Verification**: Dev login flow works end-to-end — click Dev → user selection page → redirect to SPA as logged-in user ("online" session status). All console errors resolved (only pre-existing a11y warnings).
+- Tagi: #fix #auth #oauth2 #local-security #httpbasic #session
+
+## [2026-06-27] [GIT] Rebase quality-update na main
+- `quality-update` został zresetowany do `main`, następnie cherry-pick 3 commitów jakościowych (bez auth dev commits):
+  - `d7dd80bf` feat: upgrade hexabid-spa to Angular 22 with TypeScript 6.0.3
+  - `f6dad899` angular 22
+  - `552f787f` quality upgrade (refactor 6 modułów + LocalSecurityConfiguration fix)
+- **Pominięto**: 9 auth commitów (raw dev wersje), które są w main w postaci squashed (`authorization (#23)` + `Authorization (#24)`)
+- **Weryfikacja**: `mvn clean install -Plocal -DskipTests` → 31 modułów OK; `mvn test` → wszystkie testy OK; SPA działa poprawnie z zalogowanym użytkownikiem
+- Tagi: #git #rebase #quality-update #cherry-pick

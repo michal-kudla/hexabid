@@ -1,6 +1,9 @@
 package com.github.hexabid.statement.usecase;
 
-import com.github.hexabid.statement.graph.StatementDependencyGraph;
+import com.github.hexabid.statement.event.AnswerSubmittedEvent;
+import com.github.hexabid.statement.event.ProgramCompletedEvent;
+import com.github.hexabid.statement.event.ProgramRejectedEvent;
+import com.github.hexabid.statement.event.ProgramStartedEvent;
 import com.github.hexabid.statement.model.AuctionId;
 import com.github.hexabid.statement.model.ParticipationDecision;
 import com.github.hexabid.statement.model.ParticipationPolicyTemplateId;
@@ -25,6 +28,7 @@ import com.github.hexabid.statement.port.in.SubmitStatementAnswerResult;
 import com.github.hexabid.statement.port.in.SubmitStatementAnswerUseCase;
 import com.github.hexabid.statement.port.in.GetStatementProgramUseCase;
 import com.github.hexabid.statement.port.in.GetParticipationDecisionUseCase;
+import com.github.hexabid.statement.port.out.StatementEventPublisher;
 import com.github.hexabid.statement.port.out.StatementProgramInstanceRepository;
 import com.github.hexabid.statement.template.ParticipationPolicyTemplate;
 import com.github.hexabid.statement.template.PolicyTemplateCatalog;
@@ -64,10 +68,17 @@ public final class StatementService implements
     private final Map<String, ParticipationPolicyTemplate> templatesByName;
     private final Map<ParticipationPolicyTemplateId, ParticipationPolicyTemplate> templatesById;
     private final ParticipationPolicyEvaluator evaluator;
+    private final StatementEventPublisher eventPublisher;
 
     public StatementService(StatementProgramInstanceRepository repository, Clock clock) {
+        this(repository, clock, event -> {});
+    }
+
+    public StatementService(StatementProgramInstanceRepository repository, Clock clock,
+                            StatementEventPublisher eventPublisher) {
         this.repository = Objects.requireNonNull(repository, "repository must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.eventPublisher = Objects.requireNonNull(eventPublisher, "eventPublisher must not be null");
         this.evaluator = new ParticipationPolicyEvaluator(clock);
         this.templatesByName = Map.of(
                 "PUBLIC_CONSUMER_LIGHT_V1", PolicyTemplateCatalog.PUBLIC_CONSUMER_LIGHT_V1,
@@ -97,7 +108,10 @@ public final class StatementService implements
                 auctionId, candidateId, template.id(), template.version(), Instant.now(clock)
         );
 
-        return toView(repository.save(instance));
+        var saved = repository.save(instance);
+        eventPublisher.publish(new ProgramStartedEvent(
+                auctionId, candidateId, template.id(), Instant.now(clock)));
+        return toView(saved);
     }
 
     @Override
@@ -138,6 +152,10 @@ public final class StatementService implements
 
         instance.submitAnswer(answer);
 
+        eventPublisher.publish(new AnswerSubmittedEvent(
+                auctionId, candidateId, statementCode, command.answerValue(), disqualifying,
+                Instant.now(clock)));
+
         if (disqualifying) {
             Set<StatementCode> cascaded = template.graph().reachableFrom(statementCode);
             ParticipationDecision.Rejected rejected = new ParticipationDecision.Rejected(
@@ -148,21 +166,31 @@ public final class StatementService implements
             );
             instance.markRejected(rejected);
             repository.save(instance);
+            eventPublisher.publish(new ProgramRejectedEvent(
+                    auctionId, candidateId, statementCode, rejected.humanReason(),
+                    new ArrayList<>(cascaded), Instant.now(clock)));
             return new SubmitStatementAnswerResult.AnswerRejected(toView(instance), rejected.humanReason());
         }
 
         ParticipationPolicyEvaluator.EvaluationResult evaluation = evaluator.evaluate(template, instance.answers());
+        boolean completed = false;
         if (evaluation.status() == ParticipationPolicyEvaluator.EvaluationStatus.ADMITTED) {
             ParticipationDecision decision = new ParticipationDecision.Admitted(candidateId, auctionId, Instant.now(clock));
             instance.markCompleted(decision);
+            completed = true;
         } else if (evaluation.status() == ParticipationPolicyEvaluator.EvaluationStatus.PENDING) {
             ParticipationDecision decision = new ParticipationDecision.Pending(
                     candidateId, auctionId, evaluation.missingStatements(), List.of()
             );
             instance.markCompleted(decision);
+            completed = true;
         }
 
         repository.save(instance);
+        if (completed) {
+            eventPublisher.publish(new ProgramCompletedEvent(
+                    auctionId, candidateId, Instant.now(clock)));
+        }
         return new SubmitStatementAnswerResult.AnswerAccepted(toView(instance));
     }
 
