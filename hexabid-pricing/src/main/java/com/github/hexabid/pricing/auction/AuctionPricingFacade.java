@@ -1,5 +1,6 @@
 package com.github.hexabid.pricing.auction;
 
+import com.github.hexabid.pricing.calculator.PerUnitCalculator;
 import com.github.hexabid.pricing.calculator.PercentageCalculator;
 import com.github.hexabid.pricing.calculator.PriceCalculator;
 import com.github.hexabid.pricing.calculator.SimpleFixedCalculator;
@@ -74,13 +75,7 @@ public final class AuctionPricingFacade {
         SimplePriceComponent nettoComp = SimplePriceComponent.of(
             "netto", new SimpleFixedCalculator("netto", netto));
 
-        SimplePriceComponent exciseComp = context.isExcisable()
-            ? context.maybeExciseRate()
-                .map(r -> SimplePriceComponent.builder("excise", createExciseCalculator(r, context))
-                    .mapDependent("baseAmount", "netto")
-                    .build())
-                .orElse(null)
-            : null;
+        SimplePriceComponent exciseComp = buildExciseComponent(context, currency);
 
         SimplePriceComponent customsComp = context.isImported()
             ? context.maybeCustomsDutyRate()
@@ -110,8 +105,25 @@ public final class AuctionPricingFacade {
         return totalBuilder.build().calculate(Map.of());
     }
 
-    private PriceCalculator createExciseCalculator(ExciseRate rate, PricingContext context) {
-        return new PercentageCalculator("excise", rate.rate());
+    private SimplePriceComponent buildExciseComponent(PricingContext context, String currency) {
+        return context.maybeExciseRate()
+            .map(rate -> {
+                PriceCalculator calc = createExciseCalculator(rate, currency);
+                var builder = SimplePriceComponent.builder("excise", calc)
+                    .mapDependent("baseAmount", "netto");
+                if (rate.type() == ExciseRate.ExciseType.PER_UNIT) {
+                    builder.withFixedParam("quantity", context.quantity());
+                }
+                return builder.build();
+            })
+            .orElse(null);
+    }
+
+    private PriceCalculator createExciseCalculator(ExciseRate rate, String currency) {
+        return switch (rate.type()) {
+            case PERCENTAGE -> new PercentageCalculator("excise", rate.rate());
+            case PER_UNIT -> new PerUnitCalculator("excise", Money.of(rate.rate(), currency));
+        };
     }
 
     private String[] buildVatDependencyNames(boolean hasExcise, boolean hasCustoms) {

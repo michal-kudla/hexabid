@@ -33,6 +33,11 @@ Ta wiki stanowi **źródło prawdy** dla wszystkich decyzji architektonicznych, 
 - [[PROFIL_LOCAL_GUIDE]] - Przewodnik po profilach lokalnych + systemd user services
 - [[DOCUMENTATION_STRUCTURE]] - Organizacja dokumentacji w projekcie
 
+### 🧹 Ostatnie zmiany
+- [[decisions/2026-06-26-payment-core-faza1]] - Spring removal + Faza 1.2: AccountType, ChartOfAccounts, Ledger, Payment aggregate
+- [[log#2026-06-26]] - Quantity.subtract() P1 bugfix + payment-core refactor + Faza 2/3/4/5
+- [[log#2026-06-27]] - URGENT: LocalSecurityConfiguration fix — Dev OAuth2 login repair (httpBasic→oauth2Login)
+
 ### 📐 Plany wdrożeniowe
 - [[plans/authorization-rbac-scope-final]] - **AKTUALNY PLAN**: Implementacja autoryzacji przez `PrincipalContext`, `Permission(ResourceType, Action, Relation)` i authorized queries
 

@@ -40,7 +40,13 @@ public record Quantity(BigDecimal amount, Unit unit) implements Comparable<Quant
             throw new IllegalArgumentException(
                 String.format("Cannot subtract quantities with different units: %s and %s", this.unit, other.unit));
         }
-        return new Quantity(this.amount.subtract(other.amount), this.unit);
+        var result = this.amount.subtract(other.amount);
+        if (result.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(
+                String.format("Cannot subtract %.0f %s from %.0f %s — result would be negative",
+                    other.amount, other.unit, this.amount, this.unit));
+        }
+        return new Quantity(result, this.unit);
     }
 
     public boolean isGreaterThan(Quantity other) {

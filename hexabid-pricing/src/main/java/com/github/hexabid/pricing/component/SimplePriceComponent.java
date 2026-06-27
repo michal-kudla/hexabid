@@ -15,19 +15,22 @@ public final class SimplePriceComponent implements PricingComponent {
     private final PriceCalculator calculator;
     private final Map<String, String> parameterMappings;
     private final Map<String, Function<Map<String, Money>, Money>> dependentValueMappings;
+    private final Map<String, Object> fixedParameters;
 
     public SimplePriceComponent(String name,
                                 PriceCalculator calculator,
                                 Map<String, String> parameterMappings,
-                                Map<String, Function<Map<String, Money>, Money>> dependentValueMappings) {
+                                Map<String, Function<Map<String, Money>, Money>> dependentValueMappings,
+                                Map<String, Object> fixedParameters) {
         this.name = Objects.requireNonNull(name, "name must not be null");
         this.calculator = Objects.requireNonNull(calculator, "calculator must not be null");
         this.parameterMappings = Map.copyOf(parameterMappings);
         this.dependentValueMappings = Map.copyOf(dependentValueMappings);
+        this.fixedParameters = Map.copyOf(fixedParameters);
     }
 
     public static SimplePriceComponent of(String name, PriceCalculator calculator) {
-        return new SimplePriceComponent(name, calculator, Map.of(), Map.of());
+        return new SimplePriceComponent(name, calculator, Map.of(), Map.of(), Map.of());
     }
 
     public static Builder builder(String name, PriceCalculator calculator) {
@@ -36,7 +39,7 @@ public final class SimplePriceComponent implements PricingComponent {
 
     @Override
     public ComponentResult calculate(Map<String, Money> dependentValues) {
-        Map<String, Object> params = new HashMap<>();
+        Map<String, Object> params = new HashMap<>(fixedParameters);
 
         for (var entry : dependentValueMappings.entrySet()) {
             String paramKey = entry.getKey();
@@ -58,6 +61,7 @@ public final class SimplePriceComponent implements PricingComponent {
         private final PriceCalculator calculator;
         private final Map<String, String> parameterMappings = new HashMap<>();
         private final Map<String, Function<Map<String, Money>, Money>> dependentValueMappings = new LinkedHashMap<>();
+        private final Map<String, Object> fixedParameters = new HashMap<>();
 
         Builder(String name, PriceCalculator calculator) {
             this.name = name;
@@ -83,8 +87,13 @@ public final class SimplePriceComponent implements PricingComponent {
             return this;
         }
 
+        public Builder withFixedParam(String key, Object value) {
+            fixedParameters.put(key, value);
+            return this;
+        }
+
         public SimplePriceComponent build() {
-            return new SimplePriceComponent(name, calculator, parameterMappings, dependentValueMappings);
+            return new SimplePriceComponent(name, calculator, parameterMappings, dependentValueMappings, fixedParameters);
         }
     }
 }

@@ -81,6 +81,14 @@ class QuantityTest {
     }
 
     @Test
+    void shouldRejectSubtractWhenResultWouldBeNegative() {
+        Quantity q1 = Quantity.of(10, Unit.kilograms());
+        Quantity q2 = Quantity.of(20, Unit.kilograms());
+
+        assertThrows(IllegalArgumentException.class, () -> q1.subtract(q2));
+    }
+
+    @Test
     void shouldRejectSubtractWithDifferentUnits() {
         Quantity q1 = Quantity.of(100, Unit.kilograms());
         Quantity q2 = Quantity.of(30, Unit.liters());
