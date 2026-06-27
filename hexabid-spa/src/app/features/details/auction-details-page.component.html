@@ -1,0 +1,158 @@
+@if (facade.loading()) {
+  <section class="surface loading-state">Ładowanie szczegółów aukcji...</section>
+} @else if (facade.error()) {
+  <app-empty-state
+    title="Nie udało się otworzyć aukcji"
+    [description]="facade.error()!"
+    actionLabel="Wróć do rynku"
+    actionHref="/"
+  />
+} @else if (facade.auction(); as auction) {
+  <app-participation-center [auctionId]="auction.auctionId" [qualificationSummary]="auction.qualificationSummary" />
+
+  <section class="details-grid">
+    <article class="surface spotlight">
+      <div class="eyebrow">
+        <span class="badge" [class.badge-closed]="auction.statusTone !== 'open'">{{ auction.statusLabel }}</span>
+        <span>{{ auction.endsAtLabel }}</span>
+      </div>
+
+      <h1>{{ auction.title }}</h1>
+      <p class="lede">
+        Aukcja przechodzi przez przygotowanie, publikację, aktywną licytację i rozliczenie. Licytujący
+        składają oferty dopiero w statusie aktywnym; dokumenty i opłaty zależą od etapu reguł poniżej.
+      </p>
+
+      <dl class="metrics">
+        <div>
+          <dt>Aktualna cena</dt>
+          <dd>{{ auction.priceLabel }}</dd>
+        </div>
+        <div>
+          <dt>Lider</dt>
+          <dd>{{ auction.leadingBidderLabel }}</dd>
+        </div>
+        <div>
+          <dt>Ofert łącznie</dt>
+          <dd>{{ auction.totalBids }}</dd>
+        </div>
+        <div>
+          <dt>Koniec aukcji</dt>
+          <dd>{{ auction.timeLeftLabel }}</dd>
+        </div>
+      </dl>
+
+      <a [routerLink]="['/auction', auction.auctionId, 'pricing']" class="pricing-link">
+        Zobacz kalkulację ceny &rarr;
+      </a>
+
+      @if (canActivateAuction()) {
+        <div class="seller-activation">
+          <strong>To jest Twoja aukcja w przygotowaniu.</strong>
+          <p>
+            Utworzenie aukcji zapisuje szkic. Dopiero publikacja i start przełączają ją do statusu aktywnego,
+            w którym inni użytkownicy mogą licytować. Pełna płatność nie jest wymagana na starcie; dotyczy
+            wyłącznie zwycięzcy na etapie rozliczenia po zakończeniu aukcji.
+          </p>
+          <button type="button" (click)="activateAuction()" [disabled]="facade.activationSubmitting()">
+            {{ facade.activationSubmitting() ? 'Uruchamianie...' : 'Opublikuj i uruchom aukcję' }}
+          </button>
+        </div>
+      }
+    </article>
+
+    <app-auction-bid-panel
+      [auction]="auction"
+      [decision]="participationFacade.decision()"
+      [isSeller]="isSeller()"
+      [bidSubmitting]="facade.bidSubmitting()"
+      [hasBiddingBlocks]="hasBiddingBlocks()"
+      (bidSubmit)="onBidSubmit($event)"
+    />
+  </section>
+
+  <section class="details-grid details-grid--secondary">
+    <article class="surface">
+      <div class="section-heading">
+        <h2>Reguły aukcyjne</h2>
+        @if (rulesFacade.loading()) {
+          <span class="meta">Ładowanie...</span>
+        }
+      </div>
+
+      @if (rulesFacade.error()) {
+        <p class="muted">{{ rulesFacade.error() }}</p>
+      } @else if (rulesFacade.evaluation(); as eval_) {
+        <app-rules-panel [evaluations]="eval_.evaluations" />
+
+        @if (hasBiddingBlocks()) {
+          <p class="hint blocking-hint">
+            Masz blokujące warunki licytacji. Te blokady trzeba usunąć przed złożeniem oferty.
+          </p>
+        } @else if (hasSettlementBlocks()) {
+          <p class="hint settlement-hint">
+            Blokady w sekcji rozliczenia nie zatrzymują startu aukcji ani licytacji. Dotyczą zwycięzcy
+            po zakończeniu aukcji, gdy trzeba dostarczyć oryginały albo opłacić pełną kwotę.
+          </p>
+        }
+      }
+    </article>
+
+    <article class="surface">
+      <app-document-submit
+        [submitting]="rulesFacade.documentSubmitting()"
+        (documentSubmitted)="onDocumentSubmitted($event)"
+      />
+
+      @if (rulesFacade.submittedDocument(); as doc) {
+        <div class="result-success">
+          <strong>Dokument złożony</strong>
+          <p>{{ doc.documentTypeLabel }} &mdash; {{ doc.statusLabel }}</p>
+        </div>
+      }
+    </article>
+  </section>
+
+  <section class="details-grid details-grid--secondary">
+    <article class="surface">
+      <div class="section-heading">
+        <h2>Historia ofert</h2>
+        <span class="meta">{{ auction.totalBids }} wpisów</span>
+      </div>
+
+      @if (auction.bidHistory.length) {
+        <div class="timeline">
+          @for (bid of auction.bidHistory; track bid.bidderId + bid.placedAt.toISOString()) {
+            <article class="timeline-item">
+              <strong>{{ bid.priceLabel }}</strong>
+              <span>{{ bid.bidderLabel }}</span>
+              <small>{{ bid.placedAtLabel }}</small>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="muted">Brak ofert zapisanych dla tej aukcji.</p>
+      }
+    </article>
+
+    <article class="surface">
+      <div class="section-heading">
+        <h2>Strumień aktywności</h2>
+        <span class="badge">Live</span>
+      </div>
+
+      @if (facade.feed().length) {
+        <div class="feed">
+          @for (item of facade.feed(); track item.title + item.detail) {
+            <article class="feed-item" [class.error]="item.tone === 'error'" [class.success]="item.tone === 'success'">
+              <strong>{{ item.title }}</strong>
+              <p>{{ item.detail }}</p>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="muted">Czekamy na pierwsze zdarzenia z kanału aukcji.</p>
+      }
+    </article>
+  </section>
+}

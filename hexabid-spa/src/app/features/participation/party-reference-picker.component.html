@@ -1,0 +1,14 @@
+<article class="party-picker">
+  <p class="party-question">{{ question() }}</p>
+
+  <div class="party-options">
+    <button type="button" class="party-option option-self" (click)="onSelectSelf()" [disabled]="submitting()">
+      <strong>Działam we własnym imieniu</strong>
+      <span>Kupuję jako osoba fizyczna na własny rachunek.</span>
+    </button>
+    <button type="button" class="party-option option-representative" (click)="onSelectRepresentative()" [disabled]="submitting()">
+      <strong>Działam w imieniu innego podmiotu</strong>
+      <span>Reprezentuję firmę, organizację lub inną osobę.</span>
+    </button>
+  </div>
+</article>

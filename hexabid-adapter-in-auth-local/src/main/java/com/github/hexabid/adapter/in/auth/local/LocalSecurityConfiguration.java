@@ -1,0 +1,144 @@
+package com.github.hexabid.adapter.in.auth.local;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+/**
+ * Deweloperska wtyczka uwierzytelniania lokalnego.
+ *
+ * Dostarcza:
+ * - InMemoryUserDetailsManager z testowymi użytkownikami
+ * - SecurityFilterChain z formLogin (tylko jeśli żaden inny łańcuch nie jest zdefiniowany,
+ *   np. gdy adapter auth-oauth NIE jest na classpath)
+ * - Konfigurację CORS odczytaną z właściwości aplikacji (profil dev)
+ *
+ * Wzorzec LISTY: ta wtyczka może współistnieć z innymi dostawcami uwierzytelniania
+ * (np. OAuth2). Gdy OAuth2 jest obecny, jego SecurityFilterChain ma pierwszeństwo,
+ * a ta klasa dostarcza jedynie użytkowników lokalnych.
+ *
+ * CORS jest aktywny wyłącznie gdy właściwość {@code spring.cors.allowed-origins}
+ * jest zdefiniowana (profil dev). Na produkcji brak CORS — frontend i backend
+ * powinny być serwowane z tej samej domeny.
+ */
+@Configuration
+public class LocalSecurityConfiguration {
+
+    @Value("${spring.cors.allowed-origins:}")
+    private List<String> allowedOrigins;
+
+    @Value("${spring.cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS}")
+    private List<String> allowedMethods;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            @Autowired(required = false) com.github.hexabid.adapter.in.auth.oauth.dev.DevOAuth2UserService devOauth2UserService,
+            @Autowired(required = false) com.github.hexabid.adapter.in.authz.filter.JwtAuthorizationFilter jwtFilter
+    ) throws Exception {
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/api/authz/**").permitAll()
+                        .requestMatchers("/login/**", "/logout", "/dev-auth/**").permitAll()
+                        .requestMatchers("/ws-auctions/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auctions", "/api/auctions/*", "/api/auth/providers").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .oauth2Login(oauth2 -> oauth2.loginPage("/login/dev")
+                        .userInfoEndpoint(userInfo -> userInfo.userService(devOauth2UserService)))
+                .oauth2Client(Customizer.withDefaults())
+                .logout(logout -> logout.logoutSuccessUrl("/"))
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
+
+        if (jwtFilter != null) {
+            http.addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+        }
+
+        return http.build();
+    }
+
+    private CorsConfigurationSource corsConfigurationSource() {
+        if (allowedOrigins == null || allowedOrigins.isEmpty()) {
+            return request -> null;
+        }
+
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(allowedOrigins);
+        configuration.setAllowedMethods(allowedMethods);
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    @Bean
+    @org.springframework.context.annotation.Primary
+    public InMemoryUserDetailsManager localUserDetailsService() {
+        UserDetails user1 = User.withDefaultPasswordEncoder()
+                .username("user")
+                .password("password")
+                .roles("USER")
+                .build();
+        UserDetails admin = User.withDefaultPasswordEncoder()
+                .username("admin")
+                .password("password")
+                .roles("USER", "ADMIN")
+                .build();
+        UserDetails anna = User.withDefaultPasswordEncoder()
+                .username("anna")
+                .password("password")
+                .roles("AUCTION_AUTHOR")
+                .build();
+        UserDetails marek = User.withDefaultPasswordEncoder()
+                .username("marek")
+                .password("password")
+                .roles("AUCTION_AUTHOR")
+                .build();
+        UserDetails piotr = User.withDefaultPasswordEncoder()
+                .username("piotr")
+                .password("password")
+                .roles("AUCTION_MANAGER")
+                .build();
+        UserDetails barbara = User.withDefaultPasswordEncoder()
+                .username("barbara")
+                .password("password")
+                .roles("REPORT_VIEWER")
+                .build();
+        return new InMemoryUserDetailsManager(user1, admin, anna, marek, piotr, barbara);
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
+    }
+
+    @Bean
+    @org.springframework.context.annotation.Primary
+    public org.springframework.security.crypto.password.PasswordEncoder localPasswordEncoder() {
+        return org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+}

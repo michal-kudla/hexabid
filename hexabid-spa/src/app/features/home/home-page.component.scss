@@ -1,0 +1,136 @@
+.hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--space-5);
+  align-items: stretch;
+  margin-bottom: var(--space-5);
+}
+
+.hero-copy {
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(145deg, #3d2e1a, var(--accent) 55%, var(--color-amber-500));
+  color: white;
+}
+
+.hero-copy h1 {
+  font: 700 clamp(1.8rem, 3.5vw, 2.6rem)/1.1 var(--font-display);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.hero-copy p {
+  max-width: 44ch;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: var(--leading-relaxed);
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.hero-stat {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.hero-stat strong {
+  display: block;
+  font: 700 var(--text-lg)/1 var(--font-display);
+}
+
+.hero-stat span {
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hero-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.panel-header a {
+  font: 600 var(--text-sm)/1 var(--font-body);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.panel-header a:hover {
+  text-decoration: underline;
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.wide,
+.search-actions {
+  grid-column: 1 / -1;
+}
+
+.search-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-2);
+}
+
+.results {
+  margin-top: var(--space-5);
+}
+
+.results h2 {
+  font: 700 clamp(1.4rem, 2.5vw, 2rem)/1 var(--font-display);
+}
+
+.results-loading,
+.results-footer {
+  margin-top: var(--space-4);
+  text-align: center;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 1024px) {
+  .hero,
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero,
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .search-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-actions {
+    flex-direction: column;
+  }
+}

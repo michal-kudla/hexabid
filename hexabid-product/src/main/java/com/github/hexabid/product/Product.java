@@ -1,0 +1,25 @@
+package com.github.hexabid.product;
+
+/**
+ * Product - component in composite pattern.
+ * Can be either ProductType (leaf - regular product) or PackageType (composite - package of products).
+ */
+public sealed interface Product permits ProductType, PackageType {
+    ProductIdentifier id();
+
+    ProductName name();
+
+    ProductDescription description();
+
+    ProductMetadata metadata();
+
+    ApplicabilityConstraint applicabilityConstraint();
+
+    default boolean isApplicableFor(ApplicabilityContext context) {
+        return applicabilityConstraint().isSatisfiedBy(context);
+    }
+
+    static ProductBuilder builder(ProductIdentifier id, ProductName name, ProductDescription description) {
+        return new ProductBuilder(id, name, description);
+    }
+}

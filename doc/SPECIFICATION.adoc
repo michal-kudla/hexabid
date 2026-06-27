@@ -1,0 +1,142 @@
+= Hexabid Project Specification
+:toc:
+:toclevels: 3
+:sectnums:
+:source-highlighter: highlight.js
+
+== Project Vision
+
+Hexabid is a reference auction platform implementing **hexagonal architecture** (ports and adapters) with **contract-first** development approach.
+The system demonstrates enterprise-grade patterns for real-time bidding, payment processing, and clean domain separation.
+
+== Architecture Overview
+
+=== Hexagonal Architecture
+
+The system follows the hexagonal (ports and adapters) architecture pattern:
+
+* **Core Domain** (`auctions-core`) - Pure Java business logic, no framework dependencies
+* **Input Adapters** - REST, WebSocket, Job scheduler (inbound)
+* **Output Adapters** - JPA, Kafka, KYC, Payment gateways (outbound)
+* **Ports** - Interfaces defining boundaries between core and adapters
+
+=== Module Structure
+
+[source,text]
+----
+quantity/              - Unit and Quantity value objects
+product/              - Product catalog domain
+inventory/           - Inventory management domain
+auctions-core/         - Core auctioning domain (Pure Java)
+auctions-auth-core/    - Authentication domain (Party model)
+hexabid-api-contract/ - OpenAPI contract definitions
+auctions-adapter-in-rest/      - REST API adapter
+auctions-adapter-in-ws/        - WebSocket STOMP adapter
+auctions-adapter-in-job/        - Scheduler adapter
+auctions-adapter-in-auth-oauth/  - OAuth2/OpenID Connect adapter
+auctions-adapter-in-auth-local/   - Local form login adapter (dev)
+auctions-adapter-out-db/       - JPA persistence adapter
+auctions-adapter-out-kafka/    - Event publishing adapter
+auctions-adapter-out-kyc/     - KYC verification client
+auctions-adapter-out-kyc-local/  - Local KYC mock (dev)
+auctions-payment-core/            - Payment processing domain
+auctions-payment-api-contract/    - Payment contract
+auctions-payment-adapter-payu/    - PayU gateway
+auctions-payment-adapter-p24/       - Przelewy24 gateway
+auctions-payment-adapter-crypto/    - Crypto payments
+auctions-payment-adapter-local/  - Local mock (dev)
+hexabid-bootstrap/        - Spring Boot composition root
+----
+
+== Core Domain Models
+
+=== Party (User)
+
+* `Party` - Business participant (buyer/seller) independent of authentication mechanism
+* `PartyId` - Unique identifier derived from identity provider
+* `PartyRole` - Seller, Buyer, Admin
+
+=== Auction
+
+* `Auction` - Aggregate root with bidding rules
+* `AuctionId` - Unique auction identifier
+* `AuctionStatus` - OPEN, CLOSED
+* `Bid` - Individual bid with amount, currency, timestamp
+
+=== Lot (Item for Sale)
+
+* `Lot` - Represents item being auctioned
+* `LotId` - Unique lot identifier
+* `SellingMode` - WHOLE, DIVISIBLE, DIVISIBLE_ONLY
+
+=== Product
+
+* `Product` - Product definition in catalog
+* `ProductId` - Unique product identifier
+
+== Business Requirements
+
+=== User Registration and Profile
+
+* Users authenticate via OAuth2/OIDC (Google, GitHub) or local credentials
+* Profile includes identity verification status (KYC)
+
+=== Auction Creation
+
+* Seller creates auction with title, description, starting price, end time
+* KYC verification required before creating auctions
+* Real-time validation of business rules
+
+=== Real-Time Bidding
+
+* WebSocket/STOMP for live bidding
+* Optimistic locking for concurrent bid handling
+* Leader change notifications
+* Business result instead of exceptions
+
+=== Payment Processing
+
+* Multiple payment gateways (PayU, Przelewy24, Crypto)
+* Currency conversion support
+* Accounting entries per transaction
+
+=== Event Publishing
+
+* Domain events to Kafka
+* WebSocket notifications to clients
+* Event types: AuctionWon, AuctionClosedWithoutWinner, AuctionLeaderChanged
+
+== API Specifications
+
+=== REST Endpoints
+
+* `POST /api/auctions` - Create auction
+* `GET /api/auctions/{id}` - Get auction details
+* `GET /api/auctions` - Browse/search auctions
+
+=== WebSocket Channels
+
+* `/app/auctions/{id}/bids` - Place bid
+* `/topic/auctions/{id}/bids` - Accepted bids
+* `/topic/auctions/{id}/events` - Domain events
+* `/topic/auctions/{id}/errors` - Business rejections
+
+=== Authentication
+
+* OAuth2/OpenID Connect with Google and GitHub
+* Local form login for development
+
+== Non-Functional Requirements
+
+* **Scalability** - Handle concurrent bidding with optimistic locking
+* **Security** - OAuth2/OIDC authentication, no credential storage
+* **Modularity** - Independent modules with clear boundaries
+* **Contract-First** - OpenAPI definitions before implementation
+
+== Development Principles
+
+* Domain logic in pure Java (no Spring/JPA in core)
+* Explicit business results instead of exceptions leaking to adapters
+* Contract-first with OpenAPI generator
+* Event-driven with Kafka and WebSocket
+* Plugin architecture for authentication (profile-based)

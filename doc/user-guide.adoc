@@ -1,0 +1,360 @@
+= Hexabid User Guide
+:toc:
+:toclevels: 3
+:sectnums:
+:source-highlighter: highlight.js
+
+== Cel dokumentu
+
+Ten dokument opisuje podstawowy sposób korzystania z systemu `Hexabid` z perspektywy użytkownika biznesowego i integratora klienta.
+
+== Logowanie
+
+System wymaga uwierzytelnienia przed:
+
+- utworzeniem aukcji przez REST
+- składaniem ofert przez WebSocket
+
+Dostępni dostawcy:
+
+- Google
+- GitHub
+- Local Auth (tylko w wariancie deweloperskim)
+
+Tożsamość użytkownika jest pobierana z sesji (OAuth2/OpenID Connect lub Local Form Login). Klient nie przekazuje `sellerId` w REST ani `bidderId` w komunikatach WebSocket.
+
+== Podstawowy przepływ
+
+=== 1. Pobranie aukcji
+
+Klient pobiera szczegóły aukcji przez REST:
+
+[source,http]
+----
+GET /api/auctions/{auctionId}
+----
+
+Możliwe wyniki:
+
+- `200 OK` z widokiem aukcji
+- `404 Not Found`, gdy aukcja nie istnieje
+
+=== 2. Utworzenie aukcji
+
+Uwierzytelniony sprzedający tworzy aukcję przez REST:
+
+[source,http]
+----
+POST /api/auctions
+Content-Type: application/json
+
+{
+  "title": "Komiks z limitowanej serii",
+  "startingPrice": {
+    "amount": "100.00",
+    "currency": "PLN"
+  },
+  "endsAt": "2026-03-10T12:00:00Z"
+}
+----
+
+Możliwe wyniki:
+
+- `201 Created`, gdy aukcja została utworzona
+- `400 Bad Request`, gdy czas zakończenia nie jest w przyszłości
+- `400 Bad Request`, gdy sprzedający nie przeszedł weryfikacji KYC
+- `401 Unauthorized`, gdy użytkownik nie jest zalogowany
+
+=== 3. Subskrypcja aukcji
+
+Klient łączy się z WebSocket STOMP pod:
+
+[source,text]
+----
+ws://localhost:18080/hexabid/ws-auctions
+----
+
+Kanały:
+
+- `/topic/auctions/{auctionId}/bids` - zaakceptowane oferty
+- `/topic/auctions/{auctionId}/events` - zdarzenia biznesowe aukcji
+- `/topic/auctions/{auctionId}/errors` - odrzucone oferty i błędy biznesowe
+
+=== 4. Złożenie oferty
+
+Klient wysyła komunikat STOMP na:
+
+[source,text]
+----
+/app/auctions/{auctionId}/bids
+----
+
+Payload:
+
+[source,json]
+----
+{
+  "amount": "130.00",
+  "currency": "PLN"
+}
+----
+
+Możliwe wyniki:
+
+- na `/topic/auctions/{auctionId}/bids` trafia potwierdzenie zaakceptowanej oferty
+- na `/topic/auctions/{auctionId}/events` trafia zdarzenie `AUCTION_LEADER_CHANGED`
+- na `/topic/auctions/{auctionId}/errors` trafia komunikat odrzucenia, jeśli oferta nie została przyjęta
+
+== Zmiana prowadzącego
+
+Jeżeli nowa oferta przebija poprzednią, system publikuje zdarzenie:
+
+- `AUCTION_LEADER_CHANGED`
+
+Payload zawiera:
+
+- poprzedniego lidera, jeśli istniał
+- nowego lidera
+- nową cenę prowadzącą
+- walutę
+
+To zdarzenie jest emitowane równolegle do:
+
+- WebSocket dla klientów w czasie rzeczywistym
+- Kafki dla integracji asynchronicznych
+
+== Zakończenie aukcji
+
+Scheduler okresowo zamyka wygasłe aukcje.
+
+=== Aukcja z rozstrzygnięciem
+
+Jeżeli przynajmniej jedna ważna oferta została zapisana, system publikuje:
+
+- `AUCTION_WON`
+
+Payload zawiera:
+
+- zwycięzcę
+- cenę końcową
+- walutę
+
+=== Aukcja bez rozstrzygnięcia
+
+Jeżeli nikt nie wziął udziału w aukcji, system publikuje:
+
+- `AUCTION_CLOSED_WITHOUT_WINNER`
+
+To oznacza, że aukcja została zamknięta, ale nie ma zwycięzcy i nie doszło do sprzedaży.
+
+== Obsługa błędów
+
+=== Błędy biznesowe przy licytacji
+
+System nie zwraca surowych wyjątków do klienta WebSocket. Zamiast tego publikuje jawny wynik odrzucenia z kodem biznesowym.
+
+Przykładowe przyczyny:
+
+- `AUCTION_NOT_FOUND`
+- `BIDDER_NOT_VERIFIED`
+- `SELLER_CANNOT_BID_ON_OWN_AUCTION`
+- `BID_AMOUNT_TOO_LOW`
+- `AUCTION_ALREADY_CLOSED`
+- `AUCTION_ALREADY_EXPIRED`
+- `CURRENCY_MISMATCH`
+- `CONCURRENT_MODIFICATION`
+
+=== Konflikt współbieżności
+
+System używa optimistic locking przy zapisie aukcji.
+
+Skutek:
+
+- jeżeli dwie oferty próbują jednocześnie zmienić ten sam stan aukcji, jedna może zostać odrzucona jako `CONCURRENT_MODIFICATION`
+- system nie traci spójności danych
+- klient może ponowić pobranie stanu aukcji i wysłać nową ofertę
+
+Job zamykający aukcje działa stabilnie także przy konflikcie:
+
+- konflikt jest liczony i pomijany
+- pozostałe aukcje są dalej przetwarzane
+
+=== Błędy uwierzytelnienia
+
+Jeżeli użytkownik nie jest zalogowany:
+
+- REST zwraca `401 Unauthorized`
+- WebSocket publikuje odrzucenie z kodem `UNAUTHENTICATED`
+
+== Zalecany przebieg po błędzie
+
+1. Pobierz aktualny stan aukcji przez REST.
+2. Zweryfikuj, czy aukcja nadal jest otwarta.
+3. Dla konfliktu współbieżności lub przebicia oferty wyślij nową ofertę z wyższą kwotą.
+4. Dla błędów KYC dokończ weryfikację użytkownika poza systemem aukcyjnym.
+
+== Uwagi integracyjne
+
+- identyfikator użytkownika w domenie jest wyprowadzany z dostawcy logowania i jego identyfikatora zewnętrznego
+- klient nie powinien próbować nadawać własnej tożsamości w payloadach
+- kanał `/events` służy do faktów biznesowych, a `/errors` do jawnych odrzuceń operacji
+
+== Kalkulacja ceny (Pricing)
+
+System kalkuluje cenę końcową aukcji na podstawie konfiguracji cenowej (`PricingConfig`), która może obejmować: wadium, VAT, akcyzę i cło.
+
+=== Formuła kalkulacji
+
+....
+netto = hammerPrice - wadiumOffset
+excise = netto * exciseRate         (jeśli isExcisable=true)
+customsDuty = (netto + excise) * customsDutyRate   (jeśli isImported=true)
+vat = (netto + excise + customsDuty) * vatRate
+totalDue = netto + excise + customsDuty + vat
+....
+
+=== Pobranie kalkulacji ceny
+
+[source,http]
+----
+GET /api/auctions/{auctionId}/price
+----
+
+Odpowiedź `200 OK`:
+
+[source,json]
+----
+{
+  "hammerPrice": { "amount": "50000.00", "currency": "PLN" },
+  "wadiumOffset": { "amount": "2500.00", "currency": "PLN" },
+  "netto": { "amount": "47500.00", "currency": "PLN" },
+  "excise": { "amount": "1472.50", "currency": "PLN" },
+  "customsDuty": { "amount": "0.00", "currency": "PLN" },
+  "vat": { "amount": "11281.78", "currency": "PLN" },
+  "totalDue": { "amount": "60254.28", "currency": "PLN" },
+  "appliedRates": {
+    "vatRate": "23%",
+    "exciseRate": "3.1%",
+    "customsDutyRate": null,
+    "wadiumType": "PERCENTAGE"
+  }
+}
+----
+
+=== Wadium
+
+Wadium to depozyt bezpieczeństwa wymagany przed licytacją. Jest:
+
+- **zwracane** po przegranej aukcji
+- **odliczane** od ceny końcowej po wygranej
+
+Strategie wadium:
+
+- `PERCENTAGE` - procent ceny młotka (np. 5% = rate 0.05)
+- `FIXED` - stała kwota (np. 50 PLN)
+
+==== Wpłata wadium
+
+[source,http]
+----
+POST /api/auctions/{auctionId}/wadium
+Content-Type: application/json
+
+{
+  "amount": { "amount": "2500.00", "currency": "PLN" }
+}
+----
+
+Odpowiedź `200 OK`:
+
+[source,json]
+----
+{
+  "wadiumId": "uuid",
+  "auctionId": "uuid",
+  "status": "PAID",
+  "amount": { "amount": "2500.00", "currency": "PLN" },
+  "refundableOnLoss": true,
+  "deductibleOnWin": true
+}
+----
+
+==== Zwrot wadium
+
+[source,http]
+----
+POST /api/auctions/{auctionId}/wadium/refund
+Content-Type: application/json
+
+{
+  "partyId": "uuid-przegranego-uczestnika"
+}
+----
+
+Odpowiedź `200 OK`:
+
+[source,json]
+----
+{
+  "wadiumId": "uuid",
+  "auctionId": "uuid",
+  "status": "REFUNDED",
+  "refundAmount": { "amount": "2500.00", "currency": "PLN" }
+}
+----
+
+=== Konfiguracja cenowa przy tworzeniu aukcji
+
+Opcjonalne pole `pricingConfig` w żądaniu tworzenia aukcji:
+
+[source,json]
+----
+{
+  "title": "Samochód importowany",
+  "startingPrice": { "amount": "50000.00", "currency": "PLN" },
+  "endsAt": "2026-06-01T12:00:00Z",
+  "pricingConfig": {
+    "wadiumStrategy": "PERCENTAGE",
+    "wadiumRate": "0.05",
+    "vatRate": "0.23",
+    "isExcisable": true,
+    "exciseRate": "0.031",
+    "exciseType": "PERCENTAGE",
+    "isImported": true,
+    "customsDutyRate": "0.05"
+  }
+}
+----
+
+Pola `pricingConfig`:
+
+|===
+|Pole|Typ|Opis
+|`wadiumStrategy`|`FIXED` \| `PERCENTAGE`|Strategia obliczania wadium
+|`wadiumRate`|string|Stawka procentowa wadium (np. `0.05`)
+|`wadiumFixedAmount`|`Money`|Stała kwota wadium (gdy FIXED)
+|`vatRate`|string|Stawka VAT jako ułamek (np. `0.23`)
+|`isExcisable`|boolean|Czy produkt podlega akcyzie
+|`exciseRate`|string|Stawka akcyzy (ułamek lub kwota/jednostkę)
+|`exciseType`|`PERCENTAGE` \| `PER_UNIT`|Typ stawki akcyzy
+|`isImported`|boolean|Czy produkt jest importowany
+|`customsDutyRate`|string|Stawka cła jako ułamek (np. `0.05`)
+|===
+
+=== Interfejs SPA
+
+W aplikacji Angular SPA:
+
+1. **Strona kalkulacji ceny** (`/auction/{auctionId}/pricing`):
+   - Tabela ze składnikami ceny: młotek, wadium, netto, akcyza, cło, VAT, należne
+   - Panel stawek zastosowanych
+   - Formuła kalkulacji (edukacyjna)
+   - Formularz wpłaty i zwrotu wadium
+
+2. **Tworzenie aukcji z ceną** (`/sell`):
+   - Przycisk "Dodaj konfigurację ceny"
+   - Dynamiczne pola: strategia wadium, stawka VAT, akcyza, cło
+   - Warunkowe wyświetlanie zależne od wybranych opcji
+
+3. **Link ze szczegółów aukcji** (`/auction/{auctionId}`):
+   - "Zobacz kalkulację ceny →" przechodzi do strony kalkulacji

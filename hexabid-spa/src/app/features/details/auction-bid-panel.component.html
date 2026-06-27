@@ -1,0 +1,77 @@
+@let m = mode(); @let a = auction();
+
+<aside class="surface bid-panel">
+  @switch (m) {
+    @case ('rejected') {
+      <h2>Dopuszczenie odrzucone</h2>
+      <p class="bid-blocked-reason">
+        Twoje dopuszczenie do tej aukcji zostało odrzucone.
+        @if (decision()?.humanReason; as reason) {
+          Przyczyna: {{ reason }}.
+        }
+        Nie możesz składać ofert.
+      </p>
+    }
+
+    @case ('qualification-needed') {
+      <h2>Wymagane dopuszczenie</h2>
+      <p>
+        Aby licytować tę aukcję, musisz przejść przez proces dopuszczenia powyżej.
+        Ukończ wszystkie wymagane oświadczenia, a formularz oferty się odblokuje.
+      </p>
+      <div class="qualification-cta">
+        <span class="cta-icon">&#8593;</span>
+        <span>Rozpocznij dopuszczenie w Centrum dopuszczenia powyżej</span>
+      </div>
+    }
+
+    @case ('seller') {
+      <h2>Twoja aukcja</h2>
+      <p>
+        Jesteś sprzedającym tej aukcji. Sprzedający nie może licytować własnej oferty.
+      </p>
+    }
+
+    @case ('inactive') {
+      <h2>Złóż ofertę</h2>
+      <p class="bid-blocked-reason">{{ disabledReason() }}</p>
+    }
+
+    @case ('bid') {
+      <h2>Złóż ofertę</h2>
+      @if (decision()?.status === 'ADMITTED_WITH_CONDITIONS') {
+        <div class="conditions-notice">
+          Jesteś dopuszczony z warunkami. Możesz licytować, ale musisz spełnić warunki przed rozliczeniem.
+        </div>
+      }
+      <p>
+        Ofertę może złożyć zalogowany licytujący, który nie jest sprzedającym i spełnia reguły licytacji.
+        Kopie dokumentów pomagają wejść do aukcji, ale oryginały mogą być wymagane dopiero przy rozliczeniu.
+      </p>
+
+      <form [formGroup]="bidForm" (ngSubmit)="submitBid()" class="stack">
+        <label>
+          <span>Kwota</span>
+          <input type="text" formControlName="amount" placeholder="150.00" />
+        </label>
+
+        <label>
+          <span>Waluta</span>
+          <select formControlName="currency">
+            <option value="PLN">PLN</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </label>
+
+        <button type="submit" [disabled]="bidSubmitting() || disabledReason() !== null">
+          {{ bidSubmitting() ? 'Wysyłanie...' : 'Licytuj teraz' }}
+        </button>
+      </form>
+
+      @if (disabledReason(); as reason) {
+        <p class="hint">{{ reason }}</p>
+      }
+    }
+  }
+</aside>

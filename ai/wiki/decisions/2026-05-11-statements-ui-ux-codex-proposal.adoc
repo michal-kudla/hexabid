@@ -1,0 +1,725 @@
+= ADR: UI/UX systemu oświadczeń i kwalifikacji w Hexabid SPA - propozycja Codex
+:toc: macro
+:toclevels: 3
+:sectnums:
+
+toc::[]
+
+== Tytuł
+
+Projekt interfejsu użytkownika dla oświadczeń, wymogów kwalifikacyjnych i konfiguracji profili dopuszczenia w Hexabid SPA.
+
+== Podsumowanie (TLDR)
+
+Frontend nie powinien pokazywać systemu oświadczeń jako dodatkowego formularza doklejonego do strony aukcji.
+Użytkownik musi widzieć spójny proces:
+
+* sprzedający konfiguruje aukcję przez kreator, który dobiera profile kwalifikacyjne z kategorii, jurysdykcji, wartości i ryzyka,
+* licytant widzi jasną bramkę dopuszczenia przed licytacją,
+* oświadczenia, dokumenty, zweryfikowane fakty i zewnętrzne kontrole są pokazane jako jedna mapa kwalifikacji, ale z rozróżnieniem znaczenia,
+* system nie pyta licytanta o wybór szablonu; licytant realizuje program przypisany do aukcji,
+* UI pokazuje "co jest wymagane", "dlaczego", "kto jest podmiotem wymogu" i "co mogę zrobić dalej".
+
+Rekomenduję zaprojektować dwa główne procesy:
+
+. `Auction Setup Studio` dla sprzedającego: kreator aukcji z konfiguracją kategorii, trybu sprzedaży, profili kwalifikacyjnych i podglądem ścieżki licytanta.
+. `Participation Center` dla licytanta: centrum dopuszczenia do aukcji z mapą kroków, oświadczeniami, dokumentami, weryfikacjami i decyzją.
+
+== Tagi
+
+#statements #ui #ux #frontend #angular #qualification-profile #participation #auction-setup #wizard #party #requirements
+
+== Kontekst
+
+Backend ma zaimplementowany system `hexabid-statements` oraz endpointy `ParticipationApi`:
+
+* `GET /api/auctions/{auctionId}/participation/program`,
+* `POST /api/auctions/{auctionId}/participation/program`,
+* `POST /api/auctions/{auctionId}/participation/statements/{statementCode}/answers`,
+* `GET /api/auctions/{auctionId}/participation/decision`.
+
+Wygenerowany frontend zawiera `ParticipationApi`, `StatementProgramView`, `StatementStepView`, `ParticipationDecisionView` i `SubmitStatementAnswerResponse`.
+Kod ręczny SPA jeszcze ich nie używa.
+
+Istniejący ekran `/sell` jest płaskim formularzem: tytuł, cena, waluta, koniec aukcji i opcjonalna konfiguracja ceny.
+Nie pozwala wybrać kategorii ryzyka ani profilu kwalifikacyjnego.
+
+Ekran `/auction/:auctionId` pokazuje licytację, reguły i dokumenty, ale nie prowadzi użytkownika przez program oświadczeń.
+Aktualny model blokowania licytacji opiera się na rules panel i `bidDisabledReason()`, a nie na jawnej decyzji dopuszczenia z `ParticipationDecision`.
+
+== Ocena istniejącej analizy
+
+Dokument `[[2026-05-10-statements-ux-design.adoc]]` poprawnie wskazuje trzy potrzebne elementy: wizard tworzenia aukcji, bramkę kwalifikacji i statement wizard.
+To jest dobry kierunek MVP.
+
+Moja korekta: ta wersja jest za bardzo "formularzowa" i za mocno zakłada statyczne szablony `PUBLIC_CONSUMER_LIGHT_V1`, `REGULATED_ASSET_BUYER_V1`, `HIGH_VALUE_TENDER_V1`.
+Po dodaniu profili kwalifikacyjnych dla kategorii typu grunt, alkohol, lek albo udział w imieniu innego `PartyId`, UI musi obsługiwać nie tylko oświadczenia, ale cztery różne klasy elementów:
+
+* oświadczenia użytkownika,
+* zweryfikowane fakty, np. wiek 18+ albo KYC,
+* dowody, np. zezwolenie ministra, licencja, pełnomocnictwo,
+* zewnętrzne kontrole, np. rejestr medyczny, rejestr koncesji, listy sankcyjne.
+
+Dlatego proponuję nie nazywać głównego flow licytanta "Statement Wizard".
+Lepsza nazwa domenowa i UX: `Participation Center` albo `Centrum dopuszczenia`.
+Oświadczenia są tylko jednym rodzajem zadania w tym centrum.
+
+== Decyzje UX
+
+=== Decyzja 1: Jedno centrum kwalifikacji zamiast rozproszonych paneli
+
+Na stronie aukcji licytant powinien widzieć jeden panel decyzyjny:
+
+....
+Centrum dopuszczenia
+Status: Wymaga działania
+Postęp: 2 z 5 zadań
+
+To musisz zrobić, aby licytować:
+  1. Zweryfikuj tożsamość                gotowe
+  2. Potwierdź działanie we własnym imieniu  gotowe
+  3. Złóż oświadczenie o rezydencji          teraz
+  4. Dołącz zezwolenie ministra              alternatywa
+  5. Zaakceptuj warunki aukcji               zablokowane
+....
+
+Rules panel i dokumenty nadal mogą istnieć, ale nie powinny być głównym miejscem rozumienia dopuszczenia.
+Rules panel jest diagnostyką.
+Participation Center jest procesem użytkownika.
+
+=== Decyzja 2: Sprzedający wybiera profil, licytant go realizuje
+
+`StartParticipationProgramRequest` obecnie przyjmuje `templateName`.
+Z punktu widzenia UX to nie powinno być widoczne dla licytanta.
+Szablon albo profil kwalifikacyjny należy do aukcji.
+
+Docelowy flow:
+
+. Sprzedający wybiera kategorię i profil kwalifikacyjny w kreatorze aukcji.
+. Aukcja zapisuje `qualificationProfileRefs` albo `participationPolicyTemplate`.
+. Licytant klika "Rozpocznij kwalifikację".
+. Frontend wysyła start programu bez wyboru szablonu przez użytkownika albo używa profilu odczytanego z aukcji.
+
+W MVP można technicznie nadal przekazać `templateName`, ale powinien pochodzić z `AuctionResponse`, a nie z wyboru licytanta.
+
+=== Decyzja 3: Kreator aukcji ma pokazywać skutki konfiguracji
+
+Sprzedający nie powinien wybierać profilu tylko z listy kodów.
+Musi zobaczyć konsekwencje:
+
+* ilu kroków będzie wymagał licytant,
+* czy pojawią się twarde wymogi weryfikacyjne,
+* jakie dokumenty mogą być potrzebne,
+* czy profil może zmniejszyć liczbę licytantów,
+* czy profil jest rekomendowany dla wybranej kategorii.
+
+Przykład komunikatu:
+
+....
+Profil: Grunt w Polsce
+Ten profil wymaga od kupującego potwierdzenia rezydencji albo zezwolenia.
+Licytant bez zweryfikowanej rezydencji zobaczy alternatywną ścieżkę: dołączenie zezwolenia ministra.
+Szacowany czas: 4-8 minut.
+Ryzyko porzucenia: średnie.
+....
+
+=== Decyzja 4: Pokazywać podmiot wymogu
+
+Przy każdym zadaniu UI musi wskazać, kogo dotyczy wymóg:
+
+* zalogowanego użytkownika,
+* reprezentowanej firmy,
+* beneficjenta rzeczywistego,
+* pełnomocnika,
+* płatnika,
+* odbiorcy,
+* posiadacza licencji.
+
+Bez tego użytkownik nie zrozumie oświadczeń typu "działam w imieniu spółki X" albo "licencję posiada podmiot reprezentowany".
+
+=== Decyzja 5: Nie mieszać wieku 18+ z oświadczeniem
+
+UI powinien rozróżniać:
+
+* "złóż oświadczenie" - użytkownik deklaruje,
+* "zweryfikuj fakt" - system musi posiadać pewny wynik,
+* "dołącz dowód" - użytkownik dostarcza dokument,
+* "czekamy na sprawdzenie" - system lub operator weryfikuje.
+
+Dla alkoholu UI nie powinien pytać "Oświadczam, że mam 18 lat" jako głównej blokady.
+Powinien pokazać:
+
+....
+Wymagana weryfikacja wieku
+Ta kategoria wymaga konta ze zweryfikowanym wiekiem 18+.
+Status: brak potwierdzenia
+[Przejdź do weryfikacji]
+....
+
+== Model informacji dla UI
+
+=== Qualification Task
+
+Frontend powinien mapować backendowe oświadczenia i przyszłe wymogi do wspólnego VM:
+
+[source,typescript]
+----
+export type QualificationTaskKind =
+  | 'STATEMENT'
+  | 'VERIFIED_FACT'
+  | 'EVIDENCE'
+  | 'EXTERNAL_CHECK'
+  | 'PARTY_REFERENCE';
+
+export type QualificationTaskStatus =
+  | 'AVAILABLE'
+  | 'COMPLETED'
+  | 'BLOCKED'
+  | 'PENDING_REVIEW'
+  | 'FAILED'
+  | 'SKIPPED_BY_DECISION';
+
+export interface QualificationTaskVm {
+  id: string;
+  code: string;
+  kind: QualificationTaskKind;
+  status: QualificationTaskStatus;
+  title: string;
+  question?: string;
+  explanation: string;
+  subjectLabel: string;
+  subjectRole: string;
+  stageCode: string;
+  stageLabel: string;
+  severity: 'BLOCKING' | 'IMPORTANT' | 'INFO';
+  answerType?: 'YES_NO' | 'TEXT' | 'SINGLE_CHOICE' | 'MULTI_CHOICE' | 'NUMERIC' | 'DOCUMENT_UPLOAD' | 'PARTY_PICKER';
+  answerValue?: string;
+  blockedBy: string[];
+  sourceProfileLabels: string[];
+  destructiveAnswers: DestructiveAnswerVm[];
+}
+----
+
+Obecny `StatementStepView` może być mapowany do `QualificationTaskVm` jako `kind = 'STATEMENT'`.
+Gdy backend doda profile wymogów, ten sam komponent UI obsłuży pozostałe klasy zadań.
+
+=== Qualification Program
+
+[source,typescript]
+----
+export interface QualificationProgramVm {
+  auctionId: string;
+  programInstanceId?: string;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'ADMITTED' | 'ADMITTED_WITH_CONDITIONS' | 'PENDING' | 'REJECTED';
+  headline: string;
+  userActionLabel: string;
+  progressPercent: number;
+  completedCount: number;
+  totalCount: number;
+  stages: QualificationStageVm[];
+  decision?: ParticipationDecisionVm;
+  nextBestAction?: QualificationActionVm;
+}
+
+export interface QualificationStageVm {
+  code: string;
+  label: string;
+  purpose: string;
+  status: 'LOCKED' | 'CURRENT' | 'DONE' | 'FAILED';
+  tasks: QualificationTaskVm[];
+}
+----
+
+Ten model powinien powstać w mapperze, nie w komponentach.
+Komponenty renderują proces, a mapper tłumaczy backend na język UI.
+
+== Proces sprzedającego: Auction Setup Studio
+
+=== Cel
+
+Sprzedający ma wystawić aukcję bez studiowania compliance.
+UI ma prowadzić go przez wybór kategorii i profilu, a następnie pokazać wynik: kto będzie mógł licytować i jakie zadania zobaczy kandydat.
+
+=== Proponowana struktura kroków
+
+....
+/sell
+  1. Przedmiot i kategoria
+  2. Tryb sprzedaży
+  3. Kwalifikacja licytantów
+  4. Cena i zabezpieczenia
+  5. Podgląd procesu licytanta
+  6. Podsumowanie i zapis szkicu
+....
+
+=== Krok 1: Przedmiot i kategoria
+
+Zamiast zaczynać od samego tytułu, sprzedający powinien wskazać kategorię przedmiotu.
+Kategoria jest wejściem do profili kwalifikacyjnych.
+
+Pola:
+
+* tytuł aukcji,
+* kategoria produktu lub lotu,
+* jurysdykcja sprzedaży,
+* cechy wpływające na kwalifikację, np. grunt rolny, alkohol, lek, substancja kontrolowana, import, akcyza,
+* wartość szacunkowa albo cena wywoławcza.
+
+UX:
+
+* po wyborze kategorii panel boczny pokazuje "Wykryte wymagania",
+* system sugeruje profile, ale pozwala użytkownikowi wejść w tryb zaawansowany.
+
+=== Krok 2: Tryb sprzedaży
+
+Wybór mechaniki:
+
+* aukcja angielska,
+* holenderska,
+* oferta zamknięta,
+* przetarg ograniczony,
+* aukcja wielolotowa.
+
+Ten krok nie powinien sam narzucać oświadczeń.
+Może tylko zmienić rekomendację profili.
+
+=== Krok 3: Kwalifikacja licytantów
+
+To najważniejszy nowy ekran.
+Powinien mieć trzy tryby:
+
+* `Rekomendowane` - system proponuje pakiet na podstawie kategorii,
+* `Gotowe profile` - lista nazwanych profili,
+* `Zaawansowane` - składanie profili i parametrów.
+
+Przykładowy układ:
+
+....
+Kwalifikacja licytantów
+
+Rekomendacja dla: grunt / Polska / wysoka wartość
+
+[x] BASE_AUCTION_PARTICIPATION_V1
+[x] LAND_BUYER_PL_V1
+[x] HIGH_VALUE_AML_V1
+
+Parametry:
+  acceptedResidencies: PL, EEA
+  permitOriginality: COPY_ALLOWED
+  kycLevel: ENHANCED
+
+Wpływ na licytanta:
+  5 zadań
+  1 alternatywna ścieżka
+  2 możliwe dokumenty
+  1 twarda blokada
+....
+
+Ważne: UI nie powinien pokazywać tylko kodów.
+Kod jest drugorzędny; sprzedający ma widzieć sens biznesowy.
+
+=== Krok 4: Cena i zabezpieczenia
+
+Obecna sekcja pricing powinna zostać osobnym krokiem, ale z linkiem do kwalifikacji.
+Przykład:
+
+* wadium może być wymogiem wejścia do licytacji albo tylko rozliczenia,
+* pełna płatność nie może blokować startu aukcji,
+* dokumenty rozliczeniowe nie powinny blokować udziału, jeśli dotyczą zwycięzcy.
+
+UI powinien pytać nie tylko "ile wynosi wadium", ale też "kiedy wymagane":
+
+* przed licytacją,
+* po wygranej,
+* tylko dla przetargu ograniczonego.
+
+=== Krok 5: Podgląd procesu licytanta
+
+To brakujący element w istniejącej propozycji.
+Sprzedający powinien zobaczyć symulację ekranu licytanta przed publikacją aukcji.
+
+Przykład:
+
+....
+Tak licytant zobaczy dopuszczenie:
+
+1. Tożsamość i rola
+   - KYC rozszerzone
+   - Działam we własnym imieniu albo wskazuję reprezentowany podmiot
+
+2. Uprawnienie do zakupu gruntu
+   - Rezydencja PL/EEA albo zezwolenie ministra
+
+3. Zobowiązanie
+   - Akceptacja skutków prawnych zakupu
+....
+
+Ten podgląd zmniejsza ryzyko, że sprzedający przypadkowo wybierze zbyt ciężki profil.
+
+=== Krok 6: Podsumowanie
+
+Podsumowanie musi zawierać:
+
+* dane aukcji,
+* tryb sprzedaży,
+* przypięte profile kwalifikacyjne,
+* parametry profili,
+* przewidywany proces licytanta,
+* ostrzeżenia o sprzecznościach albo nadmiarowych wymogach.
+
+== Proces licytanta: Participation Center
+
+=== Cel
+
+Licytant ma odpowiedzieć na pytanie: "co blokuje moje licytowanie i jak to odblokować?".
+
+Nie powinien analizować faz rules, nazw technicznych ani grafu DAG.
+Ma widzieć mapę postępu i najbliższe działanie.
+
+=== Miejsce w UI
+
+Na `/auction/:auctionId` panel dopuszczenia powinien być nad panelem licytacji.
+Panel licytacji:
+
+* jest widoczny dopiero dla `ADMITTED` albo `ADMITTED_WITH_CONDITIONS`,
+* jest ukryty dla `REJECTED`,
+* jest zastąpiony przez CTA kwalifikacji dla `NOT_STARTED`, `IN_PROGRESS` i `PENDING`.
+
+=== Stany panelu
+
+[cols="1,3,3"]
+|===
+| Stan | Co widzi użytkownik | Akcja
+
+| `NOT_STARTED`
+| Aukcja wymaga dopuszczenia. UI pokazuje liczbę etapów, szacowany czas i powód.
+| `Rozpocznij dopuszczenie`
+
+| `IN_PROGRESS`
+| Mapa etapów, bieżące zadanie, ukończone i zablokowane elementy.
+| `Kontynuuj`
+
+| `PENDING`
+| Braki albo oczekiwanie na weryfikację operatora/systemu.
+| `Uzupełnij braki` albo `Odśwież status`
+
+| `ADMITTED`
+| Użytkownik może licytować.
+| `Przejdź do formularza oferty`
+
+| `ADMITTED_WITH_CONDITIONS`
+| Użytkownik może licytować, ale widzi warunki do spełnienia przed rozliczeniem.
+| `Licytuj` oraz `Zobacz warunki`
+
+| `REJECTED`
+| Odrzucenie z powodem, odpowiedzią źródłową, skutkiem kaskadowym i możliwą ścieżką kontaktu.
+| `Zobacz szczegóły`, bez formularza licytacji
+|===
+
+=== Widok zadania
+
+Każde zadanie ma mówić:
+
+* jaki jest cel,
+* kogo dotyczy,
+* co użytkownik ma zrobić,
+* czy to blokuje licytację,
+* jakie będą konsekwencje odpowiedzi.
+
+Przykład dla Party:
+
+....
+Działasz w imieniu innego podmiotu?
+
+Dotyczy: zalogowany użytkownik Marek Demo
+Cel: ustalić, kto jest faktycznym kupującym.
+
+( ) Działam we własnym imieniu
+( ) Działam w imieniu osoby lub firmy
+
+Jeśli wybierzesz drugą opcję, poprosimy o wskazanie PartyId albo danych podmiotu
+i dokument umocowania.
+....
+
+Przykład dla alkoholu:
+
+....
+Weryfikacja wieku
+
+Dotyczy: zalogowany użytkownik Marek Demo
+Wymóg: zweryfikowany wiek co najmniej 18 lat.
+Status: brak potwierdzenia
+
+[Przejdź do weryfikacji konta]
+
+To nie jest oświadczenie. Ta kategoria wymaga zweryfikowanego faktu.
+....
+
+Przykład dla gruntu:
+
+....
+Uprawnienie do nabycia gruntu
+
+Dotyczy: kupujący ekonomiczny
+Spełnij jeden z warunków:
+
+( ) Jestem rezydentem PL/EEA
+( ) Posiadam zezwolenie ministra
+
+Jeśli wskażesz zezwolenie, dołącz kopię dokumentu.
+....
+
+=== Odpowiedzi dyskwalifikujące
+
+UI musi ostrzec przed odpowiedzią, która natychmiast zamknie udział.
+
+Zalecany wzorzec:
+
+* po wybraniu odpowiedzi dyskwalifikującej pokaż inline warning,
+* przy submit pokaż modal potwierdzenia z konkretnym skutkiem,
+* dopiero po potwierdzeniu wysyłaj odpowiedź.
+
+Przykład:
+
+....
+Ta odpowiedź spowoduje odmowę dopuszczenia do aukcji.
+Nie będzie trzeba składać dalszych oświadczeń dotyczących finansowania i regulaminu,
+bo decyzja będzie negatywna.
+
+[Zmień odpowiedź] [Potwierdzam odpowiedź]
+....
+
+== Architektura frontend
+
+=== Nowe warstwy data-access
+
+....
+hexabid-spa/src/app/data-access/
+  contracts/
+    participation-api.models.ts
+    qualification-profile.models.ts
+  http/
+    participation-api.service.ts
+    qualification-profile-api.service.ts
+  mappers/
+    participation-view.mapper.ts
+    qualification-program.mapper.ts
+....
+
+`participation-view.mapper.ts` obsługuje obecny backend.
+`qualification-program.mapper.ts` buduje docelowy `QualificationProgramVm`, który jest stabilnym modelem UI.
+
+=== Nowe feature modules
+
+....
+hexabid-spa/src/app/features/
+  auction-setup/
+    auction-setup-page.component.*
+    auction-setup.facade.ts
+    steps/
+      subject-category-step.component.*
+      sale-format-step.component.*
+      qualification-profile-step.component.*
+      pricing-security-step.component.*
+      bidder-preview-step.component.*
+      setup-review-step.component.*
+  participation/
+    participation-center.component.*
+    qualification-map.component.*
+    qualification-task-card.component.*
+    statement-answer-form.component.*
+    party-reference-picker.component.*
+    rejection-explanation.component.*
+    participation.facade.ts
+....
+
+Nazwa `auction-setup` jest celowo szersza niż obecne `create`.
+Tworzenie aukcji staje się konfiguracją procesu, nie tylko wysłaniem formularza.
+
+=== Integracja z istniejącymi ekranami
+
+`/sell`:
+
+* zastąpić obecny płaski formularz przez `AuctionSetupPageComponent`,
+* zachować istniejącą logikę pricing jako krok `pricing-security-step`,
+* dodać tryb MVP: jeśli backend nie zna jeszcze profili aukcji, zapisać lokalnie domyślny template i jasno oznaczyć brak pełnej integracji.
+
+`/auction/:auctionId`:
+
+* dodać `ParticipationCenterComponent` nad panelem licytacji,
+* przenieść formularz oferty do osobnego `AuctionBidPanelComponent`,
+* blokowanie licytacji oprzeć na `ParticipationDecision` oraz rules,
+* rules panel ma linkować do konkretnego zadania w centrum dopuszczenia.
+
+`/me` albo dashboard:
+
+* dodać sekcję `Moje dopuszczenia`,
+* pokazać aukcje z kwalifikacją w toku, oczekujące braki i odrzucenia.
+
+== Wymagane rozszerzenia API
+
+=== Aukcja musi nieść konfigurację kwalifikacji
+
+Obecny `CreateAuctionRequest` i `AuctionResponse` w wygenerowanym TypeScript nie zawierają `auctionFormat` ani profilu kwalifikacji.
+To trzeba dodać, inaczej UI będzie musiał zgadywać albo hardcodować.
+
+Minimalnie:
+
+[source,yaml]
+----
+CreateAuctionRequest:
+  properties:
+    auctionFormat:
+      type: string
+    qualificationProfileRefs:
+      type: array
+      items:
+        $ref: '#/components/schemas/BoundQualificationProfile'
+
+AuctionResponse:
+  properties:
+    auctionFormat:
+      type: string
+    qualificationSummary:
+      $ref: '#/components/schemas/AuctionQualificationSummary'
+----
+
+=== Potrzebny katalog profili dla kreatora
+
+[source,http]
+----
+GET /api/qualification-profiles?category=LAND&jurisdiction=PL&estimatedValue=1000000
+----
+
+Odpowiedź powinna zawierać:
+
+* nazwę profilu,
+* opis dla sprzedającego,
+* rekomendację,
+* parametry,
+* listę zadań licytanta,
+* ostrzeżenia.
+
+=== Program powinien ujawniać typ zadania
+
+Obecny `StatementStepView` nie wystarczy docelowo.
+Potrzebny jest model:
+
+[source,yaml]
+----
+QualificationTaskView:
+  properties:
+    code: { type: string }
+    kind:
+      enum: [STATEMENT, VERIFIED_FACT, EVIDENCE, EXTERNAL_CHECK, PARTY_REFERENCE]
+    subject:
+      $ref: '#/components/schemas/QualificationSubjectView'
+    severity:
+      enum: [BLOCKING, IMPORTANT, INFO]
+    sourceProfiles:
+      type: array
+      items: { type: string }
+    destructiveAnswers:
+      type: array
+      items:
+        $ref: '#/components/schemas/DestructiveAnswerView'
+----
+
+MVP może mapować `StatementStepView` do `QualificationTaskView`, ale kontrakt docelowy powinien być szerszy.
+
+== Plan implementacji
+
+=== Faza 1: Most do obecnego backendu
+
+. Dodać `ParticipationApiService` opakowujący wygenerowany `ParticipationApi`.
+. Dodać `participation-api.models.ts` i `participation-view.mapper.ts`.
+. Zmapować `StatementProgramView` do `QualificationProgramVm` z `kind = STATEMENT`.
+. Dodać `ParticipationFacade`.
+. Dodać `ParticipationCenterComponent` na stronie aukcji.
+. Dodać E2E: licytant rozpoczyna program, składa wszystkie odpowiedzi pozytywnie, formularz licytacji się odblokowuje.
+
+=== Faza 2: Bezpieczne blokowanie licytacji
+
+. Wydzielić `AuctionBidPanelComponent`.
+. Ukrywać albo blokować panel oferty na podstawie `ParticipationDecision`.
+. Zachować rules jako dodatkowy warunek, ale komunikat główny prowadzi do `ParticipationCenter`.
+. Dodać E2E: odpowiedź dyskwalifikująca pokazuje odmowę i nie pokazuje formularza oferty.
+
+=== Faza 3: Kreator aukcji MVP
+
+. Zastąpić `/sell` kreatorem krokowym.
+. Dodać krok `Przedmiot i kategoria`.
+. Dodać krok `Kwalifikacja licytantów` z tymczasowym katalogiem profili w frontendzie.
+. Dodać podgląd procesu licytanta.
+. Submit nadal może wysyłać obecny `CreateAuctionRequest`, dopóki backend nie przyjmie profili; UI powinien wtedy oznaczyć konfigurację jako projektową albo używać domyślnego template.
+
+=== Faza 4: Kontrakt profili kwalifikacyjnych
+
+. Dodać do backendu `qualificationProfileRefs` w `CreateAuctionRequest`.
+. Dodać `qualificationSummary` w `AuctionResponse`.
+. Dodać endpoint katalogu profili.
+. Zastąpić hardcode katalogu w SPA danymi z API.
+. Start programu licytanta powinien używać profilu aukcji, nie wyboru użytkownika.
+
+=== Faza 5: Pełne UX wymogów
+
+. Dodać `QualificationTaskView` dla typów innych niż oświadczenie.
+. Dodać `PartyReferencePickerComponent`.
+. Dodać taski `VERIFIED_FACT`, `EVIDENCE`, `EXTERNAL_CHECK`.
+. Dodać dashboard `Moje dopuszczenia`.
+. Dodać testy E2E dla gruntu, alkoholu i udziału w imieniu innego `PartyId`.
+
+== Kryteria jakości UX
+
+Przed uznaniem wdrożenia za gotowe trzeba sprawdzić:
+
+* użytkownik wie, czy może licytować, bez czytania technicznych reguł,
+* użytkownik widzi najbliższe działanie i powód wymagania,
+* sprzedający rozumie wpływ profilu kwalifikacji na liczbę zadań licytanta,
+* oświadczenia nie udają weryfikacji faktów,
+* odrzucenie nie wygląda jak awaria systemu,
+* UI działa na mobile bez przepełnień i bez zagnieżdżonych kart w kartach,
+* formularz licytacji nie jest głównym CTA, jeśli użytkownik nie jest dopuszczony,
+* każdy wymóg ma źródło: profil, kategoria albo reguła aukcji.
+
+== Ryzyka
+
+[cols="1,3,3"]
+|===
+| Ryzyko | Objaw | Ograniczenie
+
+| Przeciążenie sprzedającego
+| Kreator wygląda jak system compliance.
+| Domyślnie pokazywać rekomendację i podgląd skutków, a tryb zaawansowany schować.
+
+| Mylenie oświadczeń z wymogami
+| Użytkownik składa deklarację tam, gdzie potrzebny jest fakt zweryfikowany.
+| Osobne typy zadań, osobne ikony i jednoznaczne teksty.
+
+| Licytant wybiera zły template
+| Kandydat wybiera lżejszą ścieżkę niż wymaga aukcja.
+| Template/profil musi być przypisany do aukcji.
+
+| Brak wyjaśnienia odrzucenia
+| Odrzucony użytkownik traktuje decyzję jako błąd.
+| Ekran decyzji z root cause, odpowiedzią, skutkiem kaskadowym i możliwą akcją.
+
+| Kontrakt API zbyt ubogi
+| Frontend hardcoduje severity, profile i zależności.
+| Docelowo dodać katalog profili i `QualificationTaskView`.
+|===
+
+== Rekomendacja końcowa
+
+Wdrożenie powinno zacząć się od `ParticipationCenter` na stronie aukcji, bo to natychmiast zamyka najważniejszą lukę: licytant wie, co ma zrobić przed ofertą.
+Drugim krokiem powinien być kreator `/sell`, ale z podglądem procesu licytanta, nie tylko z wyborem szablonu.
+
+Najważniejsza zasada: UI ma prowadzić użytkownika przez dopuszczenie do aukcji, a nie eksponować wewnętrzną strukturę modułu `hexabid-statements`.
+
+== Powiązania
+
+* [[2026-05-10-statements-ux-design.adoc]]
+* [[2026-05-10-statement-collection-system-codex-proposal.adoc]]
+* [[2026-05-09-statement-collection-system.adoc]]
+* [[2026-05-05-auction-activation-rules-guidance.md]]
+* [[../plan-system-regul.adoc]]

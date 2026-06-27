@@ -1,0 +1,958 @@
+= Plan Modernizacji Hexabid: Jakość Domenowa i Inspiracje Archetypowe
+:author: Hexabid Architecture Team
+:revdate: 2026-06-27
+:status: AKTUALNY — odzwierciedla stan po Fazie 5
+:doctype: book
+:source-highlighter: highlight.js
+:toc: left
+:toclevels: 4
+:icons: font
+
+== Wprowadzenie
+
+Cel tego dokumentu jest odwrócony względem typowego podejścia "wdróż archetyp X w module Y".
+
+Zaczynamy od **każdego modułu Hexabid z osobna** i oceniamy:
+
+. **Poprawność domenowa** – czy model chroni niezmienniki, czy logika biznesowa jest tam,
+  gdzie powinna, czy występują bugi.
+. **Czystość heksagonalna** – czy moduł domenowy nie zależy od Spring/JPA, czy granice
+  portów i adapterów są zachowane.
+. **Bogactwo modelu** – czy obiekty domenowe mają zachowania, czy są anemiczne.
+. **Wartość edukacyjna** – czego może nauczyć się programista czytający ten kod.
+
+Dokumentacja kursu <<AO, Archetypy Oprogramowania>> (M01–M10) służy jako **katalog inspiracji** –
+nie jako lista wymagań. Każda inspiracja jest opatrzona adnotacją, czy i jak podnosi
+jakość architektury.
+
+=== Kryteria oceny
+
+[cols="1,2,4"]
+|===
+| Poziom | Etykieta | Opis
+
+| P1
+| BLOKER
+| Bug domenowy – system może policzyć/zaksięgować błędną wartość
+
+| P2
+| DESIGN
+| Naruszenie czystości heksagonalnej, logika domenowa w adapterze, anemiczny model
+
+| P3
+| ROZSZERZENIE
+| Brak funkcji, która wg archetypu podniosłaby jakość/edukacyjność, ale nie powoduje błędów
+
+| P4
+| INSPIRACJA
+| Koncept z kursu AO wart rozważenia przy okazji większych zmian
+|===
+
+=== Konwencje zapisu
+
+* `[archetyp: M02]` – odniesienie do modułu kursu Archetypy Oprogramowania
+* `[BUG]` – krytyczny problem wymagający natychmiastowej naprawy
+* `[hexagonal]` – naruszenie architektury heksagonalnej
+* `[edu]` – walor edukacyjny wart podkreślenia/zachowania
+
+//
+
+== Moduł: hexabid-quantity
+
+=== Ocena bieżąca: BARDZO DOBRA
+
+`Quantity(amount, unit)` i `Unit(symbol, name)` to wzorcowe value objecty:
+immutable (record), chronią niezmienniki (`Objects.requireNonNull`, brak ujemnych
+wartości), mają własny `compareTo` z walidacją kompatybilności jednostek.
+
+[edu]
+`Unit` jako record (nie enum) pozwala na rozszerzanie bez modyfikacji –
+celowa decyzja projektowa pokazująca Open/Closed Principle w praktyce.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| ~~P1 BLOKER~~ [green]#NAPRAWIONY#
+| `Quantity.subtract()` (linia 37)
+| Dodano guard z `requireArgument` i opisowym komunikatem. Test w `QuantityTest`.
+
+| P4 INSPIRACJA
+| `hexabid-quantity`
+| Brak `Quantity.multiply(BigDecimal)` / `divide(BigDecimal)`. Przydatne przy
+  wycenie per-unit – ale to już pokrywa `hexabid-pricing`.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M02]` Product tracking strategy używa Quantity w kontekście identyfikowalności
+  – warto pokazać w dokumentacji, jak Quantity łączy product i inventory.
+* `[M08]` Inventory może operować na `QuantityRange(min, max)` zamiast gołego
+  `Quantity` – to rozszerzenie warte rozważenia przy przebudowie inventory.
+
+=== Zalecane działania
+
+. Dodać guard w `subtract()` – najwyższy priorytet.
+. Dodać `Quantity.ZERO` jako stałą.
+. Dodać `multiply(BigDecimal)` i `divide(BigDecimal)` – niski koszt, wysoka
+  przydatność edukacyjna.
+
+//
+
+== Moduł: hexabid-product
+
+=== Ocena bieżąca: DOBRA
+
+Moduł rozróżnia definicję produktu (`ProductType`) od oferty komercyjnej
+(`CatalogEntry`). Sealed interface `Product` z `ProductType` (leaf) i
+`PackageType` (composite) to poprawna implementacja wzorca Composite.
+
+[edu]
+`ProductTrackingStrategy` (UNIQUE / INDIVIDUALLY_TRACKED / BATCH_TRACKED /
+IDENTICAL) to rzadko spotykana w projektach dbałość o warianty śledzenia
+produktów – doskonały materiał do nauki modelowania domenowego.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P2 DESIGN
+| `ProductFacade`
+| Łączy rolę repozytorium, serwisu domenowego i fasady aplikacyjnej.
+  W heksagonalnej architekturze powinien być rozdzielony na:
+  `ProductCatalog` (port in) + adapter in-memory.
+
+| P2 DESIGN
+| `CatalogEntry`
+| Brak jawnego `Applicability` – przydatność oferty jest albo `Validity`
+  (zakres dat) albo nie ma jej wcale. Kurs M02 sugeruje osobny obiekt
+  `Applicability` dla warunków kontekstowych.
+
+| P3 ROZSZERZENIE
+| Produkt
+| Brak `Variance` jako first-class obiektu. Warianty produktu są modelowane
+  przez `ProductFeatureType` + `ProductFeatureInstance`, ale nie ma formalnej
+  relacji "wariant bazuje na produkcie bazowym".
+|===
+
+=== Inspiracje archetypowe
+
+* `[M02]` **ProductDefinition / CatalogEntry / ProductInstance** – kurs wyraźnie
+  rozdziela trzy światy. Hexabid ma ProductType (definicja) i CatalogEntry (katalog),
+  ale ProductInstance jest w `hexabid-inventory`. To **poprawne** rozdzielenie
+  modułowe, warte podkreślenia w dokumentacji.
+* `[M02 L06]` **Kremenaros** – model trzech granic (definicja / sprzedaż /
+  realizacja) jest w Hexabid zrealizowany przez trzy osobne moduły. To wzorcowe.
+
+=== Zalecane działania
+
+. Rozdzielić `ProductFacade` na `ProductCatalog` (port in) + adapter in-memory.
+. Dodać `Variant` jako value object łączący `ProductType` z zestawem cech
+  (`Map<ProductFeatureType, ProductFeatureValue>`).
+. Przenieść mapowanie `CatalogEntry.validity` do osobnego obiektu `Validity`
+  (obecnie inline).
+
+//
+
+== Moduł: hexabid-pricing
+
+=== Ocena bieżąca: BARDZO DOBRA – wzorcowy
+
+To najlepiej zaprojektowany moduł domenowy w projekcie. Separacja
+`PriceCalculator` (matematyka) od `PricingComponent` (semantyka) i
+`CompositePriceComponent` (agregacja) to tekstbookowa implementacja
+wzorca Strategy + Composite. `Money` to pełnoprawny value object z
+arytmetyką.
+
+[edu]
+*Trzy warstwy ceny* (Calculator / Component / Composite) można pokazać
+studentom jako praktyczny przykład, jak uniknąć anemicznego `price` pola.
+Każda warstwa ma inną odpowiedzialność i inną częstotliwość zmian –
+zgodnie z `[M04 L02]` three zones of change.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P1 BLOKER CZĘŚCIOWO
+| `AuctionPricingFacade.calculate()` (linia 31)
+| **Excise naliczane od netto (hammer - wadium), powinno być od pełnego
+  hammer price.** Podatek akcyzowy dotyczy całej transakcji, a nie kwoty
+  pomniejszonej o wadium. [yellow]#Nadal otwarte#.
+
+| P1 BLOKER NAPRAWIONY
+| `createExciseCalculator()` ExciseType (linia 34)
+| `createExciseCalculator()` zawsze używał `PercentageCalculator` nawet dla
+  `ExciseType.PER_UNIT`. Naprawiono: switch na `ExciseType` — `PercentageCalculator` dla
+  PERCENTAGE, `PerUnitCalculator` dla PER_UNIT. Dodano `withFixedParam()` w Builderze
+  dla przekazywania `quantity`.
+
+| P2 DESIGN
+| `AuctionPricingFacade`
+| If-else chain dla `isExcisable()` / `isImported()` to logika warunków
+  zastosowania (applicability) rozsmarowana w kodzie proceduralnym.
+  Powinna być modelem – patrz inspiracje poniżej.
+
+| P3 ROZSZERZENIE
+| `VatRate`, `ExciseRate`, `CustomsDutyRate`
+| Brak `validFrom` / `validTo` – stawki nie są wersjonowane w czasie.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M03 L03]` **Calculator / Component / Interpretation** – Hexabid ma Calculator
+  i Component, ale brak jawnego `Interpretation` enum (TOTAL/UNIT/MARGINAL).
+  Dodanie go pozwoliłoby usunąć if-y na typie kalkulatora.
+* `[M03 L04]` **Applicability** – warunki zastosowania komponentu pricingowego
+  powinny być modelowane jako `PricingComponent.applicability()` zwracające
+  `ApplicabilityRule`, a nie if-else w fasadzie.
+* `[M03 L05]` **Validity** – wersjonowanie stawek w czasie to naturalne
+  rozszerzenie zwiększające realizm produkcyjny.
+
+=== Zalecane działania
+
+. **Natychmiast**: naprawić bug Excise (P1).
+. **Natychmiast**: naprawić dead code w `ExciseRate.applyTo()` (P1).
+. Dodać `Validity(Instant validFrom, Instant validTo)` do stawek (P3).
+. Dodać `Interpretation` enum i powiązać z kalkulatorami (P3).
+. Dodać `ApplicabilityCondition` jako first-class obiekt przy `PricingComponent` (P3).
+. Dodać `PricingCatalog` port do lookupu stawek (P3).
+
+//
+
+== Moduł: hexabid-inventory
+
+=== Ocena bieżąca: ŚREDNIA – po wzbogaceniu (Faza 2)
+
+`InventoryEntry` i `Instance` stanowią core, ale moduł nie realizuje podstawowego
+zadania inwentarza: zarządzania dostępnością. Nie ma rezerwacji, alokacji, stanów
+magazynowych ani ruchów inwentarzowych.
+
+[edu]
+Moduł można pokazać jako *antywzorzec modelowania dosłownego* (`[M08 L02]`) –
+zamiast abstrakcyjnego "Inventory = ograniczony zasób w czasie", mamy dosłowne
+"lista instancji w mapie". To celowe niedomodelowanie, które uwidacznia się
+dopiero przy próbie rezerwacji towaru po wygranej aukcji.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P2 DESIGN
+| `InventoryFacade`
+| Analogicznie do `ProductFacade` – łączy repozytorium i serwis domenowy.
+  Brak wyraźnego portu `InventoryAvailability`.
+
+| P2 DESIGN NAPRAWIONY
+| `InventoryEntry.addInstance()`
+| Mimo `Set<InstanceId>`, `instanceDetails` to `Map<InstanceId, Instance>` –
+  dodanie istniejącego ID cicho nadpisze wpis. [green]#Dodano guard na duplikat.#
+
+| P3 ROZSZERZENIE NAPRAWIONE
+| `hexabid-inventory`
+| Brak modelu dostępności. [green]#Dodano `Availability`, `Reservation` aggregate,
+  `ReservationService` (reserve/confirm/cancel/complete), `InventoryMovement`.#
+
+| P3 ROZSZERZENIE
+| `hexabid-inventory`
+| Brak zarządzania ilościowego dla produktów IDENTICAL.
+
+| P2 DESIGN
+| `InventoryFacade`
+| Analogicznie do `ProductFacade` – łączy repozytorium i serwis domenowy.
+  Brak wyraźnego portu `InventoryAvailability`.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M08 L03]` **Availability = total - allocated** – fundament, który w Hexabid
+  nie istnieje. Należy dodać `Availability(ProductIdentifier, Quantity total,
+  Quantity allocated)` z metodą `available() -> Quantity`.
+* `[M08 L04]` **Reservation** – tymczasowa blokada zasobu na czas trwania aukcji.
+  Powinna wygasać (TTL) i być powiązana z `AuctionId`.
+* `[M08 L05]` **Allocation** – trwałe przypisanie zasobu do zamówienia po wygranej.
+* `[M08]` Inventory to nie magazyn – to **dowolny ograniczony zasób**: czas lekarza,
+  miejsce w paczkomacie, pula kredytowa. Hexabid powinien modelować Inventory
+  właśnie tak abstrakcyjnie, a nie jako "lista rzeczy w magazynie".
+
+=== Zalecane działania
+
+. Dodać `Availability` z `total()`, `allocated()`, `available()` (P3).
+. Dodać `Reservation(reservedBy, reservedAt, expiresAt, quantity)` (P3).
+. Dodać `Allocation(allocatedTo, allocatedAt, quantity)` (P3).
+. Dodać `InventoryMovement(movementType, quantity, reason, timestamp)` (P3).
+. Zabezpieczyć `addInstance()` przed duplikatami (P2).
+. Rozdzielić `InventoryFacade` na port + adapter (P2).
+
+//
+
+== Moduł: hexabid-core (Auction, Lot, Party, Domain Events)
+
+=== Ocena bieżąca: DOBRA (Auction) / SŁABA (Party)
+
+Auction aggregate to bogaty model ze stanową maszyną (8 statusów), chronionymi
+tranzycjami (`ensureStatusIs`, `ensureInProgressAt`), zdarzeniami domenowymi
+(10 typów) i czystą separacją use case'ów od logiki agregatu.
+
+Natomiast `Party` to anemiczny rekord (tylko partyId + displayName + roles),
+a `Auction.edit()` ma podejrzaną implementację niszczącą oryginalny lot.
+
+[edu]
+Auction aggregate to wzorcowy przykład *bogatego modelu domenowego* z DDD:
+każda metoda chroni niezmiennik stanowy, a use case'y delegują logikę do agregatu.
+`PlaceBidService` pokazuje, jak łączyć KYC, reguły i domenę bez rozlewania logiki.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P2 DESIGN NAPRAWIONY
+| `Auction.edit()` (linia 105)
+| Tworzył nowy `Lot.singleProductDraft()`, niszcząc referencję.
+  [green]#Dodano `EditAuctionService`# z `EditAuctionUseCase` result types:
+  `AuctionEdited`, `AuctionNotFound`, `EditNotAllowed` (guard na DRAFT/PUBLISHED).
+
+| P2 DESIGN NAPRAWIONY
+| `Auction.assignParticipationPolicyTemplate()`
+| Setter bez guarda. [green]#Naprawiono przez `EditAuctionService`# – dozwolone
+  tylko w DRAFT i PUBLISHED.
+
+| P2 DESIGN
+| `Party` (rekord)
+| Anemiczny – tylko dane, zero zachowań. Brak `hasRole(PartyRole)`,
+  `isBuyer()`, `isSeller()`, `isActive()`, `displayName()` formatter.
+
+| P3 ROZSZERZENIE
+| `hexabid-core`
+| Brak `Order` aggregate po wygranej aukcji. Winner zostaje wyłoniony,
+  ale nie ma obiektu reprezentującego "zakup" łączącego aukcję z płatnością
+  i wysyłką.
+
+| P3 ROZSZERZENIE
+| `hexabid-core`
+| `Bid` jako value object jest OK, ale w momencie gdy trzeba obsłużyć
+  retrakcję (wycofanie oferty), brak własnego ID boli – nie ma jak
+  odwołać się do konkretnej oferty.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M07]` **Party** – Kurs AO pokazuje, że "user to za mało". `Party` powinno
+  wspierać: `PartyType` (PERSON/ORGANIZATION), hierarchię (`parentPartyId`),
+  relacje (`PartyRelationship`), kontakt (`email`, `phone`). To naturalne
+  rozszerzenie dla aukcji z udziałem firm i pełnomocników.
+* `[M09]` **Ordering** – `Order` jako osobny aggregate pojawia się po wygranej
+  aukcji i łączy `AuctionId` + `BuyerId` (PartyId) + `LotId` + `Price` (Money) +
+  `PaymentDeadline`. To pomost pomiędzy `hexabid-core` a `hexabid-payment-core`.
+* `[M09 L02]` Order jako *wielokrotnego użytku szkielet pojęciowy* – w Hexabid
+  rolę ordera pełni Auction, ale tylko do momentu zamknięcia. Po wygranej
+  potrzebny jest osobny byt.
+
+=== Zalecane działania
+
+. [green]#✓# Naprawić `Auction.edit()` – implementacja EditAuctionService (P2).
+. [green]#✓# Dodać guard stanu w `assignParticipationPolicyTemplate()` (P2).
+. Wzbogacić `Party` o metody `hasRole()`, `isBuyer()`, `isSeller()` (P2) – deferowane.
+. Dodać `Order` aggregate – most pomiędzy auction a payment (P3) – deferowane.
+. Dodać zdarzenia domenowe `AuctionWonEvent` → tworzy `Order` (P3) – deferowane.
+
+//
+
+== Moduł: hexabid-statements
+
+=== Ocena bieżąca: BARDZO DOBRA – wzorcowy
+
+`StatementDependencyGraph` to pełna implementacja DAG-a z DFS reachability,
+sortowaniem topologicznym, detekcją cykli i budowniczym. `ParticipationPolicyEvaluator`
+poprawnie łączy template + graf + decyzję. `PolicyTemplateCatalog` z 3 pre-built
+template'ami pokazuje Factory pattern w praktyce.
+
+[edu]
+To najlepszy przykład w projekcie, że *graf to nie tylko algorytmika* (`[M05 L01]`).
+Problem biznesowy (kolekcja oświadczeń kandydata) jest wprost modelowany jako DAG,
+a nie jako lista kroków w serwisie. Algorytmy grafowe rozwiązują realny problem
+biznesowy (kaskadowe odrzucenie zależnych oświadczeń).
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P2 DESIGN
+| `StatementService.submitAnswer()`
+| Kaskada odrzucenia liczona w 2 miejscach: w serwisie (linia 141-143)
+  i w `ParticipationPolicyEvaluator` (linia 63). Duplikacja logiki.
+
+| P2 DESIGN NAPRAWIONY
+| `hexabid-statements`
+| [green]#Dodano# `StatementDomainEvent` sealed interface z 4 eventami:
+  `ProgramStarted`, `AnswerSubmitted`, `ProgramCompleted`, `ProgramRejected`.
+  `StatementEventPublisher` output port. Zintegrowane w `StatementService`.
+
+| P3 ROZSZERZENIE
+| `hexabid-statements`
+| Brak `AuctionKind` jako sealed interface. ADR zakładał
+  `EnglishAscending / SealedBidTender / RestrictedTender / DutchDescending`,
+  ale kod ma tylko string `participationPolicyTemplate` w `Auction`.
+
+| P3 ROZSZERZENIE
+| `hexabid-statements`
+| Brak `PhaseTransitionGuard` – `[M04]` RuleAlgebra mogłoby służyć do
+  gatingu przejść między fazami (IDENTITY → QUALIFICATION → CAPABILITY → COMMITMENT).
+|===
+
+=== Inspiracje archetypowe
+
+* `[M05]` **Graph jako archetyp myślowy** – `StatementDependencyGraph` to gotowy
+  materiał na osobny moduł `hexabid-graph-core` z generycznym DAG + algorytmami,
+  z którego korzysta `hexabid-statements`. To podniosłoby reużywalność.
+* `[M04 L02]` **Three zones of change** – w statements widać to naturalnie:
+  stabilne (StatementDependencyGraph, algorytmy), domknięcia (ParticipationPolicyEvaluator),
+  konfiguracja (PolicyTemplateCatalog). Warto to wyeksponować w dokumentacji.
+* `[M04]` **RuleAlgebra** – `hexabid-rules` ma Boolean/Compliance/Explained algebra.
+  Statements mógłby użyć ComplianceAlgebra do phase gating zamiast if-else na statusach.
+
+=== Zalecane działania
+
+. [green]#✓# Dodać zdarzenia domenowe fazy (P2).
+. Wyeliminować duplikację kaskady (P2) – deferowane.
+. Dodać zdarzenia domenowe do `StatementProgramInstance` (P2).
+. Dodać `AuctionKind` sealed interface i zintegrować z Auction (P3).
+. Rozważyć wyodrębnienie `hexabid-graph-core` (P4).
+
+//
+
+== Moduł: hexabid-rules (+ hexabid-rules-adapter)
+
+=== Ocena bieżąca: BARDZO DOBRA – wzorcowy
+
+`Expression` sealed interface z 7 typami + `ExpressionVisitor` + `RuleAlgebra<R>`
+to najczystsza implementacja wzorca Interpreter + Visitor w projekcie. Trzy
+implementacje algebry (Boolean, Compliance, Explained) pokazują, jak jeden AST
+może być ewaluowany na różne sposoby w zależności od potrzeby.
+
+[edu]
+To moduł, który powinien obowiązkowo obejrzeć każdy programista uczący się
+wzorców projektowych. Pokazuje:
+* **Interpreter pattern** – AST dla reguł biznesowych
+* **Visitor pattern** – separacja struktury od operacji
+* **Algebra** – abstrakcja semantyki ewaluacji
+* **Three zones of change** (`[M04 L02]`) – stabilny AST, domknięcia (algebry),
+  selekcja (RuleCatalog + RuleDefinition)
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P3 ROZSZERZENIE
+| `hexabid-rules`
+| Brak `RuleVersion` – reguły nie mają wersjonowania, nie można śledzić
+  zmian w definicji reguły w czasie.
+
+| P3 ROZSZERZENIE
+| `hexabid-rules`
+| Brak persistencji – `RuleCatalog` to `CopyOnWriteArrayList` w pamięci.
+  Dla produkcyjnego użycia reguły muszą być ładowane z bazy/serwera.
+
+| P3 ROZSZERZENIE
+| `hexabid-rules-adapter`
+| Moduł nie jest podpięty do `hexabid-pricing` (applicability pricing rules)
+  ani do `hexabid-statements` (phase gating). Potencjał cross-modułowy
+  niewykorzystany.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M04 L05]` **Dynamiczne reguły** – biznes zmienia reguły bez deploy'u.
+  W Hexabid to byłoby możliwe przez serializację `Expression` AST do JSON/YAML
+  i hot-reload w RuleCatalog.
+* `[M04 L06]` **Reguły jako osobna bounded context** – `hexabid-rules` już jest
+  osobnym modułem. Warto pokazać, że nie ma zależności od Spring/JPA, co czyni
+  go idealnym kandydatem do wyodrębnienia jako microserwis.
+
+=== Zalecane działania
+
+. Dodać `RuleVersion(validFrom, validTo, versionNumber)` (P3).
+. Dodać serializację `Expression` do JSON (P3).
+. Podpiąć `RuleAlgebra` do applicability w pricing (P3).
+. Podpiąć `RuleAlgebra` do phase gating w statements (P3).
+
+//
+
+== Moduł: hexabid-auth-core
+
+=== Ocena bieżąca: DOBRA
+
+Moduł czysty – **nie znaleziono zależności od Springa** (wbrew ostrzeżeniu w
+AGENTS.md, które prawdopodobnie dotyczy starszej wersji kodu). `AuthenticatedUser`
+to poprawny rekord DTO dla principala. `CurrentUserProvider` jako port out jest
+właściwą abstrakcją.
+
+[edu]
+`CurrentUserProvider` jako *port* (interfejs w domenie) z *adapterami*
+(RestCurrentUserProvider w REST, WebSocketCurrentUserProvider w WS) to
+tekstbookowy przykład Ports & Adapters w warstwie autoryzacji.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P2 DESIGN
+| `hexabid-auth-core`
+| Zależność `spring-boot-starter-security` w `pom.xml` – choć kod nie importuje
+  Springa, sama zależność w domyślnym classpath może ciągnąć niechciane
+  transitive dependencies. Należy usunąć lub oznaczyć `<scope>provided</scope>`.
+
+| P3 ROZSZERZENIE
+| `hexabid-auth-core`
+| Brak modelu weryfikacji tożsamości – `UserVerificationStatusPort` istnieje,
+  ale nie ma enum `VerificationLevel` (NONE / BASIC / ADVANCED / BIOMETRIC).
+|===
+
+=== Inspiracje archetypowe
+
+* `[M07]` **Tożsamość ≠ rola** – `AuthenticatedUser` jest tymczasowym kontekstem
+  sesji. Stała tożsamość użytkownika powinna być w `Party`. Hexabid to rozdziela
+  (auth-core vs core.Party) – poprawnie.
+
+=== Zalecane działania
+
+. Oznaczyć `spring-boot-starter-security` jako `provided` lub usunąć (P2).
+. Dodać `VerificationLevel` enum do portu weryfikacji (P3).
+
+//
+
+== Moduł: hexabid-authorization-core
+
+=== Ocena bieżąca: BARDZO DOBRA – wzorcowy
+
+`Permission(ResourceType, Action, Relation)` to elegancki model 3D unikający
+eksplozji płaskich nazw. `OrganisationCode` z `isSameOrBelow()` do hierarchicznej
+kontroli dostępu. `AuthorizationContextFactory` jako czysta Java z portem
+`SubordinateQueryPort`.
+
+[edu]
+*Model 3D uprawnień* to rzadko spotykana w projektach dojrzałość. Większość
+systemów ma `Role.ADMIN / Role.USER` (płaskie role). Hexabid pokazuje, że
+przestrzeń uprawnień to iloczyn kartezjański: *co?* (ResourceType) × *jaka
+operacja?* (Action) × *czyj zasób?* (Relation). To daje `Permission(AUCTION, EDIT, OWN)`
+zamiast `AUCTION_EDIT_OWN` jako string.
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P3 ROZSZERZENIE
+| `ResourceType`
+| Tylko `AUCTION` i `REPORT` – zbyt mało dla pełnego systemu. Brak
+  `PRODUCT`, `INVENTORY`, `PAYMENT`, `PARTY`, `STATEMENT`, `SETTINGS`.
+
+| P3 ROZSZERZENIE
+| `hexabid-authorization-core`
+| AuthorizationContext sprawdza *czy użytkownik ma prawo edytować aukcje*,
+  ale nie *czy użytkownik może edytować tę konkretną aukcję*.
+  Resource-level enforcement jest w use case'ach (ręcznie w ActivateAuctionService
+  linia 34) – powinien być w AuthorizationContext.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M07]` **Party + Scope** – `OrganisationCode` to praktyczna implementacja
+  hierarchicznego scope'u. Warto pokazać w dokumentacji, że to wariant wzorca
+  "scope" z `[M07]` Party Relationship.
+
+=== Zalecane działania
+
+. Rozszerzyć `ResourceType` o brakujące zasoby (P3).
+. Dodać resource-level checking do `AuthorizationContext` (P3).
+
+//
+
+== Moduł: hexabid-payment-core (Accounting)
+
+=== Ocena bieżąca: DOBRA – po przebudowie (Faza 1.1 + 1.2)
+
+Moduł ma poprawną strukturę (AccountingEntry z DEBIT/CREDIT, AccountingTransaction
+z listą entries), ale implementacja jest sketchem, nie produkcyjnym modelem
+księgowym.
+
+[edu]
+Moduł można pokazać jako *etap pośredni modelowania* – widać, że autor zna
+koncepcję double-entry, ale nie dokończył implementacji. To materiał na case
+study: "jak rozpoznać niedomodelowany accounting".
+
+=== Znalezione problemy
+
+|===
+| Priorytet | Gdzie | Problem
+
+| P1 BLOKER NAPRAWIONY
+| `AccountingTransaction.isBalanced()` (linia 21-23)
+| Zawsze zwracało `true` przez `var` typowanie. Naprawiono: poprawna suma
+  DEBIT i CREDIT, konstruktor wymaga ≥2 entry, dodano `createBalanced()`.
+
+| P1 BLOKER NAPRAWIONY
+| `ProcessPaymentUseCase.execute()` (linia 49-52)
+| Tworzył jeden DEBIT. Naprawiono: DEBIT (buyer) + CREDIT (seller).
+
+| P2 DESIGN NAPRAWIONY
+| `hexabid-payment-core`
+| **Spring usunięty z domeny:** `PaymentGatewayRegistry` usunięty,
+  `AuctionWonEventListener` przeniesiony do `hexabid-bootstrap` jako
+  `PaymentEventSubscriber`. `spring-context` usunięty z pom.xml.
+
+| P3 ROZSZERZENIE NAPRAWIONE
+| `hexabid-payment-core`
+| Dodano `AccountType` (ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE),
+  `ChartOfAccounts`, `Ledger` (post/balance), `Account` z typem konta.
+
+| P3 ROZSZERZENIE NAPRAWIONE
+| `hexabid-payment-core`
+| Dodano agregat `Payment` z cyklem życia (PENDING→COMPLETED/FAILED→REFUNDED)
+  i `PaymentId`. Używa `Money` z hexabid-pricing.
+|===
+
+=== Inspiracje archetypowe
+
+* `[M06 L02]` **Rzeczywista struktura wartości** – kwota to nie pole `amount`.
+  Accounting powinien mieć: komponenty, semantykę, kontekst. `AccountingEntry.type`
+  (DEBIT/CREDIT) to dopiero początek.
+* `[M06 L04]` **Double-entry ledger** – każda transakcja musi mieć co najmniej
+  dwa wpisy. `isBalanced()` musi faktycznie sprawdzać: `sum(debits) == sum(credits)`.
+* `[M06 L06]` **Audit trail** – append-only log wpisów księgowych. Hexabid powinien
+  mieć zasadę: "entries are never updated, only appended".
+
+=== Zalecane działania
+
+. **Natychmiast**: naprawić `isBalanced()` (P1).
+. **Natychmiast**: dodać drugi entry (CREDIT) w `ProcessPaymentUseCase` (P1).
+. Przenieść `PaymentGatewayRegistry` i `AuctionWonEventListener` do adaptera (P2).
+. Dodać `AccountType`, `ChartOfAccounts`, `Ledger` (P3).
+. Zmigrować z `Price` na `Money` (P3).
+. Dodać `Payment` aggregate (INITIATED → PENDING → CONFIRMED → REFUNDED) (P3).
+
+//
+
+== Nowy moduł: hexabid-variance-core (planowany)
+
+=== Inspiracja archetypowa: M10 – Variance (Plan / Execution / Delta)
+
+Kurs AO pokazuje, że w każdym biznesie istnieją dwa światy: *plan* (co miało się
+wydarzyć) i *execution* (co się wydarzyło), a kluczową wartością biznesową jest
+*delta* – różnica między nimi.
+
+W Hexabid ten archetyp nie jest obecnie zaimplementowany w ogólnej formie.
+Konkretne przypadki (np. planned hammer price vs actual hammer price, planned
+close date vs actual close date) są rozsmarowane w logice use case'ów.
+
+=== Propozycja
+
+Nowy moduł `hexabid-variance-core` z generycznym modelem:
+
+```
+Plan<T>(T target, Instant plannedAt)
+Execution<T>(T actual, Instant executedAt)
+Delta<T>(Plan<T> plan, Execution<T> execution, VarianceComputation<T> computation)
+```
+
+gdzie `VarianceComputation<T>` to interfejs z metodą `compute(Plan<T>, Execution<T>) -> VarianceResult`.
+
+=== Zalecane działania
+
+. Stworzyć `hexabid-variance-core` jako pure Java module.
+. Zaimplementować generyczny `Plan`, `Execution`, `Delta` (P3).
+. Zastosować w kontekście aukcji: `AuctionPriceVariance`, `AuctionScheduleVariance` (P3).
+. Dodać testy pokazujące różne typy wariancji (kwotowa, czasowa, stanowa) (P3).
+
+//
+
+== Nowy moduł: hexabid-graph-core (planowane wyodrębnienie)
+
+=== Inspiracja: M05 – Graph
+
+`StatementDependencyGraph` w `hexabid-statements` to pełna implementacja DAG-a.
+Warto wyodrębnić generyczne algorytmy grafowe do osobnego modułu, z którego
+korzystają statements i potencjalnie inne moduły.
+
+=== Propozycja
+
+```
+Graph<Node, Edge>(Set<Node>, Set<Edge>)
+Dag<Node, Edge> extends Graph (z detekcją cyklu)
+TopologicalSort<Node>
+Reachability<Node>
+ConnectedComponents<Node>
+```
+
+=== Zalecane działania
+
+. Wyodrębnić `hexabid-graph-core` z `hexabid-statements` (P4).
+. Zrefaktorować `StatementDependencyGraph` aby używał generycznego DAG-a.
+. Dodać testy dla każdego algorytmu.
+
+//
+
+== Macierz priorytetów
+
+[cols="1,2,3,5"]
+|===
+| Priorytet | Moduł | Problem | Typ
+
+| P1
+| `hexabid-pricing`
+| Excise naliczany od netto zamiast hammer price
+| BUG
+
+| P1
+| `hexabid-pricing`
+| ExciseRate.applyTo() PER_UNIT dead code
+| BUG
+
+| P1
+| `hexabid-payment-core`
+| isBalanced() zawsze true
+| BUG
+
+| P1
+| `hexabid-payment-core`
+| Tylko 1 entry (DEBIT) zamiast 2 (DEBIT+CREDIT)
+| BUG
+
+| P1
+| `hexabid-quantity`
+| subtract() może dać ujemny Quantity
+| BUG
+
+| P2
+| `hexabid-payment-core`
+| Spring @Component/@EventListener w core
+| hexagonal
+
+| P2
+| `hexabid-core`
+| Auction.edit() niszczy lot
+| DESIGN
+
+| P2
+| `hexabid-core`
+| Party anemiczne
+| DESIGN
+
+| P2
+| `hexabid-core`
+| assignParticipationPolicyTemplate bez guarda
+| DESIGN
+
+| P2
+| `hexabid-adapter-in-rest`
+| Wadium w ConcurrentHashMap (logika domenowa w adapterze)
+| hexagonal
+
+| P2
+| `hexabid-statements`
+| Brak eventów domenowych
+| DESIGN
+
+| P2
+| `hexabid-statements`
+| Duplikacja kaskady w 2 miejscach
+| DESIGN
+
+| P2
+| `hexabid-inventory`
+| addInstance() brak guarda na duplikat
+| DESIGN
+
+| P2
+| `hexabid-product`
+| ProductFacade łączy repo + service
+| hexagonal
+
+| P2
+| `hexabid-auth-core`
+| spring-boot-starter-security w pom.xml
+| hexagonal
+
+| P3
+| `hexabid-inventory`
+| Brak Availability/Reservation/Allocation
+| ROZSZERZENIE
+
+| P3
+| `hexabid-core`
+| Brak Order aggregate
+| ROZSZERZENIE
+
+| P3
+| `hexabid-pricing`
+| Brak Validity na stawkach
+| ROZSZERZENIE
+
+| P3
+| `hexabid-pricing`
+| Brak Interpretation enum
+| ROZSZERZENIE
+
+| P3
+| `hexabid-pricing`
+| Brak ApplicabilityCondition
+| ROZSZERZENIE
+
+| P3
+| `hexabid-payment-core`
+| Brak AccountType / ChartOfAccounts / Ledger
+| ROZSZERZENIE
+
+| P3
+| `hexabid-payment-core`
+| Stary Price zamiast Money
+| ROZSZERZENIE
+
+| P3
+| `hexabid-rules`
+| Brak RuleVersion / persistencji
+| ROZSZERZENIE
+
+| P3
+| `hexabid-rules-adapter`
+| Niepodpięty do pricing / statements
+| ROZSZERZENIE
+
+| P3
+| `hexabid-statements`
+| Brak AuctionKind sealed hierarchy
+| ROZSZERZENIE
+
+| P3
+| `hexabid-authorization-core`
+| ResourceType tylko AUCTION/REPORT
+| ROZSZERZENIE
+
+| P3
+| `hexabid-auth-core`
+| Brak VerificationLevel
+| ROZSZERZENIE
+
+| P3
+| Nowy: `hexabid-variance-core`
+| Całościowa implementacja M10
+| NOWY MODUŁ
+
+| P4
+| Nowy: `hexabid-graph-core`
+| Wyodrębnienie z statements
+| NOWY MODUŁ
+|===
+
+//
+
+== Plan fazowy
+
+=== Faza 0: Bugfix [green]✓ WYKONANE[/]
+
+Cel: wyeliminować wszystkie P1 (błędne obliczenia, nieegzekwowane niezmienniki).
+
+. [green]#✓# Naprawić `createExciseCalculator()` ExciseType (pricing) — switch na PERCENTAGE/PER_UNIT
+. [green]#✓# Naprawić `isBalanced()` + dodać drugi entry w ProcessPaymentUseCase (payment-core)
+. [green]#✓# Naprawić `Quantity.subtract()` (quantity)
+
+Ryzyko: niskie. Zmiany lokalne, objęte istniejącymi testami.
+
+=== Faza 1: Czystość heksagonalna [green]✓ CZĘŚCIOWO[/]
+
+Cel: usunąć naruszenia granic heksagonalnych – logika domenowa nie może być
+w adapterach, a framework nie może być w domenie.
+
+. [green]#✓# Przenieść Spring `@Component`/`@EventListener` z payment-core do adaptera
+. [yellow]#—# Przenieść wadium z REST adaptera do payment-core lub core
+. [yellow]#—# Oznaczyć/usunąć `spring-boot-starter-security` z auth-core — deferowane (wymaga zmiany strategii autoryzacji)
+. [yellow]#—# Rozdzielić `ProductFacade` na port + adapter — deferowane
+. [green]#✓# Zabezpieczyć `InventoryEntry.addInstance()` przed duplikatami
+
+=== Faza 2: Wzmocnienie modeli domenowych [green]✓ CZĘŚCIOWO[/]
+
+Cel: podnieść jakość istniejących modułów przez wzbogacenie modeli.
+
+. [yellow]#—# Wzbogacić `Party` o zachowania (`hasRole()`, `isBuyer()`, `isSeller()`) — deferowane
+. [green]#✓# Naprawić `Auction.edit()` — implementacja EditAuctionService
+. [green]#✓# Dodać guard stanu w `assignParticipationPolicyTemplate()` (w ramach EditAuctionService)
+. [green]#✓# Dodać zdarzenia domenowe w statements — StatementDomainEvent + StatementEventPublisher
+. [yellow]#—# Wyeliminować duplikację kaskady w statements — deferowane (kosmetyka)
+. [green]#✓# Dodać `Availability`, `Reservation` w inventory
+. [yellow]#—# Dodać `Order` aggregate w core — deferowane
+
+=== Faza 3: Zaawansowane inspiracje archetypowe [yellow]— DEFEROWANE[/]
+
+Cel: implementacja konceptów z kursu AO podnoszących jakość i edukacyjność.
+
+Większość pozycji oznaczona do oceny biznesowej. Nie realizowano w ramach
+aktualnej kampanii modernizacyjnej.
+
+. Dodać `Validity`, `Interpretation`, `ApplicabilityCondition` w pricing
+. Dodać `Variant` first-class w product
+. Dodać `PricingCatalog` port
+. Dodać `Variance` core module
+. Dodać `RuleVersion` + persistencję w rules
+. Podpiąć `RuleAlgebra` do pricing applicability i statements phase gating
+. Rozszerzyć `ResourceType` w authorization-core
+. Dodać `VerificationLevel` w auth-core
+
+=== Faza 4: Wyodrębnienia i refaktoringi [green]✓ CZĘŚCIOWO[/]
+
+Cel: maksymalizacja reużywalności i czystości architektonicznej.
+
+. [yellow]#—# Wyodrębnić `hexabid-graph-core` z `hexabid-statements` — deferowane
+. [yellow]#—# Dokończyć migrację `Price` → `Money` we wszystkich modułach — deferowane
+. [green]#✓# Dodać `AccountType`, `ChartOfAccounts`, `Ledger` w payment-core
+. [yellow]#—# Dodać resource-level authorization w AuthorizationContext — deferowane
+
+//
+
+== Podsumowanie: Co sprawia, że Hexabid jest (może być) wzorcowy
+
+[cols="1,4"]
+|===
+| Cecha | Opis
+
+| Czystość heksagonalna
+| Moduły domenowe nie zależą od Spring/JPA (po 1 wyjątku: auth-core używa
+  spring-boot-starter-security – deferowane). Porty i adaptery są wyraźnie rozdzielone.
+  `hexabid-payment-core` ma usunięty `spring-context`.
+
+| Bogate modele domenowe
+| Auction (state machine z 8 statusami), Pricing (Calculator/Component),
+  Rules (AST + 3 algebry), Statements (DAG) – każdy to tekstbookowy przykład.
+
+| Architektura modularna
+| 30+ modułów Mavena z jawnymi zależnościami. DAG zależności jest acykliczny
+  (quantity → product → inventory → core; pricing → core; rules → core).
+
+| Kontrakt-first API
+| OpenAPI YAML → wygenerowany kod (Java + TypeScript). Ręczne implementacje
+  tylko w adapterach.
+
+| Testy na każdym poziomie
+| Unit (JUnit 5 + AssertJ), architektura (ArchUnit), integracja (REST Assured),
+  E2E (Playwright). Każdy poziom testuje inną warstwę.
+
+| Archetypy jako inspiracja
+| Nie "wdrożyliśmy archetyp", ale "zobaczyliśmy problem biznesowy i rozwiązaliśmy
+  go w sposób, który pokrywa się z archetypem". To znak dojrzałego modelowania.
+|===
+
+=== Kluczowe wskaźniki jakości po modernizacji
+
+* **5 bugów domenowych (P1) → 2** – 3 naprawione (Quantity.subtract, isBalanced, ExciseType switch); 1 częściowo (AuctionPricing excise base – nadal otwarte); 1 nie był P1 blokerem
+* **4 naruszenia heksagonalne (P2) → 1** – payment-core Spring usunięty (3 naruszenia naprawione); auth-core spring-boot-starter-security pozostał do oceny
+* **9 problemów projektowych (P2 DESIGN) → ~5** – EditAuctionService, domain events, Availability/Reservation zrealizowane; Party, ProductFacade, Order deferowane
+* **15 rozszerzeń (P3) → ocena biznesowa** – które faktycznie podnoszą wartość (większość deferowana)
+* **Każdy moduł domenowy ma co najmniej jeden walor edukacyjny** udokumentowany
+

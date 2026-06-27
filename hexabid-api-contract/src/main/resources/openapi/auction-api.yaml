@@ -1,0 +1,1843 @@
+openapi: 3.0.3
+info:
+  title: Auctions API
+  version: 1.0.0
+servers:
+  - url: http://localhost:18080/hexabid
+tags:
+  - name: Auctions
+  - name: Products
+  - name: Inventory
+  - name: Participation
+  - name: Qualification
+paths:
+  /api/products:
+    get:
+      operationId: browseProductTypes
+      tags:
+        - Products
+      summary: Browse all product types in catalog
+      description: |
+        Returns paginated list of all product types available in the system.
+        This is the main entry point for displaying the product catalog.
+        
+        **Archetypowy kontekst:** Product (M02 - Katalog Produktów)
+        Produkt to definicja "co to jest" - niezależny kontekst od Inventory.
+        ProductType reprezentuje szablon, według którego tworzone są instancje.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: query
+          description: Filter by product name (partial match, case-insensitive)
+          schema:
+            type: string
+        - in: query
+          name: trackingStrategy
+          description: Filter by product tracking strategy
+          schema:
+            $ref: '#/components/schemas/ProductTrackingStrategy'
+        - in: query
+          name: limit
+          description: Maximum number of items to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          description: Cursor for pagination - returns items after this cursor
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product type list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTypeListResponse'
+        '400':
+          description: Invalid request parameters
+    post:
+      operationId: createProductType
+      tags:
+        - Products
+      summary: Define a new product type
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductTypeRequest'
+      responses:
+        '201':
+          description: Product type created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTypeResponse'
+        '400':
+          description: Invalid request
+  /api/products/{productId}:
+    get:
+      operationId: getProductType
+      tags:
+        - Products
+      summary: Get product type by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product type details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductTypeResponse'
+        '404':
+          description: Product type not found
+  /api/batches:
+    get:
+      operationId: browseBatches
+      tags:
+        - Inventory
+      summary: Browse batches for current user
+      description: |
+        Returns paginated list of production batches owned by the authenticated user.
+        Batches are used to track products that come from the same production source.
+        
+        **Archetypowy kontekst:** Inventory (M06)
+        Batch reprezentuje partię produkcyjną - grupę produktów o wspólnym pochodzeniu.
+        Np. kontener kukurydzy z gospodarstwa X, zbiór 2026.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: productId
+          description: Filter by product type ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: query
+          description: Filter by batch name (partial match)
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: Authentication required
+    post:
+      operationId: createBatch
+      tags:
+        - Inventory
+      summary: Define a new production batch
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBatchRequest'
+      responses:
+        '201':
+          description: Batch created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Invalid request
+  /api/batches/{batchId}:
+    get:
+      operationId: getBatch
+      tags:
+        - Inventory
+      summary: Get batch by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: batchId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Batch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '404':
+          description: Batch not found
+  /api/inventory/instances:
+    get:
+      operationId: browseInventoryInstances
+      tags:
+        - Inventory
+      summary: Browse inventory instances for current user
+      description: |
+        Returns paginated list of inventory instances owned by the authenticated user.
+        Instances represent specific quantities of product that can be sold on auction.
+        
+        **Archetypowy kontekst:** Inventory (M06) - ProductInstance
+        Instancja to konkretna ilość produktu z danej partii.
+        Np. "worek 100 kg kukurydzy z partii KUKURYDZA-2026-001"
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: batchId
+          description: Filter by batch ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: productId
+          description: Filter by product type ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Inventory instance list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryInstanceListResponse'
+        '401':
+          description: Authentication required
+    post:
+      operationId: createInventoryInstance
+      tags:
+        - Inventory
+      summary: Create an inventory instance for auction
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryInstanceRequest'
+      responses:
+        '201':
+          description: Instance created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryInstanceResponse'
+        '400':
+          description: Invalid request
+  /api/inventory/instances/{instanceId}:
+    get:
+      operationId: getInventoryInstance
+      tags:
+        - Inventory
+      summary: Get inventory instance by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: instanceId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Instance details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryInstanceResponse'
+        '404':
+          description: Instance not found
+  /api/lots:
+    get:
+      operationId: browseLots
+      tags:
+        - Auctions
+      summary: Browse lots for current user
+      description: |
+        Returns paginated list of lots owned by the authenticated user.
+        A lot is a bridge between inventory and auction - it defines what is being sold.
+        
+        **Archetypowy kontekst:** Lot (most Product↔Auction)
+        Lot określa: jakie instancje inventory są wystawione na sprzedaż,
+        w jakim trybie (całość/podzielne), cena rezerwowa.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: sellingMode
+          description: Filter by selling mode
+          schema:
+            $ref: '#/components/schemas/SellingMode'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lot list (paginated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotListResponse'
+        '401':
+          description: Authentication required
+    post:
+      operationId: createLot
+      tags:
+        - Auctions
+      summary: Create a lot (bridge inventory to auction)
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLotRequest'
+      responses:
+        '201':
+          description: Lot created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotResponse'
+        '400':
+          description: Invalid request
+  /api/lots/{lotId}:
+    get:
+      operationId: getLot
+      tags:
+        - Auctions
+      summary: Get lot by ID
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: lotId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lot details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotResponse'
+        '404':
+          description: Lot not found
+  /api/auctions:
+    get:
+      operationId: browseAuctions
+      tags:
+        - Auctions
+      summary: Browse auctions for search and listing screens
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/AuctionStatus'
+        - in: query
+          name: sort
+          schema:
+            $ref: '#/components/schemas/AuctionSort'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Auction list page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionListResponse'
+    post:
+      operationId: createAuction
+      tags:
+        - Auctions
+      summary: Create a new auction
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAuctionRequest'
+      responses:
+        '201':
+          description: Auction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionResponse'
+  /api/auctions/{auctionId}:
+    get:
+      operationId: getAuctionById
+      tags:
+        - Auctions
+      summary: Get auction details
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Auction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionResponse'
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/activate:
+    post:
+      operationId: activateAuction
+      tags:
+        - Auctions
+      summary: Publish and start a draft auction
+      description: |
+        Moves an auction owned by the authenticated seller from DRAFT/PUBLISHED
+        to IN_PROGRESS. This is the explicit hand-off from auction preparation
+        to live bidding.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Auction activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionResponse'
+        '400':
+          description: Auction cannot be activated from the current state
+        '401':
+          description: Authentication required
+        '403':
+          description: Only the seller can activate the auction
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/edit:
+    put:
+      operationId: editAuction
+      tags:
+        - Auctions
+      summary: Edit a draft auction
+      description: |
+        Updates title and starting price of a draft auction.
+        Only the owner or a manager with appropriate permissions can edit.
+        Published or active auctions cannot be edited.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditAuctionRequest'
+      responses:
+        '200':
+          description: Auction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionResponse'
+        '400':
+          description: Invalid request or auction not in editable state
+        '401':
+          description: Authentication required
+        '403':
+          description: Insufficient permissions to edit this auction
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/wadium:
+    post:
+      operationId: depositWadium
+      tags:
+        - Auctions
+      summary: Deposit wadium (bid security) for an auction
+      description: |
+        Allows a buyer to deposit wadium before participating in bidding.
+        Wadium is refunded on loss and deducted from the final price on win.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositWadiumRequest'
+      responses:
+        '201':
+          description: Wadium deposited successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WadiumResponse'
+        '400':
+          description: Invalid request or wadium already deposited
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/wadium/refund:
+    post:
+      operationId: refundWadium
+      tags:
+        - Auctions
+      summary: Refund wadium for a losing bidder
+      description: |
+        Refunds the wadium deposit for a bidder who did not win the auction.
+        The wadium amount is returned in full to the bidder's account.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundWadiumRequest'
+      responses:
+        '200':
+          description: Wadium refunded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WadiumRefundResponse'
+        '400':
+          description: Cannot refund (auction still open or bidder won)
+        '404':
+          description: Auction or wadium deposit not found
+  /api/auctions/{auctionId}/price:
+    get:
+      operationId: getAuctionPrice
+      tags:
+        - Auctions
+      summary: Get price breakdown for an auction
+      description: |
+        Returns a detailed price breakdown including hammer price, wadium offset,
+        netto, excise, customs duty, VAT, and total amount due.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Price breakdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionPriceBreakdownResponse'
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/rules:
+    get:
+      operationId: evaluateAuctionRules
+      tags:
+        - Auctions
+      summary: Evaluate rules for an auction
+      description: |
+        Returns rule evaluation results for the authenticated user and given auction.
+        Rules are grouped by phase: PARTICIPATION, BIDDING, SETTLEMENT.
+        Use the `phase` query parameter to filter by a specific phase.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: phase
+          description: Filter rules by phase. If omitted, returns rules for all phases.
+          schema:
+            $ref: '#/components/schemas/RulePhase'
+      responses:
+        '200':
+          description: Rule evaluation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleEvaluationResponse'
+        '401':
+          description: Authentication required
+        '404':
+          description: Auction not found
+  /api/auctions/{auctionId}/documents:
+    post:
+      operationId: submitDocument
+      tags:
+        - Auctions
+      summary: Submit a document for rule compliance
+      description: |
+        Submits a document (e.g. excise certificate, customs exemption) for the
+        authenticated user on the given auction. This can satisfy participation
+        or settlement rules that require document evidence.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitDocumentRequest'
+      responses:
+        '201':
+          description: Document accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitDocumentResponse'
+        '400':
+          description: Invalid request or document rejected
+        '401':
+          description: Authentication required
+        '404':
+          description: Auction not found
+  /api/qualification-profiles:
+    get:
+      operationId: browseQualificationProfiles
+      tags:
+        - Qualification
+      summary: Browse available qualification profiles for auction configuration
+      description: |
+        Returns the list of available participation policy templates (qualification profiles)
+        that sellers can assign to their auctions. Each profile defines what steps bidders must
+        complete before being admitted to bid.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - name: category
+          in: query
+          description: Filter profiles by auction category
+          schema:
+            type: string
+        - name: jurisdiction
+          in: query
+          description: Filter profiles by jurisdiction
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Qualification profile list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualificationProfileListResponse'
+  /api/auctions/{auctionId}/participation/program:
+    get:
+      operationId: getParticipationProgram
+      tags:
+        - Participation
+      summary: Get the statement program for the current candidate
+      description: |
+        Returns the current candidate's statement collection program for the given auction.
+        Includes available, completed, and blocked statements along with the participation decision.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statement program view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatementProgramView'
+        '401':
+          description: Authentication required
+        '404':
+          description: No program instance found
+    post:
+      operationId: startParticipationProgram
+      tags:
+        - Participation
+      summary: Start a statement collection program for the current candidate
+      description: |
+        Creates a new statement program instance for the authenticated candidate
+        on the given auction, using the specified policy template.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartParticipationProgramRequest'
+      responses:
+        '201':
+          description: Program started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatementProgramView'
+        '400':
+          description: Invalid request or template not found
+        '401':
+          description: Authentication required
+  /api/auctions/{auctionId}/participation/statements/{statementCode}/answers:
+    post:
+      operationId: submitStatementAnswer
+      tags:
+        - Participation
+      summary: Submit an answer to a statement
+      description: |
+        Submits an answer for a specific statement in the candidate's program.
+        If the answer is disqualifying, the program is immediately rejected
+        and dependent statements are cascaded.
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: statementCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitStatementAnswerRequest'
+      responses:
+        '200':
+          description: Answer processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitStatementAnswerResponse'
+        '400':
+          description: Invalid answer or prerequisite not met
+        '401':
+          description: Authentication required
+        '404':
+          description: Program instance or statement not found
+  /api/auctions/{auctionId}/participation/decision:
+    get:
+      operationId: getParticipationDecision
+      tags:
+        - Participation
+      summary: Get the participation decision for the current candidate
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Participation decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParticipationDecisionView'
+        '401':
+          description: Authentication required
+        '404':
+          description: No program instance found
+  /api/me:
+    get:
+      operationId: getCurrentUserProfile
+      tags:
+        - Auctions
+      summary: Get current authenticated user profile
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserProfileResponse'
+        '401':
+          description: Authentication required
+  /api/me/auctions:
+    get:
+      operationId: browseMyAuctions
+      tags:
+        - Auctions
+      summary: Browse auctions created by current user
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/AuctionStatus'
+        - in: query
+          name: sort
+          schema:
+            $ref: '#/components/schemas/AuctionSort'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current user auctions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionListResponse'
+        '401':
+          description: Authentication required
+  /api/me/bids:
+    get:
+      operationId: browseMyBids
+      tags:
+        - Auctions
+      summary: Browse auctions where current user placed bids
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/AuctionStatus'
+        - in: query
+          name: sort
+          schema:
+            $ref: '#/components/schemas/AuctionSort'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: after
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current user bid auctions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionListResponse'
+        '401':
+          description: Authentication required
+components:
+  parameters:
+    ApiVersionHeader:
+      in: header
+      name: X-API-Version
+      required: false
+      schema:
+        type: string
+        default: "1"
+      description: API version negotiated via HTTP header.
+  schemas:
+    AuctionStatus:
+      type: string
+      enum:
+        - DRAFT
+        - PUBLISHED
+        - IN_PROGRESS
+        - PENDING_SETTLEMENT
+        - SETTLED
+        - FAILED_SETTLEMENT
+        - REOFFERED
+        - CLOSED
+    AuctionSort:
+      type: string
+      enum:
+        - ENDING_SOON
+        - ENDING_LATEST
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+          example: "120.00"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: PLN
+    CreateAuctionRequest:
+      type: object
+      required:
+        - title
+        - startingPrice
+        - endsAt
+      properties:
+        title:
+          type: string
+        startingPrice:
+          $ref: '#/components/schemas/Money'
+        endsAt:
+          type: string
+          format: date-time
+        lotId:
+          type: string
+          format: uuid
+        buyNowPrice:
+          $ref: '#/components/schemas/Money'
+        pricingConfig:
+          $ref: '#/components/schemas/PricingConfig'
+        participationPolicyTemplate:
+          type: string
+          description: Name of the participation policy template to assign to this auction. Determines which qualification steps bidders must complete.
+          example: PUBLIC_CONSUMER_LIGHT_V1
+        auctionFormat:
+          type: string
+          description: Auction sale format determining bidding mechanics
+          enum: [ENGLISH, DUTCH, SEALED_BID, RESTRICTED_TENDER, MULTI_LOT]
+          default: ENGLISH
+    BidResponse:
+      type: object
+      required:
+        - bidderId
+        - amount
+        - currency
+        - placedAt
+      properties:
+        bidderId:
+          type: string
+        amount:
+          type: string
+        currency:
+          type: string
+        placedAt:
+          type: string
+          format: date-time
+    AuctionResponse:
+      type: object
+      required:
+        - auctionId
+        - sellerId
+        - title
+        - currentPrice
+        - currency
+        - endsAt
+        - status
+        - bids
+      properties:
+        auctionId:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+        title:
+          type: string
+        currentPrice:
+          type: string
+        currency:
+          type: string
+        endsAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        leadingBidderId:
+          type: string
+        lotId:
+          type: string
+          format: uuid
+        buyNowPrice:
+          type: object
+          properties:
+            amount:
+              type: string
+            currency:
+              type: string
+        bids:
+          type: array
+          items:
+            $ref: '#/components/schemas/BidResponse'
+        pricingConfig:
+          $ref: '#/components/schemas/PricingConfig'
+        qualificationSummary:
+          $ref: '#/components/schemas/AuctionQualificationSummary'
+    AuctionListItemResponse:
+      type: object
+      required:
+        - auctionId
+        - sellerId
+        - title
+        - currentPrice
+        - currency
+        - endsAt
+        - status
+      properties:
+        auctionId:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+        title:
+          type: string
+        currentPrice:
+          type: string
+        currency:
+          type: string
+        endsAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/AuctionStatus'
+        leadingBidderId:
+          type: string
+    AuctionListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuctionListItemResponse'
+        nextCursor:
+          type: string
+    CurrentUserProfileResponse:
+      type: object
+      required:
+        - partyId
+        - provider
+        - displayName
+        - verified
+      properties:
+        partyId:
+          type: string
+        provider:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        verified:
+          type: boolean
+    ProductTrackingStrategy:
+      type: string
+      enum:
+        - UNIQUE
+        - INDIVIDUALLY_TRACKED
+        - BATCH_TRACKED
+        - INDIVIDUALLY_AND_BATCH_TRACKED
+        - IDENTICAL
+    CreateProductTypeRequest:
+      type: object
+      required:
+        - name
+        - description
+        - trackingStrategy
+        - preferredUnit
+      properties:
+        name:
+          type: string
+          example: "Jan Kowalski's Car"
+        description:
+          type: string
+          example: "Seat Leon 1999 TDI"
+        trackingStrategy:
+          $ref: '#/components/schemas/ProductTrackingStrategy'
+        preferredUnit:
+          type: string
+          example: "pcs"
+    ProductTypeResponse:
+      type: object
+      required:
+        - productId
+        - name
+        - trackingStrategy
+        - preferredUnit
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        trackingStrategy:
+          $ref: '#/components/schemas/ProductTrackingStrategy'
+        preferredUnit:
+          type: string
+    CreateBatchRequest:
+      type: object
+      required:
+        - productId
+        - name
+        - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "POTATO-2024-WARSZAWA-001"
+        quantity:
+          type: object
+          required:
+            - amount
+            - unit
+          properties:
+            amount:
+              type: string
+              example: "2000"
+            unit:
+              type: string
+              example: "kg"
+        dateProduced:
+          type: string
+          format: date-time
+        bestBefore:
+          type: string
+          format: date-time
+    BatchResponse:
+      type: object
+      required:
+        - batchId
+        - productId
+        - name
+        - quantity
+      properties:
+        batchId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: object
+          properties:
+            amount:
+              type: string
+            unit:
+              type: string
+        dateProduced:
+          type: string
+          format: date-time
+        bestBefore:
+          type: string
+          format: date-time
+    CreateInventoryInstanceRequest:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        serialNumber:
+          type: string
+          example: "VIN-WVWZZZ3CZWE123456"
+        quantity:
+          type: object
+          required:
+            - amount
+            - unit
+          properties:
+            amount:
+              type: string
+              example: "100"
+            unit:
+              type: string
+              example: "kg"
+    InventoryInstanceResponse:
+      type: object
+      required:
+        - instanceId
+        - productId
+        - quantity
+      properties:
+        instanceId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        serialNumber:
+          type: string
+        quantity:
+          type: object
+          properties:
+            amount:
+              type: string
+            unit:
+              type: string
+    SellingMode:
+      type: string
+      enum:
+        - WHOLE
+        - DIVISIBLE
+        - DIVISIBLE_ONLY
+    CreateLotRequest:
+      type: object
+      required:
+        - title
+        - description
+        - inventoryEntryId
+        - sellingMode
+      properties:
+        title:
+          type: string
+          example: "2 worki ziemniaków po 100 kg"
+        description:
+          type: string
+          example: "Świeże ziemniaki z partii POTATO-2024-WARSZAWA-001"
+        inventoryEntryId:
+          type: string
+          format: uuid
+        sellingMode:
+          $ref: '#/components/schemas/SellingMode'
+        reservePrice:
+          $ref: '#/components/schemas/Money'
+    LotResponse:
+      type: object
+      required:
+        - lotId
+        - title
+        - sellingMode
+      properties:
+        lotId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        inventoryEntryId:
+          type: string
+          format: uuid
+        sellingMode:
+          $ref: '#/components/schemas/SellingMode'
+        reservePrice:
+          type: object
+          properties:
+            amount:
+              type: string
+            currency:
+              type: string
+    ProductTypeListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of product types
+          items:
+            $ref: '#/components/schemas/ProductTypeResponse'
+        nextCursor:
+          type: string
+          description: Cursor for pagination - pass this in next request to get next page
+          nullable: true
+    BatchListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of batches
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        nextCursor:
+          type: string
+          nullable: true
+    InventoryInstanceListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of inventory instances
+          items:
+            $ref: '#/components/schemas/InventoryInstanceResponse'
+        nextCursor:
+          type: string
+          nullable: true
+    LotListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: List of lots
+          items:
+            $ref: '#/components/schemas/LotResponse'
+        nextCursor:
+          type: string
+          nullable: true
+    WadiumStrategy:
+      type: string
+      enum:
+        - FIXED
+        - PERCENTAGE
+      description: Strategy for calculating wadium amount
+    PricingConfig:
+      type: object
+      properties:
+        wadiumStrategy:
+          $ref: '#/components/schemas/WadiumStrategy'
+        wadiumRate:
+          type: string
+          description: "Rate for percentage wadium (e.g. '0.05' for 5%) or fixed amount"
+        wadiumFixedAmount:
+          $ref: '#/components/schemas/Money'
+        vatRate:
+          type: string
+          description: "VAT rate as fraction (e.g. '0.23' for 23%)"
+        isExcisable:
+          type: boolean
+          default: false
+        exciseRate:
+          type: string
+          description: "Excise rate as fraction or per-unit amount"
+        exciseType:
+          type: string
+          enum:
+            - PERCENTAGE
+            - PER_UNIT
+        isImported:
+          type: boolean
+          default: false
+        customsDutyRate:
+          type: string
+          description: "Customs duty rate as fraction (e.g. '0.05' for 5%)"
+    DepositWadiumRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          $ref: '#/components/schemas/Money'
+    WadiumResponse:
+      type: object
+      required:
+        - wadiumId
+        - auctionId
+        - status
+        - amount
+        - refundableOnLoss
+        - deductibleOnWin
+      properties:
+        wadiumId:
+          type: string
+          format: uuid
+        auctionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PAID
+            - REFUNDED
+            - DEDUCTED
+        amount:
+          $ref: '#/components/schemas/Money'
+        refundableOnLoss:
+          type: boolean
+        deductibleOnWin:
+          type: boolean
+    RefundWadiumRequest:
+      type: object
+      required:
+        - partyId
+      properties:
+        partyId:
+          type: string
+          format: uuid
+          description: ID of the bidder requesting wadium refund
+    WadiumRefundResponse:
+      type: object
+      required:
+        - wadiumId
+        - auctionId
+        - status
+        - refundAmount
+      properties:
+        wadiumId:
+          type: string
+          format: uuid
+        auctionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - REFUNDED
+        refundAmount:
+          $ref: '#/components/schemas/Money'
+    AuctionPriceBreakdownResponse:
+      type: object
+      required:
+        - hammerPrice
+        - wadiumOffset
+        - netto
+        - excise
+        - customsDuty
+        - vat
+        - totalDue
+        - appliedRates
+      properties:
+        hammerPrice:
+          $ref: '#/components/schemas/Money'
+        wadiumOffset:
+          $ref: '#/components/schemas/Money'
+        netto:
+          $ref: '#/components/schemas/Money'
+        excise:
+          $ref: '#/components/schemas/Money'
+        customsDuty:
+          $ref: '#/components/schemas/Money'
+        vat:
+          $ref: '#/components/schemas/Money'
+        totalDue:
+          $ref: '#/components/schemas/Money'
+        appliedRates:
+          $ref: '#/components/schemas/AppliedRates'
+    AppliedRates:
+      type: object
+      required:
+        - vatRate
+      properties:
+        vatRate:
+          type: string
+          description: "Applied VAT rate (e.g. '23%')"
+        exciseRate:
+          type: string
+          nullable: true
+          description: "Applied excise rate (e.g. '3.1%' or '1.17 PLN/l')"
+        customsDutyRate:
+          type: string
+          nullable: true
+          description: "Applied customs duty rate (e.g. '5%')"
+        wadiumType:
+          type: string
+          nullable: true
+          enum:
+            - FIXED
+            - PERCENTAGE
+    RulePhase:
+      type: string
+      enum:
+        - PARTICIPATION
+        - BIDDING
+        - SETTLEMENT
+      description: Phase of the auction lifecycle where rules apply
+    RuleStatus:
+      type: string
+      enum:
+        - SATISFIED
+        - PENDING
+        - VIOLATED
+      description: Evaluation status of a single rule
+    RuleSeverity:
+      type: string
+      enum:
+        - BLOCKING
+        - WARNING
+        - INFORMATIVE
+      description: Severity level of a rule violation
+    DocumentType:
+      type: string
+      enum:
+        - EXCISE_CERTIFICATE
+        - CUSTOMS_EXEMPTION
+        - REAL_ESTATE_SETTLEMENT
+        - IDENTITY_VERIFICATION
+        - VEHICLE_REGISTRATION
+    DocumentStatus:
+      type: string
+      enum:
+        - MISSING
+        - COPY
+        - ORIGINAL
+    RuleViolationItem:
+      type: object
+      required:
+        - ruleName
+        - message
+        - blocking
+        - requiredAction
+        - status
+        - severity
+      properties:
+        ruleName:
+          type: string
+          description: Unique identifier of the rule
+          example: "WADIUM_10_PERCENT_ABOVE_10K"
+        message:
+          type: string
+          description: Human-readable rule evaluation message
+        blocking:
+          type: boolean
+          description: Whether this violation blocks the associated action
+        requiredAction:
+          type: string
+          description: Action required to satisfy this rule (non-empty for PENDING rules)
+        status:
+          $ref: '#/components/schemas/RuleStatus'
+        severity:
+          $ref: '#/components/schemas/RuleSeverity'
+    RulePhaseEvaluation:
+      type: object
+      required:
+        - phase
+        - rules
+        - hasBlockingViolations
+      properties:
+        phase:
+          $ref: '#/components/schemas/RulePhase'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleViolationItem'
+        hasBlockingViolations:
+          type: boolean
+    RuleEvaluationResponse:
+      type: object
+      required:
+        - auctionId
+        - evaluations
+      properties:
+        auctionId:
+          type: string
+          format: uuid
+        evaluations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RulePhaseEvaluation'
+    SubmitDocumentRequest:
+      type: object
+      required:
+        - documentType
+        - status
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentType'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+    SubmitDocumentResponse:
+      type: object
+      required:
+        - documentType
+        - status
+      properties:
+        documentType:
+          $ref: '#/components/schemas/DocumentType'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+    StartParticipationProgramRequest:
+      type: object
+      properties:
+        templateName:
+          type: string
+          description: Name of the participation policy template to use. If omitted, the auction's assigned template will be used.
+          example: PUBLIC_CONSUMER_LIGHT_V1
+    SubmitStatementAnswerRequest:
+      type: object
+      required:
+        - answerValue
+      properties:
+        answerValue:
+          type: string
+          description: The candidate's answer value
+          example: "YES"
+    StatementStepView:
+      type: object
+      required:
+        - statementCode
+        - title
+        - question
+        - answerType
+        - order
+      properties:
+        statementCode:
+          type: string
+        title:
+          type: string
+        question:
+          type: string
+        answerType:
+          type: string
+          enum: [YES_NO, TEXT, SINGLE_CHOICE, MULTI_CHOICE, NUMERIC, DOCUMENT_UPLOAD, PARTY_PICKER]
+        order:
+          type: integer
+        stepLabel:
+          type: string
+        answerValue:
+          type: string
+    ParticipationDecisionView:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [PENDING, ADMITTED, ADMITTED_WITH_CONDITIONS, REJECTED]
+        rootCause:
+          type: string
+        humanReason:
+          type: string
+        missingStatements:
+          type: array
+          items:
+            type: string
+        cascadedStatements:
+          type: array
+          items:
+            type: string
+        conditions:
+          type: array
+          items:
+            type: string
+    StatementProgramView:
+      type: object
+      required:
+        - programInstanceId
+        - auctionId
+        - candidateId
+        - templateName
+        - templateVersion
+        - status
+        - availableStatements
+        - completedStatements
+        - blockedStatements
+      properties:
+        programInstanceId:
+          type: string
+          format: uuid
+        auctionId:
+          type: string
+          format: uuid
+        candidateId:
+          type: string
+        templateName:
+          type: string
+        templateVersion:
+          type: integer
+        status:
+          type: string
+          enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, REJECTED, CANCELLED]
+        availableStatements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementStepView'
+        completedStatements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementStepView'
+        blockedStatements:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementStepView'
+        decision:
+          $ref: '#/components/schemas/ParticipationDecisionView'
+    SubmitStatementAnswerResponse:
+      type: object
+      required:
+        - resultType
+        - program
+      properties:
+        resultType:
+          type: string
+          enum: [ACCEPTED, REJECTED, PREREQUISITE_NOT_MET]
+        reason:
+          type: string
+        missingPrerequisites:
+          type: array
+          items:
+            type: string
+        program:
+          $ref: '#/components/schemas/StatementProgramView'
+    AuctionQualificationSummary:
+      type: object
+      properties:
+        participationPolicyTemplate:
+          type: string
+          description: Name of the participation policy template assigned to this auction
+          example: PUBLIC_CONSUMER_LIGHT_V1
+        templateLabel:
+          type: string
+          description: Human-readable label of the assigned template
+          example: Standardowy konsument
+        taskCount:
+          type: integer
+          description: Number of qualification tasks bidders must complete
+    QualificationProfileSummary:
+      type: object
+      required:
+        - templateName
+        - label
+        - taskCount
+      properties:
+        templateName:
+          type: string
+          example: PUBLIC_CONSUMER_LIGHT_V1
+        label:
+          type: string
+          description: Human-readable profile name
+          example: Standardowy konsument
+        description:
+          type: string
+          description: Business-oriented description for the seller
+        taskCount:
+          type: integer
+          description: Number of qualification tasks bidders must complete
+        estimatedMinutes:
+          type: string
+          description: Estimated time for bidders to complete all tasks
+          example: 2-3
+        abandonmentRisk:
+          type: string
+          enum: [low, medium, high]
+        recommended:
+          type: boolean
+          description: Whether this profile is recommended for general use
+    QualificationProfileListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualificationProfileSummary'
+    EditAuctionRequest:
+      type: object
+      required:
+        - title
+        - startingPrice
+      properties:
+        title:
+          type: string
+          maxLength: 500
+          example: "Updated auction title"
+        startingPrice:
+          $ref: '#/components/schemas/Money'

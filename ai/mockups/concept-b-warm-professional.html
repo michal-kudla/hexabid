@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Hexabid — Concept B: Warm Professional</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --bg: #f8f6f3;
+    --surface: #ffffff;
+    --surface-raised: #fdfcfa;
+    --border: #e8e2da;
+    --border-focus: #b47a3e;
+    --ink: #2c2418;
+    --ink-secondary: #7a6f5f;
+    --ink-muted: #a89d8e;
+    --accent: #b47a3e;
+    --accent-hover: #9a6630;
+    --accent-light: rgba(180,122,62,0.08);
+    --success: #4a7c59;
+    --success-bg: rgba(74,124,89,0.08);
+    --danger: #c44b3f;
+    --danger-bg: rgba(196,75,63,0.06);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 3px rgba(44,36,24,0.06);
+    --shadow-md: 0 4px 12px rgba(44,36,24,0.08);
+    --shadow-lg: 0 12px 32px rgba(44,36,24,0.1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+  body { font-family: var(--font-body); background: var(--bg); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 24px;
+    padding: 12px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+  .brand-mark {
+    display: grid; place-items: center;
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #d4a06a);
+    color: white; font: 700 0.85rem/1 var(--font-body);
+  }
+  .brand-name { font: 700 1.1rem/1 var(--font-display); }
+  .brand-sub { font-size: 0.7rem; color: var(--ink-muted); letter-spacing: 0.04em; }
+  .nav { display: flex; gap: 4px; margin-left: 32px; }
+  .nav a {
+    padding: 7px 16px; border-radius: var(--radius-md);
+    font: 500 0.9rem/1.4 var(--font-body); color: var(--ink-secondary);
+    text-decoration: none; transition: background 150ms, color 150ms;
+  }
+  .nav a:hover { background: var(--accent-light); color: var(--ink); text-decoration: none; }
+  .nav a.is-active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; }
+  .btn-outline {
+    padding: 7px 16px; border-radius: var(--radius-md);
+    border: 1px solid var(--border); background: var(--surface);
+    font: 500 0.85rem/1.4 var(--font-body); color: var(--ink-secondary); cursor: pointer;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+  .hero {
+    display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;
+    margin-bottom: 32px;
+  }
+  .hero-copy {
+    padding: 32px; border-radius: var(--radius-lg);
+    background: linear-gradient(145deg, #3d2e1a, var(--accent) 60%, #d4a06a);
+    color: white;
+  }
+  .hero-copy .kicker { font: 600 0.7rem/1 var(--font-body); letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.65); }
+  .hero-copy h1 { font: 700 clamp(1.8rem, 3.5vw, 2.6rem)/1.1 var(--font-display); margin: 12px 0 16px; }
+  .hero-copy p { color: rgba(255,255,255,0.8); max-width: 44ch; font-size: 0.95rem; line-height: 1.65; }
+  .hero-panel {
+    padding: 24px; border-radius: var(--radius-lg);
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; flex-direction: column;
+  }
+  .hero-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .hero-panel-header span { font: 600 0.8rem/1 var(--font-body); color: var(--ink-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+  .hero-panel-header a { font: 600 0.85rem var(--font-body); color: var(--accent); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font: 600 0.75rem/1 var(--font-body); color: var(--ink-secondary); }
+  .form-group input, .form-group select {
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--surface-raised); font: 400 0.9rem/1.4 var(--font-body); color: var(--ink);
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,122,62,0.12); }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+  .btn-primary {
+    padding: 9px 20px; border-radius: var(--radius-md); border: none;
+    background: var(--accent); color: white;
+    font: 600 0.9rem/1.4 var(--font-body); cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary {
+    padding: 9px 20px; border-radius: var(--radius-md);
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    font: 500 0.9rem/1.4 var(--font-body); cursor: pointer;
+  }
+
+  .section-heading {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 16px;
+  }
+  .section-heading h2 { font: 700 1.3rem/1.1 var(--font-display); }
+  .section-heading span { font-size: 0.8rem; color: var(--ink-muted); }
+
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card {
+    padding: 20px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    transition: box-shadow 200ms, transform 200ms;
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font: 600 0.72rem/1.5 var(--font-body); text-transform: uppercase; letter-spacing: 0.03em; }
+  .pill-open { background: var(--success-bg); color: var(--success); }
+  .pill-closed { background: rgba(0,0,0,0.04); color: var(--ink-muted); }
+  .card-time { font-size: 0.78rem; color: var(--ink-muted); }
+  .card h3 { font: 600 1rem/1.25 var(--font-body); margin-bottom: 4px; }
+  .card-seller { font-size: 0.82rem; color: var(--ink-secondary); }
+  .card-bottom { display: flex; justify-content: space-between; align-items: baseline; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .card-price { font: 700 1.15rem/1 var(--font-body); }
+  .card-action { font: 600 0.85rem var(--font-body); color: var(--accent); }
+
+  @media (max-width: 1024px) { .hero, .card-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .hero, .card-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
+
+  .concept-label {
+    position: fixed; bottom: 12px; right: 12px; z-index: 100;
+    padding: 6px 14px; border-radius: var(--radius-md);
+    background: #2c2418; color: #d4a06a;
+    font: 600 0.75rem/1 var(--font-body);
+    letter-spacing: 0.06em;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="brand" href="#">
+    <span class="brand-mark">HB</span>
+    <div>
+      <div class="brand-name">Hexabid</div>
+      <div class="brand-sub">reference auction SPA</div>
+    </div>
+  </a>
+  <nav class="nav">
+    <a href="#" class="is-active">Rynek</a>
+    <a href="#">Wystaw aukcję</a>
+    <a href="#">Moje konto</a>
+  </nav>
+  <div class="topbar-right">
+    <button class="btn-outline">Dev</button>
+    <button class="btn-outline">Google</button>
+    <button class="btn-outline">GitHub</button>
+  </div>
+</div>
+
+<div class="content">
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="kicker">Rynek aukcyjny</span>
+      <h1>Odkryj unikalne przedmioty na żywym rynku licytacji</h1>
+      <p>Przeglądaj aktywne aukcje, licytuj w czasie rzeczywistym i zarządzaj swoimi ofertami. Wszystko w jednym miejscu, bez zbędnych rozproszeń.</p>
+    </div>
+    <div class="hero-panel">
+      <div class="hero-panel-header">
+        <span>Eksploracja</span>
+        <a href="#">Wystaw aukcję</a>
+      </div>
+      <div class="form-group full">
+        <label>Szukaj</label>
+        <input type="text" placeholder="np. komiks, figurka, dzieło sztuki">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select><option>Wszystkie</option><option>Aktywne</option><option>Zamknięte</option></select>
+        </div>
+        <div class="form-group">
+          <label>Sortowanie</label>
+          <select><option>Kończące się najszybciej</option><option>Kończące się najpóźniej</option></select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary">Wyczyść</button>
+        <button class="btn-primary">Szukaj</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-heading">
+    <h2>Widok rynku</h2>
+    <span>6 aukcji</span>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-open">Aktywna</span>
+        <span class="card-time">2h 14m</span>
+      </div>
+      <h3>Komiks Amazing Spider-Man #129</h3>
+      <div class="card-seller">Sprzedający: user-42</div>
+      <div class="card-bottom">
+        <span class="card-price">1 250,00 PLN</span>
+        <a class="card-action" href="#">Otwórz &rarr;</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-open">Aktywna</span>
+        <span class="card-time">5h 03m</span>
+      </div>
+      <h3>Figurka Batman Black & White</h3>
+      <div class="card-seller">Sprzedający: user-07</div>
+      <div class="card-bottom">
+        <span class="card-price">890,00 PLN</span>
+        <a class="card-action" href="#">Otwórz &rarr;</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-closed">Zamknięta</span>
+        <span class="card-time">zakończona</span>
+      </div>
+      <h3>Obraz olejny — Pejzaż z Tatr</h3>
+      <div class="card-seller">Sprzedający: user-99</div>
+      <div class="card-bottom">
+        <span class="card-price">4 500,00 PLN</span>
+        <a class="card-action" href="#">Otwórz &rarr;</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-open">Aktywna</span>
+        <span class="card-time">1d 6h</span>
+      </div>
+      <h3>Rzadka moneta 5 zł 1934</h3>
+      <div class="card-seller">Sprzedający: user-12</div>
+      <div class="card-bottom">
+        <span class="card-price">3 200,00 PLN</span>
+        <a class="card-action" href="#">Otwórz &rarr;</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-open">Aktywna</span>
+        <span class="card-time">3h 45m</span>
+      </div>
+      <h3>Winyl Pink Floyd — Dark Side</h3>
+      <div class="card-seller">Sprzedający: user-55</div>
+      <div class="card-bottom">
+        <span class="card-price">780,00 PLN</span>
+        <a class="card-action" href="#">Otwórz &rarr;</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <span class="pill pill-closed">Zamknięta</span>
+        <span class="card-time">zakończona</span>
+      </div>
+      <h3>Zegarek vintage Omega Seamaster</h3>
+      <div class="card-seller">Sprzedający: user-33</div>
+      <div class="card-bottom">
+        <span class="card-price">12 000,00 PLN</span>
+        <a class="card-action" href="#">Otwórz &rarr;</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="concept-label">CONCEPT B — Warm Professional</div>
+</body>
+</html>

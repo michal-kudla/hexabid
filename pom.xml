@@ -1,0 +1,101 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.3</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.github.hexabid</groupId>
+    <artifactId>hexabid</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>hexabid</name>
+    <description>Reference auction system with hexagonal architecture and contract-first approach.</description>
+
+    <modules>
+        <module>hexabid-bom</module>
+        <module>hexabid-quantity</module>
+        <module>hexabid-pricing</module>
+        <module>hexabid-product</module>
+        <module>hexabid-inventory</module>
+        <module>hexabid-rules</module>
+        <module>hexabid-rules-adapter</module>
+        <module>hexabid-statements</module>
+        <module>hexabid-core</module>
+        <module>hexabid-auth-core</module>
+        <module>hexabid-authorization-core</module>
+        <module>hexabid-api-contract</module>
+        <module>hexabid-adapter-in-auth-oauth</module>
+        <module>hexabid-adapter-in-auth-local</module>
+        <module>hexabid-adapter-in-authz</module>
+        <module>hexabid-adapter-in-rest</module>
+        <module>hexabid-adapter-in-ws</module>
+        <module>hexabid-adapter-in-job</module>
+        <module>hexabid-adapter-out-db</module>
+        <module>hexabid-adapter-out-kafka</module>
+        <module>hexabid-adapter-out-kyc</module>
+        <module>hexabid-adapter-out-kyc-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
+        <module>hexabid-payment-api-contract</module>
+        <module>hexabid-payment-core</module>
+        <module>hexabid-payment-adapter-payu</module>
+        <module>hexabid-payment-adapter-p24</module>
+        <module>hexabid-payment-adapter-crypto</module>
+        <module>hexabid-payment-adapter-local</module> <!-- TODO: w profilu produkcyjnym ten artefakt ma się nie pojawiać w paczce wdrożeniowej -->
+        <module>hexabid-bootstrap</module>
+        <module>hexabid-architecture-tests</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>it</id>
+            <modules>
+                <module>hexabid-integration-tests</module>
+            </modules>
+        </profile>
+    </profiles>
+
+    <properties>
+        <java.version>25</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <openapi.generator.version>7.14.0</openapi.generator.version>
+        <archunit.version>1.4.1</archunit.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <skipIntegrationTests>true</skipIntegrationTests>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Import project BOM -->
+            <dependency>
+                <groupId>com.github.hexabid</groupId>
+                <artifactId>hexabid-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

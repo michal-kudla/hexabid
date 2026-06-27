@@ -1,0 +1,14 @@
+<article class="card">
+  <div class="card-top">
+    <span class="badge" [class.badge-closed]="auction().statusTone !== 'open'">{{ auction().statusLabel }}</span>
+    <span class="card-time">{{ auction().timeLeftLabel }}</span>
+  </div>
+
+  <h3>{{ auction().title }}</h3>
+  <p class="card-seller">Sprzedający: {{ auction().sellerId }}</p>
+
+  <div class="card-bottom">
+    <strong class="card-price">{{ auction().priceLabel }}</strong>
+    <a class="card-link" [routerLink]="['/auction', auction().auctionId]">Otwórz &rarr;</a>
+  </div>
+</article>

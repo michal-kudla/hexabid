@@ -1,0 +1,59 @@
+.intro {
+  margin-bottom: var(--space-4);
+}
+
+.participations-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.participation-card {
+  border-left: 4px solid var(--border);
+}
+
+.tone-success { border-left-color: #036b4c; }
+.tone-warning { border-left-color: #92400e; }
+.tone-error { border-left-color: #991b1b; }
+.tone-info { border-left-color: #475569; }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.card-status { font-size: var(--text-lg); }
+.card-progress { font-size: var(--text-sm); color: var(--ink-secondary); }
+
+.progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--color-stone-100);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent-text);
+  transition: width 0.3s ease;
+}
+
+.card-details {
+  margin-bottom: var(--space-3);
+  p { margin: var(--space-1) 0; font-size: var(--text-sm); color: var(--ink-secondary); }
+}
+
+.card-reason { font-weight: 500; color: var(--ink-primary); }
+.card-missing { color: #92400e; }
+.card-conditions { color: #475569; }
+
+.card-link {
+  display: inline-block;
+  font-weight: 600;
+  color: var(--accent-text);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}

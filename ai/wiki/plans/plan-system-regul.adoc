@@ -1,0 +1,1554 @@
+= Plan: Konfigurowalny System Regul Aukcyjnych
+
+Autor: Analiza AI |
+Data: 2026-04-29 |
+Wersja: 1.0 |
+Status: IMPLEMENTED — Fazy 1-4 zrealizowane (2026-05-02). Reguły działają w produkcji.
+
+---
+
+== Kontekst i Motywacja
+
+Hexabid obecnie ma reguly zakodowane na sztywno jako if-y w 3 miejscach:
+
+|===
+|Miejsce |Co robi |Problem
+
+|`CreateAuctionService` |`kycClient.isVerified(sellerId)` |Jedna regula, zero konfiguracji
+|`PlaceBidService` |`kycClient.isVerified(bidderId)` + `auction.placeBid()` |Brak wadium, brak pelnoletnosci, brak dokumentow
+|`CloseExpiredAuctionsService` |Zamyka aukcje |Brak regul po-wygranej (dokumenty, terminy)
+|===
+
+Cykl zycia aukcji to `OPEN -> CLOSED` -- za malo stanow na proces rozliczeniowy.
+
+=== Przyklady regul biznesowych do obsluzenia
+
+* Nieruchomosc -> termin ogledzin przy definiowaniu produktu
+* Wartosc > 10k PLN -> wadium 10% od szacowanej ceny
+* Alkohol/tyton -> pelnoletnosc
+* Akcyza -> kopia dokumentu do przystapienia, oryginal po wygranej
+* Clo -> kopia zwolnienia do przystapienia, oryginal po wygranej
+* Nieruchomosc po wygranej -> oryginal dokumentu XYZ w ciagu 3 dni
+* Zwolniony z oplat celnych -> mozna przystapic z kopia, ale oryginal po wygranej
+
+=== Decyzje projektowe
+
+[cols="2,4"]
+|===
+|Decyzja |Wybor
+
+|Sposob realizacji |Pełny plan wszystkich faz przed implementacja
+|Zlozonosc silnika |Pelna implementacja AST+Algebra (bazowane na archetypie M04L05)
+|Konfiguracja regul |Kod + @Configuration (reguly jako klasy Java, rejestrowane przez Spring Configuration)
+|===
+
+=== Odniesienia do archetypow
+
+* **M04L01-L03**: Trzy strefy logiki (stable/closures/factory), Specification Pattern
+* **M04L05**: AST + Algebra (Expression tree z wymiennym Algebra)
+* **M04L06**: Universal Scoring Model -- reguly aplikowalne do roznych encji
+* **M05L04**: User Journey -- proces jako state/transition graph
+* **M02L08**: ApplicabilityConstraint (Specification Pattern na produktach)
+* **M03L08**: Applicability rules w komponentach cenowych
+
+
+== FAZA 1: Modul `hexabid-rules` -- AST + Algebra
+
+=== 1.1 Struktura modulu
+
+Nowy modul Maven `hexabid-rules` (czysty Java 25, bez Spring, bez JPA).
+
+Zaleznosci: `hexabid-quantity` (dla Money/Quantity/Percentage po ujednoliceniu -- patrz uwaga w sekcji 1.4).
+
+Struktura pakietow:
+
+```
+com.github.hexabid.rules
+├── model/                              # Modele domenowe
+│   ├── RuleId                          # record: UUID
+│   ├── RuleName                        # record: String (non-blank)
+│   ├── RulePhase                       # enum: PARTICIPATION, BIDDING, SETTLEMENT
+│   ├── RuleSeverity                    # enum: BLOCKING, WARNING, INFORMATIVE
+│   ├── RuleContext                      # class: worek kontekstowy z Builder
+│   ├── RuleEvaluationResult            # sealed interface
+│   │   ├── Satisfied                   # regula spelniona
+│   │   ├── Pending                     # regula wymaga akcji (np. dokument)
+│   │   └── Violated                    # regula naruszona
+│   └── Violation                       # record: ruleName, message, severity
+│
+├── ast/                                # Abstract Syntax Tree
+│   ├── Expression                      # sealed interface -- wezly AST
+│   │   ├── AttributeCheck              # porownanie atrybutu z wartoscia
+│   │   ├── AndExpression               # koniunkcja
+│   │   ├── OrExpression                # alternatywa
+│   │   ├── NotExpression               # negacja
+│   │   ├── IfThenElse                  # warunkowe rozgalezienie
+│   │   ├── ConstantExpression          # stala wartosc (true/false)
+│   │   └── MetricComparison            # porownanie metryki z progiem
+│   ├── ExpressionVisitor               # visitor pattern dla AST
+│   └── AttributeKey                    # record: String (typowane klucze atrybutow)
+│
+├── algebra/                            # Algebry ewaluacji
+│   ├── RuleAlgebra                     # interfejs: operacje na wynikach regul
+│   ├── BooleanAlgebra                  # ewaluacja warunkow (true/false)
+│   ├── ComplianceAlgebra               # ewaluacja zgodnosci (SATISFIED/PENDING/VIOLATED)
+│   └── ExplainedAlgebra                # ewaluacja z wyjasnieniami (receipt)
+│
+├── engine/                             # Silnik ewaluacji
+│   ├── RuleEngine                      # fasada: evaluateAll(context, phase)
+│   ├── RuleDefinition                  # definicja reguly z AST + metadane
+│   └── RuleCatalog                     # rejestr regul powiazany z typem produktu
+│
+└── configuration/                      # Composition root
+    └── RulesConfiguration              # inMemory() factory
+```
+
+=== 1.2 AST -- Expression Hierarchy
+
+Bazowane na `rules/src/main/java/com/softwarearchetypes/scoring/ast/Expression.java` z archetypu.
+
+```java
+// ast/Expression.java
+public sealed interface Expression
+    permits AttributeCheck, AndExpression, OrExpression,
+            NotExpression, IfThenElse, ConstantExpression,
+            MetricComparison {
+}
+```
+
+Kazdy wezel AST przechowuje **tylko strukture** -- zero logiki ewaluacyjnej.
+Ewaluacja jest delegowana do `RuleAlgebra` via `ExpressionVisitor`.
+
+```java
+// ast/AttributeCheck.java
+public record AttributeCheck(AttributeKey key, Comparator comparator, Object value)
+    implements Expression {
+
+    public enum Comparator {
+        EQUALS, NOT_EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL,
+        LESS_THAN, LESS_THAN_OR_EQUAL, IN, NOT_IN, IS_NULL, IS_NOT_NULL
+    }
+}
+
+// ast/AndExpression.java
+public record AndExpression(Expression left, Expression right) implements Expression {}
+
+// ast/OrExpression.java
+public record OrExpression(Expression left, Expression right) implements Expression {}
+
+// ast/NotExpression.java
+public record NotExpression(Expression inner) implements Expression {}
+
+// ast/IfThenElse.java
+public record IfThenElse(Expression condition, Expression thenExpr, Expression elseExpr)
+    implements Expression {}
+
+// ast/ConstantExpression.java
+public record ConstantExpression(boolean value) implements Expression {}
+
+// ast/MetricComparison.java
+public record MetricComparison(AttributeKey metric, Comparator comparator, Object threshold)
+    implements Expression {}
+```
+
+**AttributeKey** -- typowane klucze zapobiegajace literowkom:
+
+```java
+// ast/AttributeKey.java
+public record AttributeKey(String name) {
+    // Predefiniowane klucze dla domeny aukcyjnej
+    public static final AttributeKey PRODUCT_TYPE = new AttributeKey("productType");
+    public static final AttributeKey ESTIMATED_VALUE = new AttributeKey("estimatedValue");
+    public static final AttributeKey BIDDER_AGE = new AttributeKey("bidderAge");
+    public static final AttributeKey WADIUM_PAID = new AttributeKey("wadiumPaid");
+    public static final AttributeKey EXCISABLE = new AttributeKey("excisable");
+    public static final AttributeKey IMPORTED = new AttributeKey("imported");
+    public static final AttributeKey CUSTOMS_EXEMPT = new AttributeKey("customsExempt");
+    public static final AttributeKey DOCUMENT_STATUS = new AttributeKey("documentStatus");
+}
+```
+
+=== 1.3 Algebra -- Rozdzielenie struktury od ewaluacji
+
+To jest **kluczowy wzorzec z M04L05**: Bridge pattern miedzy Expression (struktura) a Algebra (ewaluacja).
+
+```java
+// algebra/RuleAlgebra.java
+public interface RuleAlgebra<R> {
+    R and(R left, R right);
+    R or(R left, R right);
+    R not(R inner);
+    R ifThenElse(R condition, R thenResult, R elseResult);
+    R constant(boolean value);
+    R attributeCheck(AttributeKey key, AttributeCheck.Comparator cmp, Object value);
+    R metricComparison(AttributeKey metric, AttributeCheck.Comparator cmp, Object threshold);
+}
+```
+
+**BooleanAlgebra** -- ewaluacja warunkow (czy regula jest aktywna):
+
+```java
+// algebra/BooleanAlgebra.java
+public final class BooleanAlgebra implements RuleAlgebra<Boolean> {
+    @Override
+    public Boolean and(Boolean left, Boolean right) { return left && right; }
+    @Override
+    public Boolean or(Boolean left, Boolean right) { return left || right; }
+    @Override
+    public Boolean not(Boolean inner) { return !inner; }
+    @Override
+    public Boolean ifThenElse(Boolean cond, Boolean thenR, Boolean elseR) {
+        return cond ? thenR : elseR;
+    }
+    @Override
+    public Boolean constant(boolean value) { return value; }
+    @Override
+    public Boolean attributeCheck(AttributeKey key, Comparator cmp, Object value) {
+        // Ekstrakcja z RuleContext i porownanie
+    }
+    // ...
+}
+```
+
+**ComplianceAlgebra** -- ewaluacja zgodnosci (SATISFIED / PENDING / VIOLATED):
+
+To jest trójwartosciowa algebra. Kluczowa logika:
+
+```
+and(SATISFIED, SATISFIED)     = SATISFIED
+and(SATISFIED, PENDING)      = PENDING
+and(SATISFIED, VIOLATED)     = VIOLATED
+and(PENDING, VIOLATED)       = VIOLATED   -- VIOLATED dominuje
+and(PENDING, PENDING)        = PENDING
+
+or(SATISFIED, _)             = SATISFIED  -- SATISFIED dominuje
+or(PENDING, SATISFIED)       = SATISFIED
+or(VIOLATED, SATISFIED)      = SATISFIED
+or(VIOLATED, PENDING)        = PENDING
+or(VIOLATED, VIOLATED)       = VIOLATED
+
+not(SATISFIED)               = VIOLATED
+not(VIOLATED)                = SATISFIED
+not(PENDING)                 = PENDING
+```
+
+**ExplainedAlgebra** -- ewaluacja z wyjasnieniami (receipt dla biznesu):
+
+```java
+// algebra/ExplainedAlgebra.java
+public record ExplainedResult(
+    RuleEvaluationResult result,
+    String description,
+    List<Contribution> contributions
+) {}
+
+public record Contribution(String source, String description, RuleEvaluationResult result) {}
+```
+
+Dla kazdego wezla AST generuje opis: `"Wadium 10% wymagane (estimatedValue=50000 > 10000)"`.
+
+=== 1.4 ExpressionVisitor -- Bridge miedzy AST a Algebra
+
+Bazowane na `AlgebraicVisitor` z archetypu:
+
+```java
+// ast/ExpressionVisitor.java
+public class ExpressionVisitor<R> {
+    private final RuleAlgebra<R> algebra;
+    private final RuleContext context;
+
+    public ExpressionVisitor(RuleAlgebra<R> algebra, RuleContext context) {
+        this.algebra = algebra;
+        this.context = context;
+    }
+
+    public R evaluate(Expression expr) {
+        return switch (expr) {
+            case AttributeCheck ac -> algebra.attributeCheck(ac.key(), ac.comparator(), ac.value());
+            case AndExpression and -> algebra.and(evaluate(and.left()), evaluate(and.right()));
+            case OrExpression or -> algebra.or(evaluate(or.left()), evaluate(or.right()));
+            case NotExpression not -> algebra.not(evaluate(not.inner()));
+            case IfThenElse ite -> {
+                var condResult = evaluate(ite.condition());
+                // Uzywamy algebry do warunkowego rozgalezienia
+                yield algebra.ifThenElse(condResult, evaluate(ite.thenExpr()), evaluate(ite.elseExpr()));
+            }
+            case ConstantExpression ce -> algebra.constant(ce.value());
+            case MetricComparison mc -> algebra.metricComparison(mc.metric(), mc.comparator(), mc.threshold());
+        };
+    }
+}
+```
+
+=== 1.5 RuleContext -- Worek Kontekstowy
+
+```java
+// model/RuleContext.java
+public final class RuleContext {
+    private final Map<AttributeKey, Object> attributes;
+
+    private RuleContext(Map<AttributeKey, Object> attributes) {
+        this.attributes = Map.copyOf(attributes);
+    }
+
+    public static Builder builder() { return new Builder(); }
+
+    @Nullable
+    public Object get(AttributeKey key) { return attributes.get(key); }
+
+    public String getString(AttributeKey key) { ... }
+    public BigDecimal getBigDecimal(AttributeKey key) { ... }
+    public Integer getInteger(AttributeKey key) { ... }
+    public Boolean getBoolean(AttributeKey key) { ... }
+    public boolean has(AttributeKey key) { return attributes.containsKey(key); }
+
+    public static class Builder {
+        private final Map<AttributeKey, Object> attributes = new HashMap<>();
+
+        public Builder with(AttributeKey key, Object value) { attributes.put(key, value); return this; }
+        public Builder productType(String type) { return with(AttributeKey.PRODUCT_TYPE, type); }
+        public Builder estimatedValue(BigDecimal value) { return with(AttributeKey.ESTIMATED_VALUE, value); }
+        public Builder bidderAge(Integer age) { return with(AttributeKey.BIDDER_AGE, age); }
+        public Builder wadiumPaid(boolean paid) { return with(AttributeKey.WADIUM_PAID, paid); }
+        public Builder excisable(boolean excisable) { return with(AttributeKey.EXCISABLE, excisable); }
+        public Builder imported(boolean imported) { return with(AttributeKey.IMPORTED, imported); }
+        public Builder customsExempt(boolean exempt) { return with(AttributeKey.CUSTOMS_EXEMPT, exempt); }
+        public RuleContext build() { return new RuleContext(attributes); }
+    }
+}
+```
+
+=== 1.6 RuleDefinition i RuleCatalog
+
+```java
+// engine/RuleDefinition.java
+public final class RuleDefinition {
+    private final RuleId id;
+    private final RuleName name;
+    private final RulePhase phase;
+    private final RuleSeverity severity;
+    private final Expression applicabilityCondition;  // czy regula dotyczy tej aukcji
+    private final Expression ruleCondition;            // warunek spelnienia reguly
+    private final String violationMessage;
+
+    // Fabryki:
+    public static RuleDefinition of(RuleName name, RulePhase phase, RuleSeverity severity,
+                                     Expression applicability, Expression condition, String message) { ... }
+}
+```
+
+```java
+// engine/RuleCatalog.java
+public final class RuleCatalog {
+    private final List<RuleDefinition> rules;
+
+    public RuleCatalog() { this.rules = new ArrayList<>(); }
+
+    public void register(RuleDefinition rule) { rules.add(rule); }
+
+    public List<RuleDefinition> rulesForPhase(RulePhase phase) {
+        return rules.stream().filter(r -> r.phase() == phase).toList();
+    }
+
+    public List<RuleDefinition> applicableRules(RulePhase phase, RuleContext context) {
+        var visitor = new ExpressionVisitor<>(new BooleanAlgebra(), context);
+        return rules.stream()
+            .filter(r -> r.phase() == phase)
+            .filter(r -> visitor.evaluate(r.applicabilityCondition()))
+            .toList();
+    }
+}
+```
+
+=== 1.7 RuleEngine -- Fasada
+
+```java
+// engine/RuleEngine.java
+public final class RuleEngine {
+    private final RuleCatalog catalog;
+
+    public RuleEngine(RuleCatalog catalog) { this.catalog = catalog; }
+
+    public List<RuleEvaluationResult> evaluateAll(RulePhase phase, RuleContext context) {
+        var applicableRules = catalog.applicableRules(phase, context);
+        var algebra = new ComplianceAlgebra();
+        var results = new ArrayList<RuleEvaluationResult>();
+
+        for (var rule : applicableRules) {
+            var visitor = new ExpressionVisitor<>(algebra, context);
+            var result = visitor.evaluate(rule.ruleCondition());
+            results.add(mapResult(rule, result));
+        }
+        return results;
+    }
+
+    public ExplainedEvaluation evaluateWithExplanation(RulePhase phase, RuleContext context) {
+        var applicableRules = catalog.applicableRules(phase, context);
+        var algebra = new ExplainedAlgebra();
+        var explanations = new ArrayList<ExplainedResult>();
+
+        for (var rule : applicableRules) {
+            var visitor = new ExpressionVisitor<>(algebra, context);
+            var result = visitor.evaluate(rule.ruleCondition());
+            explanations.add(result);
+        }
+        return new ExplainedEvaluation(explanations);
+    }
+
+    public boolean hasBlockingViolations(RulePhase phase, RuleContext context) {
+        return evaluateAll(phase, context).stream()
+            .anyMatch(r -> r instanceof Violated v && v.severity() == RuleSeverity.BLOCKING);
+    }
+}
+```
+
+=== 1.8 RuleEvaluationResult -- Sealed Hierarchy
+
+```java
+// model/RuleEvaluationResult.java
+public sealed interface RuleEvaluationResult {
+    RuleName ruleName();
+    RuleSeverity severity();
+}
+
+// model/Satisfied.java
+public record Satisfied(RuleName ruleName, RuleSeverity severity) implements RuleEvaluationResult {}
+
+// model/Pending.java
+public record Pending(RuleName ruleName, RuleSeverity severity, String requiredAction,
+                      @Nullable Instant deadline) implements RuleEvaluationResult {}
+
+// model/Violated.java
+public record Violated(RuleName ruleName, RuleSeverity severity, String violationMessage)
+    implements RuleEvaluationResult {}
+```
+
+=== 1.9 Konfiguracja regul (przyklady)
+
+Bazowane na wzorcu "factory w kodzie" -- reguly jako Java classes rejestrowane przez `RulesConfiguration`:
+
+```java
+// Przyklad: Regula wadium 10% powyzej 10k PLN
+RuleDefinition.wadiumRule(
+    RuleName.of("WADIUM_10_PERCENT_ABOVE_10K"),
+    RulePhase.PARTICIPATION,
+    RuleSeverity.BLOCKING,
+    // Applicability: wartosc > 10000 AND typ != REAL_ESTATE
+    new AndExpression(
+        new MetricComparison(AttributeKey.ESTIMATED_VALUE, GREATER_THAN, new BigDecimal("10000")),
+        new NotExpression(new AttributeCheck(AttributeKey.PRODUCT_TYPE, EQUALS, "REAL_ESTATE"))
+    ),
+    // Condition: wadiumPaid == true
+    new AttributeCheck(AttributeKey.WADIUM_PAID, EQUALS, true),
+    "Wadium 10% jest wymagane dla produktow o wartosci powyzej 10000 PLN"
+);
+
+// Przyklad: Pelnoletnosc dla alkoholu
+RuleDefinition.of(
+    RuleName.of("AGE_VERIFICATION_ALCOHOL"),
+    RulePhase.PARTICIPATION,
+    RuleSeverity.BLOCKING,
+    // Applicability: productType IN (ALCOHOL, TOBACCO)
+    new OrExpression(
+        new AttributeCheck(AttributeKey.PRODUCT_TYPE, EQUALS, "ALCOHOL"),
+        new AttributeCheck(AttributeKey.PRODUCT_TYPE, EQUALS, "TOBACCO")
+    ),
+    // Condition: bidderAge >= 18
+    new MetricComparison(AttributeKey.BIDDER_AGE, GREATER_THAN_OR_EQUAL, 18),
+    "Wymagana pelnoletnosc do zakupu alkoholu lub tytoniu"
+);
+
+// Przyklad: Oryginal dokumentu XYZ w 3 dni dla nieruchomosci
+RuleDefinition.of(
+    RuleName.of("ORIGINAL_DOCUMENT_REAL_ESTATE"),
+    RulePhase.SETTLEMENT,
+    RuleSeverity.BLOCKING,
+    // Applicability: productType == REAL_ESTATE
+    new AttributeCheck(AttributeKey.PRODUCT_TYPE, EQUALS, "REAL_ESTATE"),
+    // Condition: documentStatus ORIGINAL provided
+    new AttributeCheck(AttributeKey.DOCUMENT_STATUS, EQUALS, "ORIGINAL"),
+    "Dla nieruchomosci wymagany oryginal dokumentu XYZ w ciagu 3 dni"
+);
+```
+
+=== 1.10 Testy
+
+Testy jednostkowe dla kazdego elementu:
+
+|===
+|Klasa testowa |Co testuje |Ilosc testow (szac.)
+
+|`ExpressionTest` |Kazdy typ wezla AST |8+
+|`BooleanAlgebraTest` |and/or/not/ifThenElse dla Boolean |10+
+|`ComplianceAlgebraTest` |Tabelka prawdy trójwartosciowa (SATISFIED/PENDING/VIOLATED) |20+
+|`ExplainedAlgebraTest` |Generowanie wyjasnien |5+
+|`ExpressionVisitorTest` |Przechodzenie drzewa AST z roznymi alg |6+
+|`RuleEngineTest` |E2E: rejestracja regul + ewaluacja |10+
+|`RuleCatalogTest` |Filtrowanie regul po phase i applicability |5+
+|`RuleContextTest` |Builder, gettery, null-safety |5+
+|===
+
+=== 1.4 Uwaga o zaleznosci od hexabid-quantity
+
+Modul `hexabid-rules` potrzebuje `BigDecimal` do porownan metryk.
+Gdy `Money` i `Percentage` zostana przeniesione do `hexabid-quantity` (rekomendacja krytyczna z analizy),
+modul `hexabid-rules` bedzie mogl uzywac `Money` z quantity do porownan wartosci.
+Na razie `RuleContext` przechowuje wartosci jako `Object` i `BigDecimal` -- bez silnej typizacji monetarnej.
+
+
+== FAZA 2: Rozszerzenie Cyklu Zycia Aukcji
+
+=== 2.1 Obecny stan
+
+```
+[creation] -> OPEN -> CLOSED
+```
+
+Dwa stany, jedno przejscie. Brak rozliczenia, brak draftu, brak anulowania.
+
+=== 2.2 Docelowy cykl zycia
+
+```
+DRAFT -> PUBLISHED -> IN_PROGRESS -> PENDING_SETTLEMENT -> SETTLED
+                                         |                     ^
+                                         v                     |
+                                    FAILED_SETTLEMENT ---------+
+                                         |
+                                         v
+                                    REOFFERED
+```
+
+|===
+|Stan |Znaczenie |Reguly ewaluowane |Kto inicjuje przejscie
+
+|`DRAFT` |Aukcja tworzona, niewidoczna |ParticipationRules przy publikacji |Sprzedajacy
+|`PUBLISHED` |Widoczna, ale jeszcze nie trwa |Brak |Scheduler (termin rozpoczecia)
+|`IN_PROGRESS` |Trwa licytacja |BiddingRules przy kazdym bid |Uczestnicy (placeBid)
+|`PENDING_SETTLEMENT` |Zakonczona z wygrywajacym, czeka na rozliczenie |SettlementRules z deadline'ami |Scheduler (closeExpired)
+|`SETTLED` |Wszystkie obowiazki spelnione |Brak |SettleAuctionService
+|`FAILED_SETTLEMENT` |Wygrany nie spelnil obowiazkow |Reguly ponownej aukcji |SettlementDeadlineJob
+|`REOFFERED` |Ponownie wystawiona (dla kolejnego biddera lub nowa aukcja) |ParticipationRules |SettleAuctionService
+|===
+
+=== 2.3 Zmiany w AuctionStatus
+
+```java
+// hexabid-core: model/AuctionStatus.java
+public enum AuctionStatus {
+    DRAFT,
+    PUBLISHED,
+    IN_PROGRESS,
+    PENDING_SETTLEMENT,
+    SETTLED,
+    FAILED_SETTLEMENT,
+    REOFFERED
+}
+```
+
+=== 2.4 Nowe przejscia w agregacie Auction
+
+Obecnie `Auction` ma `placeBid()` i `maybeCloseIfExpired()`.
+Nalezy dodac:
+
+```java
+// Nowe metody na agregacie Auction:
+
+// DRAFT -> PUBLISHED
+AuctionEvent publish(Instant publishedAt)
+    // Walidacja: status == DRAFT, publishedAt != null
+    // Zmienia status na PUBLISHED
+    // Emituje: AuctionPublishedEvent
+
+// PUBLISHED -> IN_PROGRESS
+AuctionEvent start(Instant startedAt)
+    // Walidacja: status == PUBLISHED, startedAt != null
+    // Zmienia status na IN_PROGRESS
+    // Emituje: AuctionStartedEvent
+
+// IN_PROGRESS -> PENDING_SETTLEMENT (zamiast CLOSED)
+AuctionEvent closeWithWinner(Instant closedAt)
+    // Walidacja: status == IN_PROGRESS, hasLeadingBid, winningPrice >= reservePrice
+    // Zmienia status na PENDING_SETTLEMENT
+    // Emituje: AuctionWonEvent (z rozszerzonymi polami)
+
+// IN_PROGRESS -> PENDING_SETTLEMENT lub CLOSED bez wygrania
+AuctionEvent closeIfExpired(Instant now)
+    // Zastepuje obecne maybeCloseIfExpired()
+    // Jezeli reservePrice nie osiagnieta -> AuctionClosedBelowReserveEvent
+    // Jezeli sa bidy -> PENDING_SETTLEMENT + AuctionWonEvent
+    // Jezeli brak bidow -> AuctionClosedWithoutWinnerEvent (terminalny)
+
+// PENDING_SETTLEMENT -> SETTLED
+AuctionEvent markAsSettled()
+    // Walidacja: status == PENDING_SETTLEMENT
+    // Emituje: AuctionSettledEvent
+
+// PENDING_SETTLEMENT -> FAILED_SETTLEMENT
+AuctionEvent markSettlementFailed(String reason)
+    // Walidacja: status == PENDING_SETTLEMENT
+    // Emituje: AuctionSettlementFailedEvent
+```
+
+=== 2.5 Nowe zdarzenia domenowe
+
+```java
+AuctionDomainEvent (sealed interface)
+├── AuctionPublishedEvent          (auctionId, publishedAt)
+├── AuctionStartedEvent            (auctionId, startedAt)
+├── AuctionLeaderChangedEvent      (istniejace, bez zmian)
+├── AuctionWonEvent                (rozszerzone: + settlementDeadline, + requiredDocuments)
+├── AuctionClosedBelowReserveEvent (NOWE: auctionId, currentPrice, reservePrice)
+├── AuctionClosedWithoutWinnerEvent(istniejace, bez zmian)
+├── AuctionSettledEvent            (NOWE: auctionId, winnerId, settledAt)
+├── AuctionSettlementFailedEvent   (NOWE: auctionId, winnerId, reason, failedAt)
+└── AuctionReofferedEvent          (NOWE: auctionId, reofferedAt)
+```
+
+=== 2.6 ReservePrice -- egzekwowanie (bug fix)
+
+Obecnie `Lot.reservePrice` nie jest sprawdzane w `Auction.placeBid()` ani w `maybeCloseIfExpired()`.
+
+**Poprawka w `Auction.closeWithWinner()`:**
+
+```java
+public AuctionEvent closeWithWinner(Instant closedAt) {
+    ensureStatusIs(IN_PROGRESS);
+    var leadingBid = maybeLeadingBid().orElseThrow();
+    if (leadingBid.amount().isLessThan(lot.reservePrice())) {
+        // Wygrywajaca oferta ponizej ceny rezerwowej
+        // Emitujemy zdarzenie ale NIE przechodzimy do PENDING_SETTLEMENT
+        return new AuctionClosedBelowReserveEvent(id, leadingBid.amount(), lot.reservePrice(), closedAt);
+    }
+    status = AuctionStatus.PENDING_SETTLEMENT;
+    return new AuctionWonEvent(id, leadingBid.bidderId(), leadingBid.amount(), closedAt, settlementDeadline, requiredDocuments);
+}
+```
+
+=== 2.7 Zmiany w PlaceBidService
+
+Obecny `PlaceBidService` sprawdza tylko KYC i deleguje do `auction.placeBid()`.
+Po zmianach:
+
+```java
+// Nowy przebieg PlaceBidService.placeBid():
+
+1. Sprawdz KYC biddera (istniejace)
+2. Znajdz aukcje (istniejace)
+3. NOWE: Sprawdz czy aukcja jest w statusie IN_PROGRESS (nie PUBLISHED, nie DRAFT)
+4. NOWE: Ewaluuj BiddingRules przez AuctionRuleEvaluator
+   - Zbuduj RuleContext z danych aukcji i biddera
+   - Jezeli BLOCKING violation -> odrzuc bid z odpowiednim powodem
+5. Deleguj do auction.placeBid() (istniejace)
+6. Zapisz i opublikuj zdarzenie (istniejace)
+```
+
+=== 2.8 Nowy: SettleAuctionService
+
+```java
+// hexabid-core: usecase/SettleAuctionService.java
+public final class SettleAuctionService implements SettleAuctionUseCase {
+
+    private final AuctionRepository auctionRepository;
+    private final AuctionRuleEvaluator ruleEvaluator;
+    private final AuctionEventPublisher eventPublisher;
+    private final Clock clock;
+
+    public SettlementResult settleAuction(AuctionId auctionId) {
+        var auction = auctionRepository.findById(auctionId)
+            .orElseThrow();
+
+        // Zbuduj RuleContext z danych aukcji i wygranego
+        var context = buildSettlementContext(auction);
+
+        // Ewaluuj SettlementRules
+        var results = ruleEvaluator.evaluateSettlementRules(context);
+
+        // Sprawdz czy sa BLOCKING violations
+        if (hasBlockingViolations(results)) {
+            auction.markSettlementFailed("Blocking violations: " + summarizeViolations(results));
+            auctionRepository.save(auction);
+            return SettlementResult.failed(results);
+        }
+
+        // Wszystko spelnione -> rozlicz
+        auction.markAsSettled();
+        auctionRepository.save(auction);
+        return SettlementResult.succeeded();
+    }
+}
+```
+
+=== 2.9 Nowy: SettlementDeadlineJob (adapter wejsciowy)
+
+```java
+// hexabid-adapter-in-job: settlement/SettlementDeadlineJob.java
+// Scheduled job sprawdzajacy aukcje w PENDING_SETTLEMENT z przekroczonym deadline
+
+@Scheduled(fixedDelayString = "${auctions.jobs.settlement-deadline.delay:300000}")
+public void checkSettlementDeadlines() {
+    var now = clock.instant();
+    var pendingAuctions = auctionRepository.findPendingSettlementWithExpiredDeadline(now);
+
+    for (var auction : pendingAuctions) {
+        settleAuctionService.checkSettlementDeadline(auction.id());
+    }
+}
+```
+
+
+== FAZA 3: Konkretne Reguly Biznesowe
+
+=== 3.1 Spis regul z mapowaniem na model
+
+Kazda regula jest zdefiniowana jako `RuleDefinition` z:
+- **applicabilityCondition** -- Expression okreslajace KIEDY regula dotyczy aukcji
+- **ruleCondition** -- Expression okreslajace CZY regula jest spelniona
+- **phase** -- na jakim etapie cyklu aukcji
+- **severity** -- czy blokuje, ostrzega, czy informuje
+
+==== Reguly fazy PARTICIPATION (czy moge przystapic?)
+
+|===
+|Regula |Applicability Condition |Rule Condition |Severity |Violated Message
+
+|Wadium 10% powyzej 10k PLN |`estimatedValue > 10000 AND productType != REAL_ESTATE` |`wadiumPaid == true` |BLOCKING |Wadium 10% wartosci szacunkowej jest wymagane
+
+|Termin ogledzin nieruchomosci |`productType == REAL_ESTATE` |`viewingDateScheduled == true` |BLOCKING |Dla nieruchomosci wymagane jest zdefiniowanie terminu ogledzin
+
+|Pelnoletnosc (alkohol/tyton) |`productType IN (ALCOHOL, TOBACCO)` |`bidderAge >= 18` |BLOCKING |Wymagana pelnoletnosc do zakupu tego produktu
+
+|Kopia dokumentu akcyzy do przystapienia |`excisable == true` |`exciseDocumentStatus == COPY OR exciseDocumentStatus == ORIGINAL` |WARNING |Dostarcz kopie dokumentu akcyzy. Oryginal bedzie wymagany po wygranej
+
+|Kopia zwolnienia celnego do przystapienia |`imported == true AND customsExempt == true` |`customsExemptionDocStatus == COPY OR customsExemptionDocStatus == ORIGINAL` |WARNING |Dostarcz kopie zwolnienia celnego. Oryginal bedzie wymagany po wygranej
+
+|Wadium 10% dla nieruchomosci |`productType == REAL_ESTATE` |`wadiumPaid == true` |BLOCKING |Dla nieruchomosci wadium 10% jest wymagane przed licytacja
+|===
+
+==== Reguly fazy BIDDING (czy moge licytowac?)
+
+|===
+|Regula |Applicability Condition |Rule Condition |Severity |Violated Message
+
+|Wadium wpłacone |`estimatedValue > 10000 OR productType == REAL_ESTATE` |`wadiumPaid == true` |BLOCKING |Nie mozna licytowac bez wplate wadium
+
+|KYC zweryfikowany |Zawsze (AlwaysTrue) |`kycVerified == true` |BLOCKING |Wymagana weryfikacja KYC
+|===
+
+==== Reguly fazy SETTLEMENT (co po wygranej?)
+
+|===
+|Regula |Applicability Condition |Rule Condition |Severity |Violated Message
+
+|Oryginal dokumentu akcyzy |`excisable == true` |`exciseDocumentStatus == ORIGINAL` |BLOCKING |Wymagany oryginal dokumentu akcyzy do rozliczenia
+
+|Oryginal zwolnienia celnego |`imported == true AND customsExempt == true` |`customsExemptionDocStatus == ORIGINAL` |BLOCKING |Wymagany oryginal zwolnienia celnego do rozliczenia
+
+|Dokument XYZ w 3 dni (nieruchomosc) |`productType == REAL_ESTATE` |`settlementDocumentProvided == true AND daysSinceClose <= 3` |BLOCKING |Dla nieruchomosci wymagany oryginal dokumentu w ciagu 3 dni roboczych
+
+|Platnosc pelnej kwoty |Zawsze (AlwaysTrue) |`fullPaymentReceived == true` |BLOCKING |Wymagana platnosc pelnej kwoty do rozliczenia
+
+|Potwierdzenie odbioru |`productType != REAL_ESTATE` |`receiptConfirmed == true` |WARNING |Potwierdzenie odbioru towaru
+|===
+
+=== 3.2 Kluczowy wzorzec: ten sam dokument, rozne wymagania na roznych etapach
+
+To jest wprost z M04L02 (Three-zone logic model): "ten sam koncept, rozna ostrosc na roznych etapach"
+
+```
+Dokument akcyzy:
+  PARTICIPATION -> kopia wystarczy  (WARNING: mozna licytowac)
+  SETTLEMENT    -> oryginal wymagany (BLOCKING: nie rozliczysz bez tego)
+
+Zwolnienie celne:
+  PARTICIPATION -> kopia wystarczy  (WARNING)
+  SETTLEMENT    -> oryginal wymagany (BLOCKING)
+```
+
+To jest realizowane przez **dwie osobne reguly** w `RuleCatalog`:
+1. `EXCISE_DOCUMENT_COPY_PARTICIPATION` (phase=PARTICIPATION, severity=WARNING)
+2. `EXCISE_DOCUMENT_ORIGINAL_SETTLEMENT` (phase=SETTLEMENT, severity=BLOCKING)
+
+Obie dotycza tego samego `AttributeKey.EXCISE_DOCUMENT_STATUS`, ale z roznymi comparatorami.
+
+=== 3.3 RuleContext dla poszczegolnych faz
+
+==== ParticipationRuleContext
+
+```java
+RuleContext.builder()
+    .productType("REAL_ESTATE")               // z ProductType
+    .estimatedValue(new BigDecimal("50000"))  // z Lot.reservePrice lub osobne pole
+    .bidderAge(25)                             // z Party/RegisteredIdentifier
+    .excisable(false)                          // z ProductFeatureType
+    .imported(false)                           // z ProductFeatureType
+    .customsExempt(false)                      // z ProductFeatureType
+    .wadiumPaid(true)                          // z nowego portu WadiumDepositPort
+    .with(AttributeKey.VIEWING_DATE_SCHEDULED, true)  // z ProductFeatureType na ProductType
+    .with(AttributeKey.EXCISE_DOCUMENT_STATUS, "COPY") // z DocumentRepository
+    .with(AttributeKey.CUSTOMS_EXEMPTION_DOC_STATUS, "MISSING")
+    .build();
+```
+
+==== SettlementRuleContext
+
+```java
+RuleContext.builder()
+    .productType("REAL_ESTATE")
+    .excisable(false)
+    .imported(false)
+    .customsExempt(false)
+    .with(AttributeKey.SETTLEMENT_DOCUMENT_PROVIDED, true)
+    .with(AttributeKey.DAYS_SINCE_CLOSE, 2)
+    .with(AttributeKey.FULL_PAYMENT_RECEIVED, false)
+    .with(AttributeKey.EXCISE_DOCUMENT_STATUS, "ORIGINAL")
+    .build();
+```
+
+=== 3.4 Dokumenty jako first-class citizens
+
+Potrzebny nowy model dla dokumentow:
+
+```java
+// hexabid-core: model/DocumentRequirement.java
+public record DocumentRequirement(
+    DocumentType type,
+    DocumentStatus requiredStatus,
+    RulePhase requiredByPhase,
+    Instant deadline
+) {}
+
+// hexabid-core: model/DocumentType.java
+public enum DocumentType {
+    EXCISE_CERTIFICATE,
+    CUSTOMS_EXEMPTION,
+    REAL_ESTATE_SETTLEMENT,
+    IDENTITY_VERIFICATION,
+    VEHICLE_REGISTRATION
+}
+
+// hexabid-core: model/DocumentStatus.java
+public enum DocumentStatus {
+    MISSING,       // brak dokumentu
+    COPY,          // kopia dostarczona (wystarczajaca na PARTICIPATION)
+    ORIGINAL       // oryginal dostarczony (wymagany na SETTLEMENT)
+}
+```
+
+=== 3.5 Nowy port-out: DocumentRepository
+
+```java
+// hexabid-core: port/out/DocumentRepository.java
+public interface DocumentRepository {
+    DocumentStatus getDocumentStatus(PartyId partyId, DocumentType type);
+    void submitDocument(PartyId partyId, DocumentType type, DocumentStatus status);
+    List<DocumentRequirement> getRequirementsForAuction(AuctionId auctionId);
+}
+```
+
+=== 3.6 Nowy port-out: WadiumDepositPort
+
+```java
+// hexabid-core: port/out/WadiumDepositPort.java
+public interface WadiumDepositPort {
+    boolean hasPaidWadium(PartyId partyId, AuctionId auctionId);
+    void registerWadiumPayment(PartyId partyId, AuctionId auctionId, Money amount);
+    void refundWadium(PartyId partyId, AuctionId auctionId);
+}
+```
+
+=== 3.7 Nowy port-in: SubmitDocumentUseCase
+
+```java
+// hexabid-core: port/in/SubmitDocumentUseCase.java
+public interface SubmitDocumentUseCase {
+    SubmitDocumentResult submitDocument(SubmitDocumentCommand command);
+}
+
+// hexabid-core: port/in/SubmitDocumentCommand.java
+public record SubmitDocumentCommand(
+    PartyId partyId,
+    AuctionId auctionId,
+    DocumentType documentType,
+    DocumentStatus status  // COPY lub ORIGINAL
+) {}
+
+// hexabid-core: port/in/SubmitDocumentResult.java
+public sealed interface SubmitDocumentResult {
+    record DocumentAccepted(DocumentType type, DocumentStatus status) implements SubmitDocumentResult {}
+    record DocumentRejected(String reason) implements SubmitDocumentResult {}
+}
+```
+
+
+== FAZA 4: Integracja z Istniejacymi Modulami
+
+=== 4.1 Nowe porty-out w hexabid-core
+
+Porty dodawane do pakietu `com.github.hexabid.core.auctioning.port.out`:
+
+|===
+|Port |Metody |Opis
+
+|`AuctionRuleEvaluator` |`evaluateParticipationRules(RuleContext)`, `evaluateBiddingRules(RuleContext)`, `evaluateSettlementRules(RuleContext)` |Deleguje do hexabid-rules RuleEngine
+|`DocumentRepository` |`getDocumentStatus(PartyId, DocumentType)`, `submitDocument(...)`, `getRequirementsForAuction(AuctionId)` |Zarzadzanie dokumentami
+|`WadiumDepositPort` |`hasPaidWadium(PartyId, AuctionId)`, `registerWadiumPayment(...)`, `refundWadium(...)` |Zarzadzanie wadium
+|===
+
+=== 4.2 Nowy modul Maven: hexabid-rules-adapter
+
+Adapter laczacy `hexabid-core` z `hexabid-rules`:
+
+```
+hexabid-rules-adapter/
+└── src/main/java/com/github/hexabid/rules/adapter/
+    ├── RuleEvaluatorAdapter.java      # implements AuctionRuleEvaluator (port-out z core)
+    ├── RuleContextFactory.java         # buduje RuleContext z danych aukcji
+    └── RulesConfiguration.java         # @Configuration rejestrujaca reguly
+```
+
+**RuleEvaluatorAdapter** -- tlumaczy miedzy portem z core a silnikiem rules:
+
+```java
+@Component
+public class RuleEvaluatorAdapter implements AuctionRuleEvaluator {
+
+    private final RuleEngine ruleEngine;
+
+    @Override
+    public List<RuleEvaluationResult> evaluateParticipationRules(RuleContext context) {
+        return ruleEngine.evaluateAll(RulePhase.PARTICIPATION, context);
+    }
+
+    @Override
+    public List<RuleEvaluationResult> evaluateBiddingRules(RuleContext context) {
+        return ruleEngine.evaluateAll(RulePhase.BIDDING, context);
+    }
+
+    @Override
+    public List<RuleEvaluationResult> evaluateSettlementRules(RuleContext context) {
+        return ruleEngine.evaluateAll(RulePhase.SETTLEMENT, context);
+    }
+}
+```
+
+**RuleContextFactory** -- buduje RuleContext z danych aukcyjnych:
+
+```java
+@Component
+public class RuleContextFactory {
+
+    private final DocumentRepository documentRepository;
+    private final WadiumDepositPort wadiumPort;
+
+    public RuleContext forParticipation(Auction auction, PartyId bidderId) {
+        return RuleContext.builder()
+            .productType(auction.lot().productType())
+            .estimatedValue(auction.currentPrice().amount())
+            .bidderAge(resolveBidderAge(bidderId))
+            .excisable(auction.lot().isExcisable())
+            .imported(auction.lot().isImported())
+            .customsExempt(auction.lot().isCustomsExempt())
+            .wadiumPaid(wadiumPort.hasPaidWadium(bidderId, auction.id()))
+            .with(AttributeKey.KYC_VERIFIED, true)  // juz sprawdzony wczesniej
+            .with(AttributeKey.VIEWING_DATE_SCHEDULED, auction.lot().hasViewingDate())
+            .with(AttributeKey.EXCISE_DOCUMENT_STATUS,
+                documentRepository.getDocumentStatus(bidderId, DocumentType.EXCISE_CERTIFICATE).name())
+            .with(AttributeKey.CUSTOMS_EXEMPTION_DOC_STATUS,
+                documentRepository.getDocumentStatus(bidderId, DocumentType.CUSTOMS_EXEMPTION).name())
+            .build();
+    }
+
+    public RuleContext forSettlement(Auction auction) {
+        var winnerId = auction.maybeWinnerId().orElseThrow();
+        return RuleContext.builder()
+            .productType(auction.lot().productType())
+            .excisable(auction.lot().isExcisable())
+            .imported(auction.lot().isImported())
+            .customsExempt(auction.lot().isCustomsExempt())
+            .with(AttributeKey.EXCISE_DOCUMENT_STATUS,
+                documentRepository.getDocumentStatus(winnerId, DocumentType.EXCISE_CERTIFICATE).name())
+            .with(AttributeKey.CUSTOMS_EXEMPTION_DOC_STATUS,
+                documentRepository.getDocumentStatus(winnerId, DocumentType.CUSTOMS_EXEMPTION).name())
+            .with(AttributeKey.SETTLEMENT_DOCUMENT_PROVIDED,
+                documentRepository.getDocumentStatus(winnerId, DocumentType.REAL_ESTATE_SETTLEMENT) != DocumentStatus.MISSING)
+            .with(AttributeKey.DAYS_SINCE_CLOSE,
+                calculateDaysSinceClose(auction))
+            .with(AttributeKey.FULL_PAYMENT_RECEIVED, false)
+            .build();
+    }
+}
+```
+
+=== 4.3 RulesConfiguration -- rejestracja regul
+
+```java
+@Configuration
+public class RulesConfiguration {
+
+    @Bean
+    public RuleCatalog auctionRuleCatalog() {
+        var catalog = new RuleCatalog();
+
+        // === PARTICIPATION RULES ===
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("WADIUM_10_PERCENT_ABOVE_10K"),
+            RulePhase.PARTICIPATION,
+            RuleSeverity.BLOCKING,
+            // Applicability: wartosc > 10k AND nie nieruchomosc
+            new AndExpression(
+                new MetricComparison(AttributeKey.ESTIMATED_VALUE,
+                    AttributeCheck.Comparator.GREATER_THAN, new BigDecimal("10000")),
+                new NotExpression(
+                    new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                        AttributeCheck.Comparator.EQUALS, "REAL_ESTATE"))
+            ),
+            // Condition: wadiumPaid == true
+            new AttributeCheck(AttributeKey.WADIUM_PAID,
+                AttributeCheck.Comparator.EQUALS, true),
+            "Wadium 10% wartosci szacunkowej jest wymagane dla produktow o wartosci powyzej 10000 PLN"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("WADIUM_REAL_ESTATE"),
+            RulePhase.PARTICIPATION,
+            RuleSeverity.BLOCKING,
+            new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                AttributeCheck.Comparator.EQUALS, "REAL_ESTATE"),
+            new AttributeCheck(AttributeKey.WADIUM_PAID,
+                AttributeCheck.Comparator.EQUALS, true),
+            "Dla nieruchomosci wadium 10% jest wymagane przed licytacja"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("VIEWING_DATE_REAL_ESTATE"),
+            RulePhase.PARTICIPATION,
+            RuleSeverity.BLOCKING,
+            new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                AttributeCheck.Comparator.EQUALS, "REAL_ESTATE"),
+            new AttributeCheck(AttributeKey.VIEWING_DATE_SCHEDULED,
+                AttributeCheck.Comparator.EQUALS, true),
+            "Dla nieruchomosci wymagane jest zdefiniowanie terminu ogledzin"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("AGE_VERIFICATION_ALCOHOL_TOBACCO"),
+            RulePhase.PARTICIPATION,
+            RuleSeverity.BLOCKING,
+            new OrExpression(
+                new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                    AttributeCheck.Comparator.EQUALS, "ALCOHOL"),
+                new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                    AttributeCheck.Comparator.EQUALS, "TOBACCO")
+            ),
+            new MetricComparison(AttributeKey.BIDDER_AGE,
+                AttributeCheck.Comparator.GREATER_THAN_OR_EQUAL, 18),
+            "Wymagana pelnoletnosc do zakupu alkoholu lub tytoniu"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("EXCISE_COPY_PARTICIPATION"),
+            RulePhase.PARTICIPATION,
+            RuleSeverity.WARNING,
+            new AttributeCheck(AttributeKey.EXCISABLE,
+                AttributeCheck.Comparator.EQUALS, true),
+            new OrExpression(
+                new AttributeCheck(AttributeKey.EXCISE_DOCUMENT_STATUS,
+                    AttributeCheck.Comparator.EQUALS, "COPY"),
+                new AttributeCheck(AttributeKey.EXCISE_DOCUMENT_STATUS,
+                    AttributeCheck.Comparator.EQUALS, "ORIGINAL")
+            ),
+            "Dostarcz kopi dokumentu akcyzy. Oryginal bedzie wymagany po wygranej"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("CUSTOMS_EXEMPTION_COPY_PARTICIPATION"),
+            RulePhase.PARTICIPATION,
+            RuleSeverity.WARNING,
+            new AndExpression(
+                new AttributeCheck(AttributeKey.IMPORTED,
+                    AttributeCheck.Comparator.EQUALS, true),
+                new AttributeCheck(AttributeKey.CUSTOMS_EXEMPT,
+                    AttributeCheck.Comparator.EQUALS, true)
+            ),
+            new OrExpression(
+                new AttributeCheck(AttributeKey.CUSTOMS_EXEMPTION_DOC_STATUS,
+                    AttributeCheck.Comparator.EQUALS, "COPY"),
+                new AttributeCheck(AttributeKey.CUSTOMS_EXEMPTION_DOC_STATUS,
+                    AttributeCheck.Comparator.EQUALS, "ORIGINAL")
+            ),
+            "Dostarcz kopi zwolnienia celnego. Oryginal bedzie wymagany po wygranej"
+        ));
+
+        // === BIDDING RULES ===
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("WADIUM_PAID_FOR_BIDDING"),
+            RulePhase.BIDDING,
+            RuleSeverity.BLOCKING,
+            new OrExpression(
+                new MetricComparison(AttributeKey.ESTIMATED_VALUE,
+                    AttributeCheck.Comparator.GREATER_THAN, new BigDecimal("10000")),
+                new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                    AttributeCheck.Comparator.EQUALS, "REAL_ESTATE")
+            ),
+            new AttributeCheck(AttributeKey.WADIUM_PAID,
+                AttributeCheck.Comparator.EQUALS, true),
+            "Nie mozna licytowac bez wplate wadium"
+        ));
+
+        // === SETTLEMENT RULES ===
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("EXCISE_ORIGINAL_SETTLEMENT"),
+            RulePhase.SETTLEMENT,
+            RuleSeverity.BLOCKING,
+            new AttributeCheck(AttributeKey.EXCISABLE,
+                AttributeCheck.Comparator.EQUALS, true),
+            new AttributeCheck(AttributeKey.EXCISE_DOCUMENT_STATUS,
+                AttributeCheck.Comparator.EQUALS, "ORIGINAL"),
+            "Wymagany oryginal dokumentu akcyzy do rozliczenia"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("CUSTOMS_EXEMPTION_ORIGINAL_SETTLEMENT"),
+            RulePhase.SETTLEMENT,
+            RuleSeverity.BLOCKING,
+            new AndExpression(
+                new AttributeCheck(AttributeKey.IMPORTED,
+                    AttributeCheck.Comparator.EQUALS, true),
+                new AttributeCheck(AttributeKey.CUSTOMS_EXEMPT,
+                    AttributeCheck.Comparator.EQUALS, true)
+            ),
+            new AttributeCheck(AttributeKey.CUSTOMS_EXEMPTION_DOC_STATUS,
+                AttributeCheck.Comparator.EQUALS, "ORIGINAL"),
+            "Wymagany oryginal zwolnienia celnego do rozliczenia"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("REAL_ESTATE_DOCUMENT_3_DAYS"),
+            RulePhase.SETTLEMENT,
+            RuleSeverity.BLOCKING,
+            new AttributeCheck(AttributeKey.PRODUCT_TYPE,
+                AttributeCheck.Comparator.EQUALS, "REAL_ESTATE"),
+            new AndExpression(
+                new AttributeCheck(AttributeKey.SETTLEMENT_DOCUMENT_PROVIDED,
+                    AttributeCheck.Comparator.EQUALS, true),
+                new MetricComparison(AttributeKey.DAYS_SINCE_CLOSE,
+                    AttributeCheck.Comparator.LESS_THAN_OR_EQUAL, 3)
+            ),
+            "Dla nieruchomosci wymagany oryginal dokumentu w ciagu 3 dni roboczych"
+        ));
+
+        catalog.register(RuleDefinition.of(
+            RuleName.of("FULL_PAYMENT_SETTLEMENT"),
+            RulePhase.SETTLEMENT,
+            RuleSeverity.BLOCKING,
+            new ConstantExpression(true),  // zawsze dotyczy
+            new AttributeCheck(AttributeKey.FULL_PAYMENT_RECEIVED,
+                AttributeCheck.Comparator.EQUALS, true),
+            "Wymagana platnosc pelnej kwoty do rozliczenia"
+        ));
+
+        return catalog;
+    }
+}
+```
+
+=== 4.4 Zmiany w CreateAuctionService
+
+Obecny przebieg:
+
+```
+1. kycClient.isVerified(sellerId) -> SELLER_NOT_VERIFIED
+2. endsAt > clock.instant() -> AUCTION_END_TIME_NOT_IN_FUTURE
+3. Auction.create(id, sellerId, Lot.singleProductDraft(title), startingPrice, endsAt)
+4. save
+```
+
+Docelowy przebieg:
+
+```
+1. kycClient.isVerified(sellerId) -> SELLER_NOT_VERIFIED
+2. endsAt > clock.instant() -> AUCTION_END_TIME_NOT_IN_FUTURE
+3. NOWE: Ewaluuj ParticipationRules dla sprzedajacego
+   - Zbuduj RuleContext z danych produktu
+   - Jezeli BLOCKING violation -> odrzuc z odpowiednim powodem
+   - (np. nieruchomosc bez terminu ogledzin -> nie mozna utworzyc aukcji)
+4. Auction.create(id, sellerId, lot, startingPrice, endsAt)
+   - Lot z prawdziwym inventoryEntryId (nie singleProductDraft)
+   - Ustaw settlementDeadline na podstawie regul
+5. Przypisz reguly do aukcji (przez RuleCatalog)
+6. save
+```
+
+=== 4.5 Zmiany w PlaceBidService
+
+Obecny przebieg:
+
+```
+1. kycClient.isVerified(bidderId) -> BIDDER_NOT_VERIFIED
+2. auctionRepository.findById(auctionId) -> AUCTION_NOT_FOUND
+3. auction.placeBid(bidderId, amount, clock.instant())
+4. save + publish
+```
+
+Docelowy przebieg:
+
+```
+1. kycClient.isVerified(bidderId) -> BIDDER_NOT_VERIFIED
+2. auctionRepository.findById(auctionId) -> AUCTION_NOT_FOUND
+3. NOWE: auction musi byc w IN_PROGRESS (nie PUBLISHED, nie DRAFT)
+4. NOWE: Ewaluuj BiddingRules przez AuctionRuleEvaluator
+   - Zbuduj RuleContext (productType, estimatedValue, bidderAge, wadiumPaid, etc.)
+   - Jezeli BLOCKING violation -> odrzuc z nowym PlaceBidFailureReason
+   - Nowe failure reasons: WADIUM_NOT_PAID, AGE_REQUIREMENT_NOT_MET, DOCUMENT_REQUIRED
+5. auction.placeBid(bidderId, amount, clock.instant())
+6. save + publish
+```
+
+Nowe `PlaceBidFailureReason` wartosci:
+
+```java
+public enum PlaceBidFailureReason {
+    // ... istniejace ...
+    AUCTION_NOT_IN_PROGRESS,
+    WADIUM_NOT_PAID,
+    AGE_REQUIREMENT_NOT_MET,
+    DOCUMENT_REQUIRED,
+    AUCTION_RULE_VIOLATION  // generic fallback
+}
+```
+
+=== 4.6 Zmiany w CloseExpiredAuctionsService
+
+Obecnie zamyka aukcje i emituje `AuctionWonEvent` lub `AuctionClosedWithoutWinnerEvent`.
+
+Docelowo:
+
+```
+1. Znajdz aukcje w IN_PROGRESS z endsAt <= now
+2. Dla kazdej:
+   a. Jezeli ma leadingBid AND leadingPrice >= reservePrice:
+      -> auction.closeWithWinner(now)  -> PENDING_SETTLEMENT
+      -> Emituj AuctionWonEvent z settlementDeadline i requiredDocuments
+   b. Jezeli ma leadingBid AND leadingPrice < reservePrice:
+      -> auction.closeBelowReserve(now)  -> CLOSED (terminal)
+      -> Emituj AuctionClosedBelowReserveEvent
+   c. Jezeli brak bidow:
+      -> auction.closeWithoutWinner(now)  -> CLOSED (terminal)
+      -> Emituj AuctionClosedWithoutWinnerEvent
+3. Save + publish
+```
+
+=== 4.7 Nowe porty-in w hexabid-core
+
+```java
+// port/in/SettleAuctionUseCase.java
+public interface SettleAuctionUseCase {
+    SettlementResult settleAuction(SettlementCommand command);
+}
+
+// port/in/SubmitDocumentUseCase.java
+public interface SubmitDocumentUseCase {
+    SubmitDocumentResult submitDocument(SubmitDocumentCommand command);
+}
+
+// port/in/CheckSettlementStatusUseCase.java
+public interface CheckSettlementStatusUseCase {
+    SettlementStatusResult checkStatus(AuctionId auctionId);
+}
+```
+
+=== 4.8 Zmiany w AuctioningConfiguration
+
+Nowe ziarna do zarejestrowania w composition root:
+
+```java
+// AuctioningConfiguration.java - nowe ziarna
+@Bean
+AuctionRuleEvaluator auctionRuleEvaluator(RuleEngine ruleEngine, RuleContextFactory contextFactory) {
+    return new RuleEvaluatorAdapter(ruleEngine, contextFactory);
+}
+
+@Bean
+SettleAuctionUseCase settleAuctionUseCase(AuctionRepository repo, AuctionRuleEvaluator evaluator,
+                                            AuctionEventPublisher publisher, Clock clock) {
+    return new SettleAuctionService(repo, evaluator, publisher, clock);
+}
+
+@Bean
+SubmitDocumentUseCase submitDocumentUseCase(DocumentRepository docRepo) {
+    return new SubmitDocumentService(docRepo);
+}
+```
+
+=== 4.9 Zmiany w Maven module structure
+
+Nowe moduly w `pom.xml` glownego projektu:
+
+```xml
+<!-- Nowe moduly -->
+<module>hexabid-rules</module>
+<module>hexabid-rules-adapter</module>
+```
+
+Zaleznosci:
+
+```
+hexabid-rules           -> hexabid-quantity (dla BigDecimal, przyszle Money/Percentage)
+hexabid-rules-adapter  -> hexabid-rules, hexabid-core
+hexabid-core           -> (nie zalezy od hexabid-rules! zalezy tylko od portu AuctionRuleEvaluator)
+hexabid-adapter-in-rest -> hexabid-core, hexabid-rules-adapter (dla nowych endpointow)
+```
+
+**Kluczowe**: `hexabid-core` NIE zalezy od `hexabid-rules`. Komunikacja idzie przez port-out `AuctionRuleEvaluator`, ktory `hexabid-rules-adapter` implementuje.
+
+
+== FAZA 5: Graf Procesu (User Journey) -- Opcjonalne Rozszerzenie
+
+=== 5.1 Motywacja
+
+Po Fazach 1-4 reguly sa ewaluowane punktowo (na konkretny event).
+Faza 5 wprowadza **perspektywe procesowa** -- graf stanow i przejsc,
+ktory pozwala odpowiedziec na pytania biznesowe:
+
+* "Co musze zrobic, zeby uztawic aukcje nieruchomosci?" -> path query w grafie
+* "Czy moge przystapic do tej aukcji?" -> reachability check
+* "Jaki jest najszybszy sposob na rozliczenie?" -> shortest path
+* "Co blokuje rozliczenie tej aukcji?" -> articulation points / pending requirements
+
+To jest dokladnie wzorzec z **M05L04** (User Story Archetype: Processes as State/Transition Graphs).
+
+=== 5.2 AuctionProcessGraph
+
+Nowa klasa w `hexabid-rules` (lub osobny modul `hexabid-rules-graph`):
+
+```java
+// graph/AuctionProcessGraph.java
+public final class AuctionProcessGraph {
+
+    // Graf stanow: node = AuctionStatus, edge = Transition (condition + requiredAction)
+    private final Map<AuctionStatus, List<Transition>> transitions;
+
+    public record Transition(
+        AuctionStatus from,
+        AuctionStatus to,
+        String description,       // "Wplac wadium", "Dostarcz oryginal akcyzy"
+        RulePhase requiredPhase, // PARTICIPATION, BIDDING, SETTLEMENT
+        Expression condition     // warunek przejscia (z AST)
+    ) {}
+
+    // Pytania do grafu:
+
+    /** Jakie akcje sa wymagane do przejscia z A do B? */
+    public List<Transition> requiredActions(AuctionStatus from, AuctionStatus to);
+
+    /** Czy z obecnego stanu i kontekstu mozna osiagnac cel? (reachability) */
+    public boolean canReach(AuctionStatus current, AuctionStatus target, RuleContext context);
+
+    /** Jakie przejscia sa mozliwe z obecnego stanu? (dostepne akcje) */
+    public List<Transition> availableTransitions(AuctionStatus current, RuleContext context);
+
+    /** Jaka jest najkrotsza sciezka do rozliczenia? (shortest path) */
+    public List<Transition> shortestPathToSettlement(AuctionStatus current, RuleContext context);
+
+    /** Co blokuje przejscie do nastepnego stanu? (blocking violations) */
+    public List<Violation> blockingViolations(AuctionStatus current, RuleContext context);
+}
+```
+
+=== 5.3 Przyklad grafu dla nieruchomosci
+
+```
+DRAFT
+  |
+  | [Zdefiniuj termin ogledzin]     <-- ParticipationRule: VIEWING_DATE_REAL_ESTATE
+  | [Wplac wadium 10%]              <-- ParticipationRule: WADIUM_REAL_ESTATE
+  v
+PUBLISHED
+  |
+  | [Poczekaj na termin rozpoczecia]
+  v
+IN_PROGRESS
+  |
+  | [Zwycieska oferta >= reservePrice]
+  v
+PENDING_SETTLEMENT
+  |
+  | [Dostarcz oryginal dokumentu XYZ w 3 dni] <-- SettlementRule: REAL_ESTATE_DOCUMENT_3_DAYS
+  | [Dokonaj platnosci pelnej kwoty]           <-- SettlementRule: FULL_PAYMENT_SETTLEMENT
+  v
+SETTLED
+```
+
+Pytania do grafu:
+
+* `canReach(DRAFT, SETTLED, context)` -> sprawdz czy wszystkie reguly PARTICIPATION + SETTLEMENT sa osiagalne
+* `blockingViolations(PENDING_SETTLEMENT, context)` -> "Brak oryginalu dokumentu XYZ", "Brak platnosci"
+* `shortestPathToSettlement(PENDING_SETTLEMENT, context)` -> [dostarcz dokument, zaplac]
+
+=== 5.4 Przyklad grafu dla alkoholu z akcyza i clem
+
+```
+DRAFT
+  |
+  | [Wplac wadium]                          <-- ParticipationRule: WADIUM_10_PERCENT_ABOVE_10K
+  | [Potwierdz pelnoletnosc]                <-- ParticipationRule: AGE_VERIFICATION_ALCOHOL_TOBACCO
+  | [Dostarcz kopi dokumentu akcyzy]        <-- ParticipationRule: EXCISE_COPY_PARTICIPATION (WARNING)
+  | [Dostarcz kopi zwolnienia celnego]      <-- ParticipationRule: CUSTOMS_EXEMPTION_COPY_PARTICIPATION (WARNING)
+  v
+PUBLISHED
+  |
+  v
+IN_PROGRESS
+  |
+  | [Zwycieska oferta >= reservePrice]
+  v
+PENDING_SETTLEMENT
+  |
+  | [Dostarcz oryginal dokumentu akcyzy]    <-- SettlementRule: EXCISE_ORIGINAL_SETTLEMENT
+  | [Dostarcz oryginal zwolnienia celnego]  <-- SettlementRule: CUSTOMS_EXEMPTION_ORIGINAL_SETTLEMENT
+  | [Dokonaj platnosci pelnej kwoty]        <-- SettlementRule: FULL_PAYMENT_SETTLEMENT
+  v
+SETTLED
+```
+
+=== 5.5 Implementacja techniczna
+
+Do implementacji grafu mozna uzyc:
+
+1. **JGraphT** (jak w archetypie `graphs`) -- pelna biblioteka grafowa z gotowymi algorytmami
+2. **Wlasna implementacja** (jak w archetypie `cycles/math/Graph.java`) -- prostsza, bez zaleznosci
+
+Rekomendacja: **JGraphT** -- algorytmy (shortest path, reachability, topological sort) sa gotowe.
+Zaleznosc tylko w `hexabid-rules` (lub `hexabid-rules-graph`), nie w core.
+
+```xml
+<!-- hexabid-rules-graph/pom.xml -->
+<dependency>
+    <groupId>org.jgrapht</groupId>
+    <artifactId>jgrapht-core</artifactId>
+    <version>1.5.2</version>
+</dependency>
+```
+
+=== 5.6 Wartosc edukacyjna
+
+Faza 5 jest **najlepszym material edukacyjny** w calej implementacji:
+laczy 3 archetypy w jednym zastosowaniu:
+
+* **M04 (Rules)** -- reguly jako AST z wymiennym Algebra
+* **M05 (Graphs)** -- proces jako state/transition graph z zapytaniami
+* **M02 (Product)** -- ApplicabilityConstraint decyduje ktore reguly dotycza produktu
+
+Pokazuje tez wzorzec z M05L04: **kazde nowe zachowanie jest addytywne**
+(nowy typ produktu = nowe krawedzie w grafie, nie modyfikacja istniejacego kodu).
+
+
+== Kolejnosc Implementacji i Zaleznosci
+
+=== Diagram zaleznosci faz
+
+```
+Faza 1: hexabid-rules (AST + Algebra)
+   |
+   v
+Faza 2: Rozszerzenie cyklu aukcji
+   |
+   v
+Faza 3: Konkretne reguly biznesowe
+   |
+   v
+Faza 4: Integracja z istniejacymi modulami
+   |
+   v
+Faza 5: Graf procesu (opcjonalne)
+```
+
+Kazda faza **buduje sie na poprzedniej** i jest testowalna niezaleznie.
+
+=== Szacunek wielkosci
+
+|===
+|Faza |Nowe klasy |Linie kodu (szacunek) |Testy
+
+|Faza 1: AST + Algebra |~20 |~800 |~40 testow
+|Faza 2: Cykl aukcji |~15 (zmiany w core) |~400 |~25 testow
+|Faza 3: Reguly biznesowe |~10 |~300 |~15 testow
+|Faza 4: Integracja |~8 |~400 |~20 testow
+|Faza 5: Graf procesu |~5 |~300 |~10 testow
+|===
+
+=== Kryteria akceptacji per faza
+
+**Faza 1:**
+
+* `RuleEngine.evaluateAll()` dziala z `BooleanAlgebra` i `ComplianceAlgebra`
+* `ExpressionVisitor` przechodzi kazdy typ wezla AST
+* `RuleCatalog` filtruje reguly po phase i applicability
+* Wszystkie testy przechodza
+* Brak zaleznosci od Spring/JPA (czysty Java)
+
+**Faza 2:**
+
+* `AuctionStatus` ma 7 stanow
+* Nowe przejscia dzialaja: DRAFT -> PUBLISHED -> IN_PROGRESS -> PENDING_SETTLEMENT -> SETTLED
+* `Lot.reservePrice` jest egzekwowane w `closeWithWinner()`
+* Nowe domain events: AuctionPublishedEvent, AuctionStartedEvent, AuctionClosedBelowReserveEvent, AuctionSettledEvent, AuctionSettlementFailedEvent
+* ArchUnit test przechodzi
+
+**Faza 3:**
+
+* Wszystkie reguly z sekcji 3.1 sa zaimplementowane jako RuleDefinition
+* `RuleContext` builder dziala dla Participation, Bidding, Settlement
+* `DocumentRequirement` i `DocumentStatus` modele istnieja
+* Nowe porty: `DocumentRepository`, `WadiumDepositPort`
+
+**Faza 4:**
+
+* `RuleEvaluatorAdapter` laczy core z rules
+* `CreateAuctionService` ewaluuje ParticipationRules
+* `PlaceBidService` ewaluuje BiddingRules
+* `SettleAuctionService` ewaluuje SettlementRules
+* Nowe endpointy REST dla rozliczenia i dokumentow
+* Integration test: pelny cykl aukcji z regulami
+
+**Faza 5:**
+
+* `AuctionProcessGraph` odpowiada na pytania path/reachability/blocking
+* JGraphT zintegrowany w hexabid-rules-graph
+* Wizualizacja grafu procesu (optional: endpoint REST zwracajacy strukture grafu)
+
+
+== Ryzyka i Mitygacje
+
+|===
+|Ryzyko |Prawdopodobienstwo |Mitygacja
+
+|Przesterowanie AST -- zbyt skomplikowane wyrazenia do czytania |Srednie |ExplainedAlgebra generuje czytelne opisy; wizualizacja AST w dev tools
+|Spadek wydajnosci przy wielu regulach |Niskie |Reguly filtrowane po phase i applicability przed ewaluacja; O(n) where n = applicable rules, nie total rules
+|Backward compatibility istniejacych testow |Wysokie |Stary cykl OPEN/CLOSED zachowany jako podprzypadzek; nowe stany dodane, nie zamienione
+|Brak dokumentow w dev/test |Wysokie |DevKycClientAdapter analog: DevDocumentRepository z pre-konfigurowanymi dokumentami dla "dev:*" userow
+|Zaleznosci cykliczne miedzy modulami |Srednie |ArchUnit testy rozszerzone o reguly zaleznosci; hexabid-core NIE zalezy od hexabid-rules
+|===
+
+
+== Odniesienia do Transkrypcji
+
+[cols="2,4"]
+|===
+|Lekcja |Zastosowanie w planie
+
+|M02L05 (FeatureValueConstraint) |DocumentStatus jako constraint na dokumentach (MISSING/COPY/ORIGINAL)
+|M02L07 (ProductRelationships) |Przyszle rozszerzenie: reguly zalezne od relacji miedzy produktami
+|M02L08 (ApplicabilityConstraint) |ApplicabilityCondition na RuleDefinition -- ten sam wzorzec
+|M03L04 (Interpretation) |RuleSeverity jako perspektywa (BLOCKING/WARNING/INFORMATIVE) -- analogiczne do TOTAL/UNIT/MARGINAL
+|M03L06 (Temporal Versioning) |Deadline'y w SettlementRules (3 dni) -- walidnosc czasowa regul
+|M03L08 (Applicability rules) |RulePhase rozdziela KIEDY regula jest ewaluowana
+|M04L02 (Three-zone logic model) |Stable: RuleDefinition | Closures: RuleContext | Factory: RulesConfiguration
+|M04L05 (AST + Algebra) |Core planu: Expression + RuleAlgebra + ExpressionVisitor
+|M04L06 (Universal Scoring) |AuctionRuleEvaluator jako uniwersalna fasada niezalezna od typu aukcji
+|M05L04 (User Journey) |Faza 5: AuctionProcessGraph jako state/transition graph
+|M07L04 (Party as common entity) |PartyId jako klucz korelacji miedzy dokumentami, wadium, a aukcja
+|===

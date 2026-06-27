@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Hexabid Payment API
+  version: 1.0.0
+  description: API for discovering available payment gateways.
+
+paths:
+  /api/payments/gateways:
+    get:
+      tags:
+        - payment
+      summary: Get available payment gateways
+      operationId: getPaymentGateways
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      responses:
+        '200':
+          description: List of available gateways
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentGatewayResponse'
+
+components:
+  parameters:
+    ApiVersionHeader:
+      in: header
+      name: X-API-Version
+      required: false
+      schema:
+        type: string
+        default: "1"
+      description: API version negotiated via HTTP header.
+  schemas:
+    PaymentGatewayResponse:
+      type: object
+      required:
+        - id
+        - name
+        - gatewayUrl
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the gateway (e.g., 'payu', 'local')
+        name:
+          type: string
+          description: Human-readable name of the gateway
+        gatewayUrl:
+          type: string
+          description: Relative or absolute URL to initiate the payment

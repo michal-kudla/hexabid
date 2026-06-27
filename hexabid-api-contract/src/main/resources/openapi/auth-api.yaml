@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Hexabid Authentication API
+  version: 1.0.0
+  description: API for discovering available authentication providers.
+
+paths:
+  /api/auth/providers:
+    get:
+      tags:
+        - auth
+      summary: Get available authentication providers
+      operationId: getAuthProviders
+      parameters:
+        - $ref: '#/components/parameters/ApiVersionHeader'
+      responses:
+        '200':
+          description: List of available providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthProviderResponse'
+
+components:
+  parameters:
+    ApiVersionHeader:
+      in: header
+      name: X-API-Version
+      required: false
+      schema:
+        type: string
+        default: "1"
+      description: API version negotiated via HTTP header.
+  schemas:
+    AuthProviderResponse:
+      type: object
+      required:
+        - registrationId
+        - name
+        - loginUrl
+      properties:
+        registrationId:
+          type: string
+          description: Unique identifier of the provider (e.g., 'google', 'local')
+        name:
+          type: string
+          description: Human-readable name of the provider
+        loginUrl:
+          type: string
+          description: Relative URL to initiate the login process

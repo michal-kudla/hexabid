@@ -1,0 +1,74 @@
+@let t = task(); @let isYesNo = t.answerType === 'YES_NO'; @let isText = t.answerType === 'TEXT'; @let isStatement = t.kind === 'STATEMENT'; @let isPartyRef = t.kind === 'PARTY_REFERENCE';
+
+<article class="task-card" [class]="statusClass() + ' ' + kindClass()">
+  <div class="task-header">
+    <span class="task-status-icon">{{ statusIcon() }}</span>
+    <strong class="task-title">{{ t.title }}</strong>
+    <span class="task-kind-badge">{{ kindLabel(t.kind) }}</span>
+    <span class="task-severity" [class]="'severity-' + t.severity.toLowerCase()">
+      {{ t.severity === 'BLOCKING' ? 'Wymagane' : t.severity === 'IMPORTANT' ? 'Ważne' : 'Informacja' }}
+    </span>
+  </div>
+
+  <p class="task-question">{{ t.question }}</p>
+
+  <p class="task-subject-hint">Dotyczy: {{ t.subjectLabel }}</p>
+
+  @if (t.sourceProfileLabels.length) {
+    <p class="task-source-hint">Źródło: {{ t.sourceProfileLabels.join(', ') }}</p>
+  }
+
+  @if (t.kind !== 'STATEMENT') {
+    <p class="task-kind-hint">{{ kindDescription(t.kind) }}</p>
+  }
+
+  @if (t.status === 'COMPLETED') {
+    <p class="task-answer">Twoja odpowiedź: {{ t.answerValue }}</p>
+  } @else if (t.status === 'BLOCKED') {
+    <p class="task-blocked-hint">To zadanie jest zablokowane. Najpierw ukończ poprzednie kroki.</p>
+  } @else if (t.status === 'AVAILABLE') {
+    @if (isPartyRef) {
+      <app-party-reference-picker
+        [question]="t.question"
+        [submitting]="submitting()"
+        (answerSubmit)="onPartyAnswer($event)"
+      />
+    } @else if (isYesNo) {
+      <div class="answer-options">
+        <button type="button" class="answer-btn answer-yes" (click)="onYesNoSelect('YES')" [disabled]="submitting()">
+          {{ isStatement ? 'Tak' : actionLabel() }}
+        </button>
+        <button type="button" class="answer-btn answer-no" (click)="onYesNoSelect('NO')" [disabled]="submitting()">
+          Nie
+        </button>
+      </div>
+    } @else if (isText) {
+      <div class="answer-text">
+        <input
+          type="text"
+          #textInput
+          placeholder="Wpisz odpowiedź..."
+          [disabled]="submitting()"
+          (keydown.enter)="onTextSubmit(textInput)"
+        />
+        <button type="button" (click)="onTextSubmit(textInput)" [disabled]="submitting()">
+          {{ actionLabel() }}
+        </button>
+      </div>
+    } @else {
+      <p class="task-type-hint">Typ odpowiedzi: {{ t.answerType }}</p>
+    }
+
+    @if (confirmingDestructive) {
+      <div class="destructive-warning">
+        <p>Ta odpowiedź spowoduje odmowę dopuszczenia do aukcji.</p>
+        <div class="destructive-actions">
+          <button type="button" class="btn-cancel" (click)="cancelDestructive()">Zmień odpowiedź</button>
+          <button type="button" class="btn-confirm-destructive" (click)="confirmDestructive()" [disabled]="submitting()">
+            Potwierdzam odpowiedź
+          </button>
+        </div>
+      </div>
+    }
+  }
+</article>

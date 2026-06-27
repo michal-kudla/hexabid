@@ -1,0 +1,425 @@
+= Hexabid Development Specification
+:toc:
+:toclevels: 3
+:sectnums:
+:source-highlighter: highlight.js
+
+== Executive Summary
+
+This document provides comprehensive development specification for Hexabid, a reference auction platform built with hexagonal architecture.
+It covers the module structure, domain models, use cases, API contracts, and architectural decisions.
+
+== Technology Stack
+
+* **Java 25** with latest features
+* **Spring Boot 4.0.3** for composition and runtime
+* **Spring MVC** for REST adapters
+* **Spring WebSocket** with STOMP for real-time communication
+* **Spring Security** for authentication
+* **Spring Data JPA** for persistence
+* **Spring Kafka** for event publishing
+* **Maven** for build management
+
+== Module Organization
+
+=== Core Modules (Pure Java, No Framework)
+
+[cols="2,4"]
+|===
+| Module | Description
+| `quantity` | Unit and Quantity value objects for all measurements
+| `product` | Product catalog domain models
+| `inventory` | Inventory management domain
+| `auctions-core` | Core auctioning domain (Auction, Bid, Lot aggregates)
+| `auctions-auth-core` | Authentication domain (Party model)
+| `auctions-payment-core` | Payment processing domain
+|===
+
+=== Input Adapters
+
+[cols="2,4"]
+|===
+| Module | Description
+| `auctions-adapter-in-rest` | REST API endpoints (Spring MVC)
+| `auctions-adapter-in-ws` | WebSocket STOMP for bidding
+| `auctions-adapter-in-job` | Scheduler for closing expired auctions
+| `auctions-adapter-in-auth-oauth` | OAuth2/OpenID Connect (Google, GitHub)
+| `auctions-adapter-in-auth-local` | Local form login (development)
+|===
+
+=== Output Adapters
+
+[cols="2,4"]
+|===
+| Module | Description
+| `auctions-adapter-out-db` | JPA/Hibernate persistence
+| `auctions-adapter-out-kafka` | Domain event publishing
+| `auctions-adapter-out-kyc` | External KYC verification
+| `auctions-adapter-out-kyc-local` | Local KYC mock (development)
+| `auctions-payment-adapter-payu` | PayU gateway
+| `auctions-payment-adapter-p24` | Przelewy24 gateway
+| `auctions-payment-adapter-crypto` | Cryptocurrency payments
+| `auctions-payment-adapter-local` | Local payment mock (development)
+|===
+
+=== Contracts
+
+* `hexabid-api-contract` - OpenAPI definitions for auction API
+* `auctions-payment-api-contract` - OpenAPI definitions for payment API
+
+=== Bootstrap
+
+* `hexabid-bootstrap` - Spring Boot application entry point
+
+== Domain Models
+
+=== Party (Authentication Domain)
+
+[source,java]
+----
+record Party(PartyId partyId, String displayName, Set<PartyRole> roles)
+record PartyId(String value)
+sealed interface PartyRole permits Seller, Buyer, Admin {}
+----
+
+The Party model represents a business participant independently of the authentication mechanism.
+Identity is derived from OAuth2/OpenID Connect provider or local credentials.
+
+=== Auction (Auctioning Domain)
+
+[source,java]
+----
+record Auction(
+    AuctionId id,
+    PartyId sellerId,
+    LotId lotId,
+    Price startingPrice,
+    Price currentPrice,
+    PartyId leaderId?,
+    Instant endsAt,
+    AuctionStatus status,
+    List<Bid> biddingHistory,
+    int version
+)
+
+enum AuctionStatus { OPEN, CLOSED }
+
+record Bid(BidId id, PartyId bidderId, Price amount, Instant placedAt)
+record Price(BigDecimal amount, String currency)
+----
+
+=== Lot (Item for Sale)
+
+[source,java]
+----
+record Lot(LotId id, String title, String description, SellingMode sellingMode)
+enum SellingMode { WHOLE, DIVISIBLE, DIVISIBLE_ONLY }
+----
+
+=== Product (Catalog Domain)
+
+[source,java]
+----
+record Product(ProductId id, String name, String description)
+record ProductId(String value)
+----
+
+=== Payment Domain
+
+[source,java]
+----
+record Account(AccountId id, String owner, List<AccountingEntry> entries)
+record AccountingTransaction(TransactionId id, AccountId from, AccountId to, BigDecimal amount)
+record AccountingEntry(EntryId id, AccountId accountId, BigDecimal amount, EntryType type)
+enum EntryType { DEBIT, CREDIT }
+----
+
+== Port Interfaces (Hexagonal Boundaries)
+
+=== Input Ports (Use Cases)
+
+[source,java]
+----
+interface CreateAuctionUseCase {
+    CreateAuctionResult execute(CreateAuctionCommand command, PartyId seller)
+}
+
+interface PlaceBidUseCase {
+    PlaceBidResult execute(PlaceBidCommand command, PartyId bidder)
+}
+
+interface BrowseAuctionsUseCase {
+    AuctionBrowsePage execute(BrowseAuctionsQuery query)
+}
+
+interface FindAuctionDetailsUseCase {
+    AuctionDetailsResult execute(AuctionId id)
+}
+
+interface CloseExpiredAuctionsUseCase {
+    ClosedAuctionsResult execute(CloseExpiredAuctionsCommand command)
+}
+----
+
+=== Output Ports (Repositories and Services)
+
+[source,java]
+----
+interface AuctionRepository {
+    Auction save(Auction auction)
+    Optional<Auction> findById(AuctionId id)
+    List<Auction> findExpired(Instant before)
+}
+
+interface AuctionEventPublisher {
+    void publish(AuctionDomainEvent event)
+}
+
+interface KycClient {
+    KycVerificationResult verify(PartyId partyId)
+}
+----
+
+=== Auth Port
+
+[source,java]
+----
+interface CurrentUserProvider {
+    Optional<Party> current()
+}
+----
+
+== Business Rules
+
+=== Auction Creation
+
+. Seller must be verified (KYC) to create auctions
+. End time must be in the future
+. Starting price must be positive with valid currency
+. Title and description are required
+
+=== Bidding
+
+. Bid amount must exceed current price
+. Currency must match auction currency
+. User cannot bid on own auction
+. Auction must be OPEN and not expired
+. Optimistic locking prevents lost updates
+
+=== Auction Closing
+
+. AUCTION_WON - Published when auction ends with winner
+. AUCTION_CLOSED_WITHOUT_WINNER - Published when no bids placed
+
+== API Specifications
+
+=== REST API
+
+==== Create Auction
+
+[source,http]
+----
+POST /api/auctions
+Content-Type: application/json
+
+{
+  "title": "Vintage Watch",
+  "description": "Rare 1960s watch",
+  "startingPrice": { "amount": "1000.00", "currency": "PLN" },
+  "endsAt": "2026-04-15T18:00:00Z"
+}
+----
+
+Response: 201 Created with AuctionView
+
+==== Get Auction Details
+
+[source,http]
+----
+GET /api/auctions/{auctionId}
+----
+
+Response: 200 OK with AuctionView, 404 Not Found
+
+==== Browse Auctions
+
+[source,http]
+----
+GET /api/auctions?status=OPEN&page=0&size=20&sort=endsAt,asc
+----
+
+Response: 200 OK with AuctionBrowsePage
+
+=== WebSocket API
+
+==== Connect
+
+[source,text]
+----
+ws://localhost:18080/hexabid/ws-auctions
+----
+
+==== Place Bid
+
+[source,text]
+----
+SEND /app/auctions/{auctionId}/bids
+{"amount": "1500.00", "currency": "PLN"}
+----
+
+==== Subscribe
+
+[source,text]
+----
+SUBSCRIBE /topic/auctions/{auctionId}/bids
+SUBSCRIBE /topic/auctions/{auctionId}/events
+SUBSCRIBE /topic/auctions/{auctionId}/errors
+----
+
+=== Authentication
+
+* OAuth2/OIDC with Google: `GET /oauth2/authorization/google`
+* OAuth2/OIDC with GitHub: `GET /oauth2/authorization/github`
+* Local login: `POST /login` (development profile)
+
+== Event Specifications
+
+=== Domain Events
+
+[source,java]
+----
+record AuctionWonEvent(AuctionId auctionId, PartyId winnerId, Price winningPrice)
+record AuctionClosedWithoutWinnerEvent(AuctionId auctionId)
+record AuctionLeaderChangedEvent(AuctionId auctionId, PartyId previousLeader?, PartyId newLeader, Price newPrice)
+----
+
+Events are published to:
+* Kafka topic: `auctions.events`
+* WebSocket: `/topic/auctions/{id}/events`
+
+== Payment Integration
+
+Payment is processed when auction ends with a winner:
+
+. `AuctionWonEvent` triggers payment flow
+. `PaymentGatewayRegistry` selects gateway based on winner preference
+. Gateway adapters implement common interface
+
+Supported gateways:
+* PayU (Polish payments)
+* Przelewy24 (Polish payments)
+* Cryptocurrency
+* Local mock (development)
+
+== Scheduler
+
+`CloseExpiredAuctionsService` runs periodically:
+* Queries auctions where `endsAt < now()` and `status = OPEN`
+* Uses optimistic locking for concurrent updates
+* Resilient to conflicts (counts and skips)
+
+== Architecture Decision Records
+
+=== ADR-001: Hexagonal Architecture
+
+The system uses hexagonal architecture to:
+* Keep domain logic in pure Java
+* Allow framework-agnostic testing
+* Enable plugin-style adapters
+
+=== ADR-002: Contract-First
+
+API contracts are defined in OpenAPI before implementation:
+* Generated DTOs and delegates
+* Client libraries can be generated
+* Clear versioning
+
+=== ADR-003: Explicit Results
+
+Use cases return explicit results instead of throwing exceptions:
+* `CreateAuctionResult` with `CREATED` or `REJECTED(reason)`
+* `PlaceBidResult` with `ACCEPTED` or `REJECTED(reason)`
+
+This prevents technical exceptions from leaking to adapters.
+
+=== ADR-004: Plugin Authentication
+
+Authentication adapter is selected at build time via Maven profile:
+* `auth-oauth` profile: Includes OAuth2 adapter
+* `auth-local` profile: Includes local login adapter
+
+Production builds only include OAuth2.
+
+=== ADR-005: Optimistic Locking
+
+Auction aggregate uses optimistic locking (`version` field):
+* Concurrent bids are handled gracefully
+* `PlaceBidResult.CONCURRENT_MODIFICATION` returned instead of exception
+* No data loss or corruption
+
+== Folder Structure
+
+[source,text]
+----
+src/main/java/com/acme/auctions/
+├── core/                           # Shared archetypes
+│   ├── party/model/                 # Party, PartyId, PartyRole
+│   ├── quantity/model/              # Unit, Quantity
+│   └── common/                    # Preconditions, Result
+├── auctions/
+│   ├── core/                      # Core domain
+│   │   ├── auctioning/
+│   │   │   ├── model/             # Auction, Bid
+│   │   │   ├── port/in/           # Use case interfaces
+│   │   │   ├── port/out/          # Repository interfaces
+│   │   │   ├── usecase/          # Service implementations
+│   │   │   └── event/            # Domain events
+│   │   └── lot/model/             # Lot, SellingMode
+│   ├── auth-core/                  # Authentication domain
+│   ├── api-contract/              # OpenAPI contract
+│   ├── adapter-in-rest/           # REST adapter
+│   ├── adapter-in-ws/             # WebSocket adapter
+│   ├── adapter-out-db/             # JPA adapter
+│   ├── adapter-out-kafka/         # Kafka adapter
+│   └── bootstrap/                 # Spring Boot app
+└── payment/
+    ├── core/                     # Payment domain
+    ├── adapter-payu/             # PayU adapter
+    └── adapter-p24/              # Przelewy24 adapter
+----
+
+== Testing Strategy
+
+* **Unit Tests** - Domain logic in pure Java
+* **Architecture Tests** - ArchUnit for dependency rules
+* **Integration Tests** - Full application context
+
+== Build and Run
+
+=== Build
+
+[source,bash]
+----
+mvn clean package
+----
+
+=== Run with OAuth2
+
+[source,bash]
+----
+mvn spring-boot:run -P auth-oauth
+----
+
+=== Run with Local Auth
+
+[source,bash]
+----
+mvn spring-boot:run -P auth-local
+----
+
+=== Integration Tests
+
+[source,bash]
+----
+mvn verify -DskipIntegrationTests=false
+----

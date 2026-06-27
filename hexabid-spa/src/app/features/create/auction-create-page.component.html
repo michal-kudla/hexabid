@@ -1,0 +1,131 @@
+<section class="compose">
+  <article class="surface intro">
+    <span class="kicker">Create Auction</span>
+    <h1>Wystaw aukcję przez SPA</h1>
+    <p>
+      Formularz zapisuje szkic aukcji. Po utworzeniu przejdziesz do szczegółów, gdzie sprzedający może
+      uruchomić licytację. Pełna płatność i oryginały dokumentów nie są warunkiem startu aukcji; dotyczą
+      zwycięzcy na etapie rozliczenia.
+    </p>
+  </article>
+
+  <article class="surface form-card">
+    <form [formGroup]="form" (ngSubmit)="submit()" class="form-grid">
+      <label class="wide">
+        <span>Tytuł aukcji</span>
+        <input type="text" formControlName="title" placeholder="Komiks z limitowanej serii" />
+      </label>
+
+      <label>
+        <span>Cena wywoławcza</span>
+        <input type="text" formControlName="amount" />
+      </label>
+
+      <label>
+        <span>Waluta</span>
+        <select formControlName="currency">
+          <option value="PLN">PLN</option>
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+        </select>
+      </label>
+
+      <label class="wide">
+        <span>Koniec aukcji</span>
+        <input type="datetime-local" formControlName="endsAt" />
+      </label>
+
+      <div class="wide pricing-toggle">
+        <button type="button" class="button-secondary" (click)="togglePricing()">
+          {{ showPricing() ? 'Ukryj konfigurację ceny' : 'Dodaj konfigurację ceny' }}
+        </button>
+      </div>
+
+      @if (showPricing()) {
+        <div class="wide pricing-section">
+          <h3>Konfiguracja ceny (PricingConfig)</h3>
+          <p class="hint">
+            Skonfiguruj parametry kalkulacji ceny: wadium, VAT, akcyzę i cło.
+          </p>
+
+          <div class="form-grid pricing-grid">
+            <label>
+              <span>Strategia wadium</span>
+              <select formControlName="wadiumStrategy">
+                <option value="">Brak wadium</option>
+                <option [ngValue]="WadiumStrategy.PERCENTAGE">Procentowe</option>
+                <option [ngValue]="WadiumStrategy.FIXED">Stałe kwotowo</option>
+              </select>
+            </label>
+
+            @if (form.value.wadiumStrategy === WadiumStrategy.PERCENTAGE) {
+              <label>
+                <span>Stawka wadium (np. 0.05 = 5%)</span>
+                <input type="text" formControlName="wadiumRate" placeholder="0.05" />
+              </label>
+            }
+
+            @if (form.value.wadiumStrategy === WadiumStrategy.FIXED) {
+              <label>
+                <span>Stała kwota wadium</span>
+                <input type="text" formControlName="wadiumFixedAmount" placeholder="50.00" />
+              </label>
+            }
+
+            <label>
+              <span>Stawka VAT (np. 0.23 = 23%)</span>
+              <input type="text" formControlName="vatRate" />
+            </label>
+
+            <label>
+              <span>Produkt akcyzowy</span>
+              <select formControlName="isExcisable">
+                <option [ngValue]="false">Nie</option>
+                <option [ngValue]="true">Tak</option>
+              </select>
+            </label>
+
+            @if (form.value.isExcisable) {
+              <label>
+                <span>Stawka akcyzy</span>
+                <input type="text" formControlName="exciseRate" placeholder="0.031" />
+              </label>
+              <label>
+                <span>Typ akcyzy</span>
+                <select formControlName="exciseType">
+                  <option [ngValue]="ExciseType.PERCENTAGE">Procentowa</option>
+                  <option [ngValue]="ExciseType.PER_UNIT">Na jednostkę</option>
+                </select>
+              </label>
+            }
+
+            <label>
+              <span>Produkt importowany</span>
+              <select formControlName="isImported">
+                <option [ngValue]="false">Nie</option>
+                <option [ngValue]="true">Tak</option>
+              </select>
+            </label>
+
+            @if (form.value.isImported) {
+              <label>
+                <span>Stawka cła (np. 0.05 = 5%)</span>
+                <input type="text" formControlName="customsDutyRate" placeholder="0.05" />
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      @if (error()) {
+        <div class="wide alert-inline">{{ error() }}</div>
+      }
+
+      <div class="wide actions">
+        <button type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Zapisywanie...' : 'Zapisz szkic aukcji' }}
+        </button>
+      </div>
+    </form>
+  </article>
+</section>

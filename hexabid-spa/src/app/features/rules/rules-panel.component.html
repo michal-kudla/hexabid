@@ -1,0 +1,49 @@
+@for (eval_ of evaluations(); track eval_.phase) {
+  <article class="surface rules-phase-card">
+    <div class="section-heading">
+      <div>
+        <h3>{{ eval_.phaseLabel }}</h3>
+        @switch (eval_.phase) {
+          @case ('PARTICIPATION') {
+            <p class="phase-help">Warunki wejścia do aukcji. Ostrzeżenia zwykle informują, jakie kopie warto dostarczyć przed licytacją.</p>
+          }
+          @case ('BIDDING') {
+            <p class="phase-help">Warunki złożenia oferty. Tylko blokady w tej sekcji zatrzymują licytację.</p>
+          }
+          @case ('SETTLEMENT') {
+            <p class="phase-help">Warunki po wygranej. Pełna płatność i oryginały dokumentów są wymagane przy rozliczeniu, nie przy starcie aukcji.</p>
+          }
+        }
+      </div>
+      @if (eval_.hasBlockingViolations) {
+        <span class="badge badge-error">Blokady</span>
+      } @else {
+        <span class="badge badge-success">OK</span>
+      }
+    </div>
+
+    <ul class="rules-list">
+      @for (rule of eval_.rules; track rule.ruleName) {
+        <li class="rule-item" [class.rule-satisfied]="rule.tone === 'success'" [class.rule-pending]="rule.tone === 'warning'" [class.rule-violated]="rule.tone === 'error'">
+          <div class="rule-header">
+            <span class="rule-status-icon">
+              @switch (rule.tone) {
+                @case ('success') { &#10003; }
+                @case ('warning') { &#9203; }
+                @case ('error') { &#10007; }
+              }
+            </span>
+            <strong class="rule-name">{{ rule.ruleName }}</strong>
+            <span class="rule-severity" [class.severity-blocking]="rule.severity === 'BLOCKING'" [class.severity-warning]="rule.severity === 'WARNING'">
+              {{ rule.severityLabel }}
+            </span>
+          </div>
+          <p class="rule-message">{{ rule.message }}</p>
+          @if (rule.requiredAction) {
+            <p class="rule-action">Wymagane: {{ rule.requiredAction }}</p>
+          }
+        </li>
+      }
+    </ul>
+  </article>
+}

@@ -1,0 +1,1274 @@
+= ADR: System Zbierania Oświadczeń (Statement Collection System)
+:toc: macro
+:toclevels: 3
+:sectnums:
+:source-highlighter: coderay
+
+toc::[]
+
+== TLDR
+
+Wprowadzenie modułu `hexabid-statements` opartego na **algorytmach grafowych** (DAG, sortowanie topologiczne, analiza osiągalności), modelującego oświadczenia kandydatów jako węzły w grafie zależności. Typ aukcji określa **szablon oświadczeń** — zbiór wymaganych oświadczeń z przypisanymi fazami zbierania. Odrzucenie dowolnego oświadczenia kaskadowo unieważnia wszystkie zależne i natychmiast powiadamia kandydata o wykluczeniu z podaniem konkretnej przyczyny.
+
+== Tagi
+
+#statements #oswiadczenia #auction-types #dag #topological-sort #reachability #templates #graph-algorithms #cascade-rejection #participation-decision
+
+== Kontekst
+
+=== Problem
+
+Obecny system nie posiada koncepcji **oświadczeń** (declarations/statements) składanych przez kandydatów do udziału w aukcji. Istnieje `DocumentType` z `DocumentStatus`, ale to system **dowodów dokumentowych**, nie oświadczeń. Brakuje:
+
+1. **Typu aukcji** — `Auction` nie ma pola określającego mechanizm aukcyjny (angielska, holenderska, przetarg, itd.)
+2. **Oświadczeń** — biznes wymaga od kandydatów oświadczeń (niekaralność, brak konfliktu interesów, sytuacja finansowa, itd.) przed dopuszczeniem do licytacji
+3. **Zależności między oświadczeniami** — oświadczenie A może być warunkiem koniecznym oświadczenia B
+4. **Faz zbierania** — oświadczenia zbierane są w krokach, a na końcu zapada decyzja o udziale
+5. **Natychmiastowe powiadomienie o odrzuceniu** — jeśli oświadczenie zostanie odrzucone, kandydat natychmiast wie, że nie może wziąć udziału i dlaczego
+
+=== Archetypy i inspiracje
+
+| Archetyp / Wzorzec | Zastosowanie |
+|---------------------|-------------|
+| Algorytmy grafowe (DAG) | Graf zależności oświadczeń — cykliczny graf skierowany bez cykli |
+| Sortowanie topologiczne | Określanie kolejności zbierania oświadczeń |
+| Analiza osiągalności (reachability) | Kaskadowe odrzucenie: unieważnienie wszystkich oświadczeń osiągalnych z odrzuconego |
+| Domknięcie przechodnie (transitive closure) | Szybkie określanie wpływu odrzucenia bez traversowania grafu |
+| Archetyp Rules (M04) | Oświadczenie jako reguła z severity i fazą |
+| Archetyp Pricing (M03) | Kompozyt oświadczeń analogiczny do CompositePriceComponent |
+
+== Decyzja
+
+=== Typy aukcji jako szablony oświadczeń
+
+Zamiast prostego enuma `AuctionType`, typ aukcji jest **szablonem** określającym:
+
+. Które oświadczenia są wymagane
+. W jakiej fazie zbierania
+. Z jaką wagą (BLOCKING / WARNING / INFORMATIVE)
+. Czy aukcja ma fazy prekwalifikacji
+
+[source,java]
+----
+sealed interface AuctionKind permits
+    EnglishAscending,
+    SealedBidTender,
+    RestrictedTender,
+    DutchDescending {
+
+    String label();
+    DeclarationTemplate declarationTemplate();
+    boolean hasPrequalification();
+}
+----
+
+Cztery typy aukcji:
+
+[cols="1,1,3,2,2"]
+|===
+| Typ | Label | Opis | Faza prekwalifikacji | Oświadczeń |
+
+| `ENGLISH_ASCENDING` | Aukcja angielska (publiczna) | Klasyczna licytacja rosnąca — najczęstszy typ w komorniczych i wojskowych | Nie | 5
+| `SEALED_BID_TENDER` | Przetarg nieograniczony | Oferty w zamkniętych kopertach, publiczne otwarcie — typowe dla zamówień publicznych | Nie | 16
+| `RESTRICTED_TENDER` | Przetarg ograniczony | Dwuetapowy: prekwalifikacja, potem licytacja tylko dla dopuszczonych — typowe dla dużych kontraktów | Tak | 16 (2 fazy)
+| `DUTCH_DESCENDING` | Aukcja holenderska | Cena spada od góry — szybkość decyduje, minimalna biurokracja | Nie | 3
+|===
+
+=== Taksonomia oświadczeń
+
+Szesnaście typów oświadczeń pogrupowanych w cztery kategorie:
+
+==== Kategoria: TOŻSAMOŚĆ (IDENTITY)
+
+[cols="1,2,3,2"]
+|===
+| ID | Oświadczenie | Opis | Wymagane dokumenty |
+| `LEGAL_CAPACITY` | Zdolność do czynności prawnych | Fundament — bez niego żadne inne oświadczenie nie ma mocy | Dowód osobisty / KRS |
+| `IDENTITY_CONFIRMATION` | Potwierdzenie tożsamości | Weryfikacja KYC — tożsamość potwierdzona przez system | Dokument tożsamości |
+| `DATA_PROCESSING_CONSENT` | Zgoda na przetwarzanie danych | RODO — zgoda na przetwarzanie danych osobowych w procesie aukcyjnym | Brak |
+|===
+
+==== Kategoria: KWALIFIKACJA (QUALIFICATION)
+
+[cols="1,2,3,2"]
+|===
+| ID | Oświadczenie | Opis | Wymagane dokumenty |
+| `NO_CRIMINAL_RECORD` | Niekaralność | Oświadczenie o niekaralności za przestępstwa umyślne | Zaświadczenie z KRP |
+| `NO_CONFLICT_OF_INTEREST` | Brak konfliktu interesów | Brak powiązań ze sprzedającym lub komornikiem | Oświadczenie własne |
+| `TAX_COMPLIANCE` | Niezaleganie podatkowe | Brak zaległości podatkowych | Zaświadczenie z US |
+| `SOCIAL_SECURITY_COMPLIANCE` | Niezaleganie ze składkami | Brak zaległości ZUS/KRUS | Zaświadczenie z ZUS |
+|===
+
+==== Kategoria: ZDOLNOŚĆ (CAPABILITY)
+
+[cols="1,2,3,2"]
+|===
+| ID | Oświadczenie | Opis | Wymagane dokumenty |
+| `FINANCIAL_STANDING` | Sytuacja finansowa | Zdolność finansowa do pokrycia zobowiązań | Bilans / Zaświadczenie bankowe |
+| `INSURANCE_COVERAGE` | Pokrycie ubezpieczeniowe | Wymagane ubezpieczenie OC lub NNW | Polisa ubezpieczeniowa |
+| `TECHNICAL_COMPETENCE` | Kompetencje techniczne | Uprawnienia do wykonywania specyficznych czynności | Uprawnienia / Licencje |
+| `ENVIRONMENTAL_COMPLIANCE` | Zgodność środowiskowa | Przestrzeganie norm środowiskowych | Decyzja środowiskowa |
+| `ANTI_CORRUPTION` | Antykorupcyjne | Niekorumpowanie, niebycie stroną porozumień | Oświadczenie własne |
+|===
+
+==== Kategoria: ZOBOWIĄZANIE (COMMITMENT)
+
+[cols="1,2,3,2"]
+|===
+| ID | Oświadczenie | Opis | Wymagane dokumenty |
+| `WADIUM_COMMITMENT` | Zobowiązanie do wadium | Zgoda na wpłatę wadium i jego ewentualne przepadek | Dowód wpłaty |
+| `CONFIDENTIALITY` | Poufność | Zachowanie tajemnicy przetargowej / aukcyjnej | Oświadczenie własne |
+| `SUBCONTRACTOR_DISCLOSURE` | Ujawnienie podwykonawców | Deklaracja udziału podwykonawców z ich kwalifikacjami | Lista podwykonawców |
+| `ACCEPTANCE_OF_TERMS` | Akceptacja regulaminu | Ostateczne zobowiązanie do przestrzegania warunków aukcji | Podpisany regulamin |
+|===
+
+=== Graf zależności oświadczeń (DAG)
+
+Oświadczenia tworzą **skierowany graf acykliczny (DAG)**. Krawędź A → B oznacza: „A jest warunkiem koniecznym B". Bez spełnienia A nie można złożyć B.
+
+==== Reprezentacja graficzna
+
+....
+                          ┌─────────────────┐
+                          │ LEGAL_CAPACITY  │  ← korzeń (FOUNDATION)
+                          └────────┬────────┘
+                                   │
+                 ┌─────────────────┼─────────────────┐
+                 │                 │                   │
+                 ▼                 ▼                   ▼
+      ┌──────────────────┐ ┌──────────────┐ ┌───────────────────────┐
+      │ IDENTITY_CONFIRM │ │ NO_CRIMINAL  │ │ DATA_PROCESSING_CONS  │
+      └────────┬─────────┘ └──────┬───────┘ └───────────────────────┘
+               │                  │
+         ┌─────┼──────┐           │
+         │     │      │           │
+         ▼     ▼      ▼           ▼
+  ┌────────┐ ┌────────────┐ ┌──────────────┐
+  │NO_CONFL│ │FINANCIAL_STA│ │  ANTI_CORR   │ ◄── wymaga NO_CRIMINAL + NO_CONFLICT
+  └───┬────┘ └──────┬─────┘ └──────┬───────┘
+      │             │              │
+      │    ┌────────┼────────┐    │
+      │    │        │        │    │
+      │    ▼        ▼        │    ▼
+      │ ┌───────┐ ┌───────┐  │ ┌────────────────────┐
+      │ │INSURAN│ │WADIUM │  │ │SUBCONTRACTOR_DISCL  │ ◄── wymaga TECHNICAL + ANTI_CORR
+      │ └───────┘ └───┬───┘  │ └────────────────────┘
+      │               │      │            │
+      │               │      │            ▼
+      │               │  ┌────┴──────┐ ┌──────────────┐
+      │               │  │TECHNICAL  │ │ENVIRONM_COMP │ ◄── wymaga TECHNICAL
+      │               │  │COMPETENCE │ └──────────────┘
+      │               │  └─────┬─────┘
+      │               │        │
+      │               │        └──────────────┐
+      │               │                       │
+  ┌───┴───────────────┴───────┐               │
+  │ TAX_COMPLIANCE             │               │
+  └────────────┬──────────────┘               │
+               │                              │
+               └──────────────┐               │
+                              ▼               │
+                   ┌──────────────────┐      │
+                   │SOCIAL_SECURITY_COM│      │
+                   └────────┬─────────┘      │
+                            │                 │
+                            └──────┐          │
+                                   │          │
+                            ┌──────┴──────┐   │
+                            │CONFIDENTIAL │   │
+                            │   ITY       │   │
+                            └──────┬──────┘   │
+                                   │          │
+                                   ▼          ▼
+                          ┌─────────────────────┐
+                          │ ACCEPTANCE_OF_TERMS │  ← liść (COMMITMENT_GATE)
+                          └─────────────────────┘
+....
+
+==== Formalna definicja krawędzi
+
+|===
+| Źródło (wymagane) | Cel (zależne) | Interpretacja
+
+| `LEGAL_CAPACITY` | `IDENTITY_CONFIRMATION` | Bez zdolności prawnej nie można potwierdzić tożsamości
+| `LEGAL_CAPACITY` | `NO_CRIMINAL_RECORD` | Bez zdolności prawnej nie można oświadczyć o niekaralności
+| `LEGAL_CAPACITY` | `DATA_PROCESSING_CONSENT` | Bez zdolności prawnej zgoda RODO jest nieważna
+| `LEGAL_CAPACITY` | `TAX_COMPLIANCE` | Bez zdolności prawnej nie można oświadczać o podatkach
+| `IDENTITY_CONFIRMATION` | `NO_CONFLICT_OF_INTEREST` | Bez potwierdzonej tożsamości nie można ocenić konfliktu
+| `IDENTITY_CONFIRMATION` | `FINANCIAL_STANDING` | Bez tożsamości nie można weryfikować finansów
+| `IDENTITY_CONFIRMATION` | `ANTI_CORRUPTION` | Bez tożsamości oświadczenie antykorupcyjne jest bezpodstawne
+| `NO_CRIMINAL_RECORD` | `ANTI_CORRUPTION` | Karalność wyklucza wiarygodność oświadczenia antykorupcyjnego
+| `NO_CONFLICT_OF_INTEREST` | `ANTI_CORRUPTION` | Konflikt interesów podważa oświadczenie antykorupcyjne
+| `TAX_COMPLIANCE` | `FINANCIAL_STANDING` | Zaległości podatkowe obniżają wiarygodność finansową
+| `FINANCIAL_STANDING` | `INSURANCE_COVERAGE` | Bez zdolności finansowej nie można utrzymać ubezpieczenia
+| `FINANCIAL_STANDING` | `WADIUM_COMMITMENT` | Bez zdolności finansowej nie można zobowiązać się do wadium
+| `TECHNICAL_COMPETENCE` | `SUBCONTRACTOR_DISCLOSURE` | Ujawnienie podwykonawców ma sens przy posiadaniu kompetencji
+| `TECHNICAL_COMPETENCE` | `ENVIRONMENTAL_COMPLIANCE` | Zgodność środowiskowa wymaga kompetencji technicznej
+| `ANTI_CORRUPTION` | `SUBCONTRACTOR_DISCLOSURE` | Podwykonawcy muszą być sprawdzeni antykorupcyjnie
+| `CONFIDENTIALITY` | `ACCEPTANCE_OF_TERMS` | Regulamin wymaga wcześniejszej zgody na poufność
+| `WADIUM_COMMITMENT` | `ACCEPTANCE_OF_TERMS` | Regulamin wymaga zobowiązania do wadium
+|===
+
+==== Własności grafu
+
+. **Jeden korzeń**: `LEGAL_CAPACITY` — jedyny węzeł bez krawędzi wchodzących (poza `DATA_PROCESSING_CONSENT` które jest opcjonalne w niektórych aukcjach)
+. **Jeden liść-commitment**: `ACCEPTANCE_OF_TERMS` — węzeł bez krawędzi wychodzących, finałowa zgoda
+. **Węzły bifurkacyjne** (stopień > 2): `LEGAL_CAPACITY`, `FINANCIAL_STANDING`, `TECHNICAL_COMPETENCE`
+. **Węzły konwergencyjne** (stopień wejściowy > 1): `ANTI_CORRUPTION` (2 wejścia), `SUBCONTRACTOR_DISCLOSURE` (2 wejścia), `ACCEPTANCE_OF_TERMS` (2 wejścia), `FINANCIAL_STANDING` (2 wejścia)
+. **Acykliczność**: Gwarantowana przez konstrukcję — oświadczenie z niższej fazy nie może zależeć od oświadczenia z wyższej fazy
+
+=== Fazy zbierania oświadczeń
+
+Oświadczenia zbierane są w **czterech fazach** odpowiadających rosnącemu poziomowi zaangażowania. Faza musi być zamknięta (wszystkie BLOCKING oświadczenia złożone) przed przejściem do następnej.
+
+[cols="1,2,3,2"]
+|===
+| Faza | Nazwa | Cel | Oświadczenia
+
+| 1 | TOŻSAMOŚĆ | Weryfikacja kim jest kandydat i czy może działać prawnie | `LEGAL_CAPACITY`, `IDENTITY_CONFIRMATION`, `DATA_PROCESSING_CONSENT`
+| 2 | KWALIFIKACJA | Weryfikacja czy kandydat spełnia wymogi prawne | `NO_CRIMINAL_RECORD`, `NO_CONFLICT_OF_INTEREST`, `TAX_COMPLIANCE`, `SOCIAL_SECURITY_COMPLIANCE`
+| 3 | ZDOLNOŚĆ | Weryfikacja czy kandydat ma zdolność do wykonania | `FINANCIAL_STANDING`, `INSURANCE_COVERAGE`, `TECHNICAL_COMPETENCE`, `ENVIRONMENTAL_COMPLIANCE`, `ANTI_CORRUPTION`
+| 4 | ZOBOWIĄZANIE | Ostateczne zobowiązanie do udziału | `WADIUM_COMMITMENT`, `CONFIDENTIALITY`, `SUBCONTRACTOR_DISCLOSURE`, `ACCEPTANCE_OF_TERMS`
+|===
+
+==== Diagram fazowy
+
+....
+FAZA 1: TOŻSAMOŚĆ
+┌─────────────────────────────────────────────────────────────────┐
+│  LEGAL_CAPACITY ─── IDENTITY_CONFIRMATION ─── DATA_PROCESSING   │
+│        │                                                         │
+│        └─── [Bramka] Wszystkie BLOCKING = SUBMITTED?            │
+│                  │ TAK                                           │
+│                  ▼                                               │
+└──────────────────┼──────────────────────────────────────────────┘
+                   │
+FAZA 2: KWALIFIKACJA
+┌──────────────────┼──────────────────────────────────────────────┐
+│                  ▼                                               │
+│  NO_CRIMINAL ─── NO_CONFLICT ─── TAX_COMPLIANCE ─── SOC_SEC     │
+│        │                                                         │
+│        └─── [Bramka] Wszystkie BLOCKING = SUBMITTED?            │
+│                  │ TAK                                           │
+│                  ▼                                               │
+└──────────────────┼──────────────────────────────────────────────┘
+                   │
+FAZA 3: ZDOLNOŚĆ
+┌──────────────────┼──────────────────────────────────────────────┐
+│                  ▼                                               │
+│  FINANCIAL ─── INSURANCE ─── TECHNICAL ─── ENVIRONMENTAL        │
+│       │                   │                                      │
+│       └─── ANTI_CORRUPTION                                       │
+│        │                                                         │
+│        └─── [Bramka] Wszystkie BLOCKING = SUBMITTED?            │
+│                  │ TAK                                           │
+│                  ▼                                               │
+└──────────────────┼──────────────────────────────────────────────┘
+                   │
+FAZA 4: ZOBOWIĄZANIE
+┌──────────────────┼──────────────────────────────────────────────┐
+│                  ▼                                               │
+│  WADIUM ─── CONFIDENTIALITY ─── SUBCONTRACTOR ─── ACCEPT_TERMS  │
+│        │                                                         │
+│        └─── [DECYZJA] ═══ PARTICIPATION_GRANTED ═══>            │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+....
+
+=== Szablony oświadczeń per typ aukcji
+
+Każdy typ aukcji definiuje **które oświadczenia są wymagane** i **z jaką wagą**:
+
+==== ENGLISH_ASCENDING (Aukcja angielska)
+
+Prosty zestaw — szybki udział, minimalna biurokracja. Typowe dla aukcji komorniczych i wojskowych.
+
+[cols="1,2,2"]
+|===
+| Faza | Oświadczenie | Waga
+
+| 1 | `LEGAL_CAPACITY` | BLOCKING
+| 1 | `IDENTITY_CONFIRMATION` | BLOCKING
+| 1 | `DATA_PROCESSING_CONSENT` | WARNING
+| 4 | `WADIUM_COMMITMENT` | BLOCKING
+| 4 | `ACCEPTANCE_OF_TERMS` | BLOCKING
+|===
+
+*Nie wymaga*: kwalifikacji, zdolności finansowej, anti-corruption, poufności, podwykonawców, środowiska.
+
+==== SEALED_BID_TENDER (Przetarg nieograniczony)
+
+Pełny zestaw — wszystkie 16 oświadczeń. Typowe dla zamówień publicznych.
+
+[cols="1,2,2"]
+|===
+| Faza | Oświadczenie | Waga
+
+| 1 | `LEGAL_CAPACITY` | BLOCKING
+| 1 | `IDENTITY_CONFIRMATION` | BLOCKING
+| 1 | `DATA_PROCESSING_CONSENT` | BLOCKING
+| 2 | `NO_CRIMINAL_RECORD` | BLOCKING
+| 2 | `NO_CONFLICT_OF_INTEREST` | BLOCKING
+| 2 | `TAX_COMPLIANCE` | BLOCKING
+| 2 | `SOCIAL_SECURITY_COMPLIANCE` | BLOCKING
+| 3 | `FINANCIAL_STANDING` | BLOCKING
+| 3 | `INSURANCE_COVERAGE` | BLOCKING
+| 3 | `TECHNICAL_COMPETENCE` | WARNING
+| 3 | `ENVIRONMENTAL_COMPLIANCE` | INFORMATIVE
+| 3 | `ANTI_CORRUPTION` | BLOCKING
+| 4 | `WADIUM_COMMITMENT` | BLOCKING
+| 4 | `CONFIDENTIALITY` | BLOCKING
+| 4 | `SUBCONTRACTOR_DISCLOSURE` | WARNING
+| 4 | `ACCEPTANCE_OF_TERMS` | BLOCKING
+|===
+
+==== RESTRICTED_TENDER (Przetarg ograniczony)
+
+Dwuetapowy: Faza 1-2 to **prekwalifikacja**, Faza 3-4 po dopuszczeniu. Kandydat może zostać odrzucony już po prekwalifikacji.
+
+[cols="1,2,2,3"]
+|===
+| Faza | Oświadczenie | Waga | Uwaga
+
+| 1 | `LEGAL_CAPACITY` | BLOCKING | Prekwalifikacja
+| 1 | `IDENTITY_CONFIRMATION` | BLOCKING | Prekwalifikacja
+| 1 | `DATA_PROCESSING_CONSENT` | BLOCKING | Prekwalifikacja
+| 2 | `NO_CRIMINAL_RECORD` | BLOCKING | Prekwalifikacja
+| 2 | `NO_CONFLICT_OF_INTEREST` | BLOCKING | Prekwalifikacja
+| 2 | `TAX_COMPLIANCE` | BLOCKING | Prekwalifikacja
+| 2 | `SOCIAL_SECURITY_COMPLIANCE` | BLOCKING | Prekwalifikacja
+|   | **DECYZJA PREKWALIFIKACYJNA** | | → PREQUALIFIED / REJECTED
+| 3 | `FINANCIAL_STANDING` | BLOCKING | Po prekwalifikacji
+| 3 | `INSURANCE_COVERAGE` | BLOCKING | Po prekwalifikacji
+| 3 | `TECHNICAL_COMPETENCE` | BLOCKING | Po prekwalifikacji
+| 3 | `ENVIRONMENTAL_COMPLIANCE` | WARNING | Po prekwalifikacji
+| 3 | `ANTI_CORRUPTION` | BLOCKING | Po prekwalifikacji
+| 4 | `WADIUM_COMMITMENT` | BLOCKING | Po prekwalifikacji
+| 4 | `CONFIDENTIALITY` | BLOCKING | Po prekwalifikacji
+| 4 | `SUBCONTRACTOR_DISCLOSURE` | BLOCKING | Po prekwalifikacji
+| 4 | `ACCEPTANCE_OF_TERMS` | BLOCKING | Po prekwalifikacji
+|===
+
+==== DUTCH_DESCENDING (Aukcja holenderska)
+
+Absolutne minimum — szybkość decyduje. Trzy oświadczenia w jednej fazie.
+
+[cols="1,2,2"]
+|===
+| Faza | Oświadczenie | Waga
+
+| 1 | `LEGAL_CAPACITY` | BLOCKING
+| 4 | `WADIUM_COMMITMENT` | BLOCKING
+| 4 | `ACCEPTANCE_OF_TERMS` | BLOCKING
+|===
+
+*Nie wymaga*: tożsamości, kwalifikacji, zdolności — szybkość uczestnictwa jest nadrzędna.
+
+=== Kaskadowe odrzucenie (Cascade Rejection)
+
+**Kluczowa własność systemu**: odrzucenie oświadczenia powoduje natychmiastowe unieważnienie wszystkich oświadczeń osiągalnych z niego w DAG (domknięcie przechodnie po krawędziach zależności).
+
+==== Algorytm
+
+[source,java]
+----
+Set<DeclarationType> computeCascadeRejection(DeclarationType rejected, DeclarationDAG dag) {
+    // Domknięcie przechodnie: wszystkie węzły osiągalne z 'rejected'
+    Set<DeclarationType> cascade = dag.reachableFrom(rejected);
+
+    // Dla każdego osiągalnego: status → REJECTED_CASCADE
+    // Powód: "Oświadczenie X zostało odrzucone, co unieważnia oświadczenie Y"
+    return cascade;
+}
+----
+
+==== Przykład kaskady
+
+Kandydat oświadcza, że nie ma zaległości podatkowych (`TAX_COMPLIANCE` = SUBMITTED). System weryfikuje i **odrzuca** (bo zaświadczenie z US wykazało zaległość).
+
+Kaskada:
+
+....
+TAX_COMPLIANCE [REJECTED]
+    └──→ FINANCIAL_STANDING [REJECTED_CASCADE: "Zaległości podatkowe unieważniają oświadczenie o sytuacji finansowej"]
+          ├──→ INSURANCE_COVERAGE [REJECTED_CASCADE: "Brak potwierdzenia sytuacji finansowej unieważnia ubezpieczenie"]
+          └──→ WADIUM_COMMITMENT [REJECTED_CASCADE: "Brak potwierdzenia sytuacji finansowej unieważnia zobowiązanie wadium"]
+                └──→ ACCEPTANCE_OF_TERMS [REJECTED_CASCADE: "Brak zobowiązania wadium uniemożliwia akceptację regulaminu"]
+....
+
+**Efekt**: kandydat natychmiast otrzymuje powiadomienie:
+
+....
+❌ Nie możesz wziąć udziału w tej aukcji.
+
+Przyczyna: Oświadczenie o niezaleganiu podatkowym zostało odrzucone.
+Wykryte zaległości podatkowe (zaświadczenie US: KRS-2026-1234).
+
+Następstwa:
+  - Oświadczenie o sytuacji finansowej — unieważnione (zależy od zgodności podatkowej)
+  - Oświadczenie o ubezpieczeniu — unieważnione (zależy od sytuacji finansowej)
+  - Zobowiązanie do wadium — unieważnione (zależy od sytuacji finansowej)
+  - Akceptacja regulaminu — unieważniona (zależy od wadium)
+
+Możesz ponownie ubiegać się o udział po usunięciu zaległości podatkowych.
+....
+
+=== Decyzja o przystąpieniu (Participation Decision)
+
+Po zamknięciu ostatniej fazy (Faza 4) system podejmuje **decyzję o przystąpieniu**:
+
+[source,java]
+----
+sealed interface ParticipationDecision
+    permits ParticipationGranted, ParticipationRejected, ParticipationPending {
+
+    Instant decidedAt();
+}
+
+record ParticipationGranted(
+    Instant decidedAt,
+    AuctionId auctionId,
+    PartyId candidateId,
+    Set<DeclarationType> satisfiedDeclarations
+) implements ParticipationDecision {}
+
+record ParticipationRejected(
+    Instant decidedAt,
+    AuctionId auctionId,
+    PartyId candidateId,
+    Set<RejectionReason> rejectionReasons
+) implements ParticipationDecision {}
+
+record ParticipationPending(
+    Instant decidedAt,
+    AuctionId auctionId,
+    PartyId candidateId,
+    Set<DeclarationType> pendingDeclarations
+) implements ParticipationDecision {}
+----
+
+==== Reguły decyzyjne
+
+|===
+| Warunek | Decyzja
+
+| Wszystkie BLOCKING = SUBMITTED, żadne REJECTED | `PARTICIPATION_GRANTED`
+| Jakiekolwiek BLOCKING = REJECTED lub REJECTED_CASCADE | `PARTICIPATION_REJECTED`
+| Jakiekolwiek BLOCKING = PENDING (czeka na weryfikację) | `PARTICIPATION_PENDING`
+| Wszystkie BLOCKING = SUBMITTED, ale WARNING = REJECTED | `PARTICIPATION_GRANTED` z adnotacją o ostrzeżeniu
+|===
+
+==== Specjalne przypadki per typ aukcji
+
+* **RESTRICTED_TENDER**: Dwie decyzje — `PREQUALIFICATION_DECISION` po Fazie 2, `PARTICIPATION_DECISION` po Fazie 4. Odrzucenie prekwalifikacji = brak dostępu do Faz 3-4.
+* **DUTCH_DESCENDING**: Decyzja podejmowana natychmiast po złożeniu 3 oświadczeń (potencjalnie w jednej transakcji).
+* **ENGLISH_ASCENDING**: Decyzja po Fazie 1 i Fazie 4 (fazy 2-3 nie istnieją w tym szablonie — ale graf zależności nadal wymaga `LEGAL_CAPACITY` przed `WADIUM_COMMITMENT`).
+
+== Model domenowy
+
+=== Nowy moduł: hexabid-statements
+
+[source]
+----
+hexabid-statements/
+  src/main/java/com/github/hexabid/statements/
+
+    model/                                    # VALUE OBJECTS i ENTITIES
+      DeclarationType.java                    # enum: 16 typów oświadczeń
+      DeclarationStatus.java                  # enum: PENDING, SUBMITTED, VERIFIED, REJECTED, REJECTED_CASCADE, WAIVED
+      DeclarationSeverity.java               # enum: BLOCKING, WARNING, INFORMATIVE
+      DeclarationPhase.java                  # enum: IDENTITY, QUALIFICATION, CAPABILITY, COMMITMENT
+      Declaration.java                       # aggregate root: type, status, severity, phase, submittedAt, verifiedAt, rejectionReason
+      DeclarationId.java                      # value object
+      RejectionReason.java                   # value object: code, message, cascadeSource
+      DeclarationSubmission.java             # value object: candidateId + declarationType + payload
+      DeclarationVerification.java           # value object: verifierId + result + timestamp
+
+    dag/                                      # GRAF ZALEŻNOŚCI (ALGORYTMY GRAFOWE)
+      DeclarationDAG.java                     # immutable DAG: nodes + edges + adjacency lists
+      DeclarationEdge.java                   # value object: from → to, reason
+      TopologicalOrder.java                  # sortowanie topologiczne: DAG → List<DeclarationType>
+      ReachabilityIndex.java                 # domknięcie przechodnie: prekomputowane reachable sets
+      DeclarationGraphFactory.java           # buduje DAG z szablonu aukcji
+
+    template/                                # SZABLONY OŚWIADCZEŃ
+      DeclarationTemplate.java              # sealed interface: type + severity + phase + applicability
+      RequiredDeclaration.java              #implements DeclarationTemplate
+      OptionalDeclaration.java              #implements DeclarationTemplate
+      AuctionKindTemplate.java              # mapowanie: AuctionKind → Set<DeclarationTemplate>
+      EnglishAscendingTemplate.java          #implements AuctionKindTemplate
+      SealedBidTenderTemplate.java           #implements AuctionKindTemplate
+      RestrictedTenderTemplate.java          #implements AuctionKindTemplate
+      DutchDescendingTemplate.java           #implements AuctionKindTemplate
+
+    collection/                              # PROCES ZBIERANIA (ORKESTRACJA)
+      DeclarationCollectionProcess.java      # aggregate root: auctionId + candidateId + phases + decisions
+      DeclarationCollectionId.java           # value object
+      DeclarationCollectionPhase.java        # value object: phase + declarations + isComplete
+      PhaseTransitionGuard.java             # sprawdza czy faza może zostać zamknięta
+      CascadeRejectionEngine.java           # oblicza kaskadę odrzuceń na DAG
+      ParticipationDecider.java             # podejmuje decyzję o przystąpieniu
+      PrequalificationDecider.java          # decyzja prekwalifikacyjna (tylko RESTRICTED_TENDER)
+
+    port/in/                                 # USE CASES
+      SubmitDeclarationUseCase.java          # kandydat składa oświadczenie
+      VerifyDeclarationUseCase.java          # weryfikator sprawdza oświadczenie
+      RejectDeclarationUseCase.java          # odrzucenie z kaskadą
+      GetDeclarationStatusUseCase.java       # status wszystkich oświadczeń kandydata
+      AdvanceCollectionPhaseUseCase.java    # przejście do następnej fazy
+      MakeParticipationDecisionUseCase.java # podejmij decyzję o udziale
+
+    port/out/
+      DeclarationRepository.java             # persystencja oświadczeń
+      DeclarationEventPublisher.java          # publikacja eventów (DeclarationSubmitted, DeclarationRejected, etc.)
+      NotificationPort.java                 # powiadomienie kandydata o odrzuceniu z przyczyną
+----
+
+=== Kluczowe klasy w szczególe
+
+==== DeclarationDAG — graf zależności
+
+[source,java]
+----
+public final class DeclarationDAG {
+
+    private final Set<DeclarationType> nodes;
+    private final Set<DeclarationEdge> edges;
+    private final Map<DeclarationType, Set<DeclarationType>> adjacency;
+    private final ReachabilityIndex reachability;
+
+    public Set<DeclarationType> reachableFrom(DeclarationType source) {
+        return reachability.reachableFrom(source);
+    }
+
+    public Set<DeclarationType> prerequisitesOf(DeclarationType target) {
+        return edges.stream()
+            .filter(e -> e.to().equals(target))
+            .map(DeclarationEdge::from)
+            .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public List<DeclarationType> topologicalOrder() {
+        return TopologicalOrder.of(this);
+    }
+
+    public boolean hasCycles() {
+        return TopologicalOrder.hasCycle(this);
+    }
+
+    public Set<DeclarationType> roots() {
+        return nodes.stream()
+            .filter(n -> prerequisitesOf(n).isEmpty())
+            .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<DeclarationType> leaves() {
+        return nodes.stream()
+            .filter(n -> adjacency.getOrDefault(n, Set.of()).isEmpty())
+            .collect(Collectors.toUnmodifiableSet());
+    }
+}
+----
+
+==== ReachabilityIndex — domknięcie przechodnie
+
+Prekomputowane przy budowie DAG. Algorytm Warshalla-Floyda lub DFS per node.
+
+[source,java]
+----
+public final class ReachabilityIndex {
+
+    private final Map<DeclarationType, Set<DeclarationType>> reachable;
+
+    public Set<DeclarationType> reachableFrom(DeclarationType source) {
+        return reachable.getOrDefault(source, Set.of());
+    }
+
+    public boolean isReachable(DeclarationType from, DeclarationType to) {
+        return reachable.getOrDefault(from, Set.of()).contains(to);
+    }
+
+    public static ReachabilityIndex compute(DeclarationDAG dag) {
+        // Floyd-Warshall or iterative DFS
+        Map<DeclarationType, Set<DeclarationType>> result = new HashMap<>();
+        for (DeclarationType node : dag.nodes()) {
+            result.put(node, computeReachable(node, dag));
+        }
+        return new ReachabilityIndex(result);
+    }
+}
+----
+
+==== CascadeRejectionEngine — silnik kaskady
+
+[source,java]
+----
+public final class CascadeRejectionEngine {
+
+    private final DeclarationDAG dag;
+
+    public CascadeRejectionResult cascade(DeclarationType rejected, RejectionReason reason) {
+        Set<DeclarationType> cascadeTargets = dag.reachableFrom(rejected);
+        List<CascadeRejection> cascadedRejections = new ArrayList<>();
+
+        for (DeclarationType target : cascadeTargets) {
+            RejectionReason cascadeReason = RejectionReason.cascaded(
+                sourceType = rejected,
+                sourceReason = reason,
+                targetType = target,
+                dependencyDescription = dag.edgeBetween(rejected, target).reason()
+            );
+            cascadedRejections.add(new CascadeRejection(target, cascadeReason));
+        }
+
+        return new CascadeRejectionResult(rejected, reason, cascadedRejections);
+    }
+}
+----
+
+==== DeclarationCollectionProcess — agregat główny
+
+[source,java]
+----
+public final class DeclarationCollectionProcess {
+
+    private DeclarationCollectionId id;
+    private AuctionId auctionId;
+    private PartyId candidateId;
+    private AuctionKind auctionKind;
+    private DeclarationDAG dag;
+    private List<DeclarationCollectionPhase> phases;
+    private ParticipationDecision decision;
+
+    public DeclarationSubmissionResult submitDeclaration(DeclarationSubmission submission) {
+        // 1. Sprawdź czy oświadczenie jest wymagane w szablonie aukcji
+        // 2. Sprawdź czy wszystkie prerequisites są SUBMITTED lub VERIFIED
+        // 3. Jeśli nie → zwróć błąd: "Najpierw złóż: [lista prerequisites]"
+        // 4. Jeśli tak → dodaj oświadczenie z statusem SUBMITTED
+        // 5. Sprawdź czy faza jest kompletna
+    }
+
+    public RejectionResult rejectDeclaration(DeclarationType type, RejectionReason reason) {
+        // 1. Oznacz oświadczenie jako REJECTED
+        // 2. Uruchom CascadeRejectionEngine
+        // 3. Oznacz wszystkie osiągalne jako REJECTED_CASCADE
+        // 4. Publikuj event DeclarationRejectedWithCascade
+        // 5. Wyślij powiadomienie przez NotificationPort
+        // 6. Jeśli jakiekolwiek BLOCKING odrzucone → PARTICIPATION_REJECTED
+    }
+
+    public PhaseAdvanceResult tryAdvancePhase() {
+        // 1. Sprawdź czy bieżąca faza ma wszystkie BLOCKING = SUBMITTED/VERIFIED
+        // 2. Jeśli nie → zwróć informację co brakuje
+        // 3. Jeśli tak → przejdź do następnej fazy
+    }
+
+    public ParticipationDecision decideParticipation() {
+        // 1. Wszystkie BLOCKING w wszystkich fazach = SUBMITTED/VERIFIED?
+        //    → PARTICIPATION_GRANTED
+        // 2. Jakiekolwiek BLOCKING = REJECTED/REJECTED_CASCADE?
+        //    → PARTICIPATION_REJECTED z listą przyczyn
+        // 3. Jakiekolwiek BLOCKING = PENDING?
+        //    → PARTICIPATION_PENDING
+    }
+}
+----
+
+== Integracja z istniejącymi modułami
+
+=== hexabid-core
+
+* `Auction` zyskuje pole `AuctionKind auctionKind` — typ aukcji określa szablon oświadczeń
+* `AuctionRuleEvaluator` deleguje sprawdzanie `PARTICIPATION` do `DeclarationCollectionProcess`
+* Nowy event: `CandidateParticipationDecidedEvent` (GRANTED / REJECTED)
+* `PlaceBidService` weryfikuje `PARTICIPATION_GRANTED` przed przyjęciem oferty
+
+=== hexabid-rules
+
+* Nowe `AttributeKey`: `PARTICIPATION_GRANTED`, `DECLARATION_STATUS_{TYPE}`
+* Reguły uczestnictwa (`PARTICIPATION` phase) korzystają ze statusów oświadczeń
+* `RuleDefinition` dla każdej fazy: sprawdza czy wszystkie BLOCKING declarations w fazie mają status SUBMITTED+
+
+=== hexabid-adapter-in-rest
+
+* Nowe endpointy: `/api/v1/auctions/{id}/declarations/*`
+* `AuctionResponse` zyskuje pole `auctionKind`
+* `CreateAuctionRequest` zyskuje pole `auctionKind`
+
+=== hexabid-adapter-in-ws
+
+* Kandydat subskrybuje kanał `/topic/candidates/{id}/declarations` — powiadomienia o statusie
+* Kaskadowe odrzucenie powoduje natychmiastowy push z listą unieważnionych oświadczeń i przyczyną
+
+=== hexabid-adapter-out-db
+
+* Nowe tabele: `declaration`, `declaration_collection_process`, `declaration_cascade_rejection`
+* Relacja: `declaration_collection_process` → `declaration` (1:N)
+
+=== hexabid-pricing
+
+* `PricingContext` zyskuje `auctionKind` — wpływ typu aukcji na kalkulację (np. holenderska ma inny model wadium)
+
+== Algorytmy grafowe — szczegóły
+
+=== Sortowanie topologiczne
+
+Określa kolejność zbierania oświadczeń wewnątrz fazy. Jeśli DAG jest:
+
+....
+LEGAL_CAPACITY → IDENTITY_CONFIRMATION → NO_CONFLICT_OF_INTEREST
+....
+
+To kolejność tożsamości: `[LEGAL_CAPACITY, IDENTITY_CONFIRMATION]`, a kwalifikacja: `[NO_CONFLICT_OF_INTEREST]`.
+
+Algorytm: Kahn's algorithm (BFS-based) — deterministyczny porządek alfabetyczny przy remisach.
+
+[source,java]
+----
+public final class TopologicalOrder {
+
+    public static List<DeclarationType> of(DeclarationDAG dag) {
+        Map<DeclarationType, Integer> inDegree = computeInDegree(dag);
+        Queue<DeclarationType> queue = new PriorityQueue<>(Comparator.comparing(DeclarationType::name));
+
+        dag.roots().forEach(queue::add);
+        List<DeclarationType> result = new ArrayList<>();
+
+        while (!queue.isEmpty()) {
+            DeclarationType current = queue.poll();
+            result.add(current);
+            for (DeclarationType neighbor : dag.successorsOf(current)) {
+                int newDegree = inDegree.merge(neighbor, -1, Integer::sum);
+                if (newDegree == 0) queue.add(neighbor);
+            }
+        }
+
+        if (result.size() != dag.nodes().size()) {
+            throw new IllegalStateException("Declaration DAG contains a cycle");
+        }
+
+        return Collections.unmodifiableList(result);
+    }
+}
+----
+
+=== Analiza osiągalności (Reachability)
+
+Prekomputowana przy budowie DAG. Dla każdego węzła przechowuje zbiór węzłów osiągalnych. Używana do:
+
+1. **Kaskadowe odrzucenie** — `reachableFrom(rejected)` → zbiór do unieważnienia
+2. **Wpływ zmiany** — gdy kandydat poprawia oświadczenie, które oświadczenia kaskadowe mogą zostać odblokowane
+3. **Audyt** — „to oświadczenie wpływa na N innych oświadczeń"
+
+=== Weryfikacja spójności DAG
+
+Przy każdej modyfikacji szablonu (dodanie typu aukcji, zmiana zależności):
+
+1. Sprawdzenie acykliczności (topological sort)
+2. Sprawdzenie spójności faz (krawędź nie prowadzi z wyższej fazy do niższej)
+3. Sprawdzenie korzeni (każdy spójny komponent ma przynajmniej jeden korzeń w Fazie 1)
+4. Sprawdzenie liści (każdy spójny komponent ma przynajmniej jeden liść w Fazie 4)
+
+== Scenariusze E2E
+
+=== E2E-1: Kandydat w aukcji angielskiej — pełny pozytywny przebieg
+
+**Typ**: `ENGLISH_ASCENDING` | **Kandydat**: Jan Kowalski
+
+. Kandydat otwiera stronę aukcji → system wyświetla wymagane oświadczenia
+. **Faza 1 (TOŻSAMOŚĆ)**:
+  .. Kandydat składa `LEGAL_CAPACITY` → status: SUBMITTED
+  .. Kandydat składa `IDENTITY_CONFIRMATION` → status: SUBMITTED (prerequisite LEGAL_CAPACITY OK)
+  .. `DATA_PROCESSING_CONSENT` ma wagę WARNING — kandydat może pominąć
+  .. Faza 1 zamknięta → przejście do Fazy 4
+. **Faza 4 (ZOBOWIĄZANIE)**:
+  .. Kandydat składa `WADIUM_COMMITMENT` → status: SUBMITTED
+  .. Kandydat składa `ACCEPTANCE_OF_TERMS` → status: SUBMITTED
+  .. Faza 4 zamknięta
+. **Decyzja**: `PARTICIPATION_GRANTED` → kandydat może licytować
+
+=== E2E-2: Kandydat w przetargu — odrzucenie z kaskadą
+
+**Typ**: `SEALED_BID_TENDER` | **Kandydat**: Firma XYZ sp. z o.o.
+
+. **Faza 1**: Wszystkie złożone → OK
+. **Faza 2**:
+  .. `NO_CRIMINAL_RECORD` → SUBMITTED
+  .. `NO_CONFLICT_OF_INTEREST` → SUBMITTED
+  .. `TAX_COMPLIANCE` → SUBMITTED
+  .. `SOCIAL_SECURITY_COMPLIANCE` → SUBMITTED
+  .. Faza 2 zamknięta → OK
+. **Faza 3**:
+  .. `FINANCIAL_STANDING` → SUBMITTED
+  .. `ANTI_CORRUPTION` → SUBMITTED
+  .. **Weryfikator sprawdza `TAX_COMPLIANCE`** → REJECTED (zaległości wykryte)
+  .. **KASKADA**:
+     ... `FINANCIAL_STANDING` → REJECTED_CASCADE (zależy od TAX_COMPLIANCE)
+     ... `INSURANCE_COVERAGE` → REJECTED_CASCADE (zależy od FINANCIAL_STANDING)
+     ... `WADIUM_COMMITMENT` → REJECTED_CASCADE (zależy od FINANCIAL_STANDING)
+     ... `ACCEPTANCE_OF_TERMS` → REJECTED_CASCADE (zależy od WADIUM_COMMITMENT)
+  .. **Natychmiastowe powiadomienie** push WebSocket:
+     ....
+     ❌ PARTICIPATION_REJECTED
+     Przyczyna główna: TAX_COMPLIANCE — oświadczenie o niezaleganiu podatkowej odrzucone.
+     Zaległości: 12 450 PLN (US-2026-8877).
+     Oświadczenia unieważnione: FINANCIAL_STANDING, INSURANCE_COVERAGE,
+     WADIUM_COMMITMENT, ACCEPTANCE_OF_TERMS.
+     ....
+  .. `ParticipationDecision` = `PARTICIPATION_REJECTED`
+
+=== E2E-3: Przetarg ograniczony — odrzucenie prekwalifikacji
+
+**Typ**: `RESTRICTED_TENDER` | **Kandydat**: Jan Nowak
+
+. **Faza 1**: Wszystkie złożone → OK
+. **Faza 2**:
+  .. `NO_CRIMINAL_RECORD` → REJECTED (karalność stwierdzona)
+  .. **KASKADA**: `ANTI_CORRUPTION` → REJECTED_CASCADE
+  .. **DECYZJA PREKWALIFIKACYJNA**: `PREQUALIFICATION_REJECTED`
+  .. Powiadomienie: „Odrzucony na etapie prekwalifikacji: karalność za przestępstwo umyślne."
+  .. Kandydat **nie ma dostępu** do Faz 3-4
+
+=== E2E-4: Aukcja holenderska — natychmiastowa decyzja
+
+**Typ**: `DUTCH_DESCENDING` | **Kandydat**: Anna Wiśniewska
+
+. Kandydat składa 3 oświadczenia w jednym formularzu:
+  .. `LEGAL_CAPACITY` → SUBMITTED
+  .. `WADIUM_COMMITMENT` → SUBMITTED (prerequisite: LEGAL_CAPACITY OK — sprawdzane w pamięci)
+  .. `ACCEPTANCE_OF_TERMS` → SUBMITTED
+. **Decyzja**: `PARTICIPATION_GRANTED` → kandydat może natychmiast licytować
+. Czas od pierwszego oświadczenia do decyzji: < 5 sekund
+
+=== E2E-5: Kandydat próbuje złożyć oświadczenie bez prerequisite
+
+**Typ**: `SEALED_BID_TENDER` | **Kandydat**: Firma ABC
+
+. Kandydat próbuje złożyć `FINANCIAL_STANDING` bez `IDENTITY_CONFIRMATION`
+. System: „Nie możesz złożyć oświadczenia o sytuacji finansowej. Najpierw złóż: IDENTITY_CONFIRMATION, TAX_COMPLIANCE"
+. Kandydat widzi w UI: oświadczenie `FINANCIAL_STANDING` jest **zablokowane** (szare), z listą prerequisites
+
+=== E2E-6: Poprawa oświadczenia po odrzuceniu kaskadowym
+
+**Typ**: `SEALED_BID_TENDER` | **Kandydat**: Firma XYZ (kontynuacja E2E-2)
+
+. Firma XYZ uregulowała zaległości podatkowe
+. Kandydat ponownie składa `TAX_COMPLIANCE` → SUBMITTED → VERIFIED
+. **Odblokowanie kaskadowe**:
+  .. `FINANCIAL_STANDING` → wraca do SUBMITTED (poprzedni status REJECTED_CASCADE)
+  .. `INSURANCE_COVERAGE` → wraca do SUBMITTED
+  .. `WADIUM_COMMITMENT` → wraca do PENDING (wymaga ponownej wpłaty)
+  .. `ACCEPTANCE_OF_TERMS` → wraca do PENDING
+. **Decyzja**: `PARTICIPATION_PENDING` (czeka na wadium i regulamin)
+
+== Scenariusze po endpointach
+
+=== EP-1: POST /api/v1/auctions/{auctionId}/declarations/submit
+
+Składanie oświadczenia przez kandydata.
+
+**Request:**
+[source,json]
+----
+{
+  "declarationType": "LEGAL_CAPACITY",
+  "payload": {
+    "statement": "Oświadczam, że posiadam pełną zdolność do czynności prawnych.",
+    "evidenceDocumentId": "doc-123"
+  }
+}
+----
+
+**Response 201:**
+[source,json]
+----
+{
+  "declarationId": "decl-456",
+  "declarationType": "LEGAL_CAPACITY",
+  "status": "SUBMITTED",
+  "phase": "IDENTITY",
+  "severity": "BLOCKING",
+  "submittedAt": "2026-05-09T10:30:00Z",
+  "prerequisites": [],
+  "dependents": ["IDENTITY_CONFIRMATION", "NO_CRIMINAL_RECORD", "TAX_COMPLIANCE"]
+}
+----
+
+**Response 400 (brak prerequisite):**
+[source,json]
+----
+{
+  "error": "PREREQUISITES_NOT_MET",
+  "message": "Nie możesz złożyć tego oświadczenia. Najpierw złóż wymagane oświadczenia.",
+  "missingPrerequisites": ["IDENTITY_CONFIRMATION", "TAX_COMPLIANCE"]
+}
+----
+
+=== EP-2: POST /api/v1/auctions/{auctionId}/declarations/verify
+
+Weryfikacja oświadczenia przez weryfikatora.
+
+**Request:**
+[source,json]
+----
+{
+  "declarationId": "decl-456",
+  "result": "VERIFIED",
+  "verifierNote": "Tożsamość potwierdzona w systemie KYC."
+}
+----
+
+**Response 200:**
+[source,json]
+----
+{
+  "declarationId": "decl-456",
+  "status": "VERIFIED",
+  "verifiedAt": "2026-05-09T10:35:00Z"
+}
+----
+
+=== EP-3: POST /api/v1/auctions/{auctionId}/declarations/reject
+
+Odrzucenie oświadczenia z kaskadą.
+
+**Request:**
+[source,json]
+----
+{
+  "declarationId": "decl-789",
+  "reason": {
+    "code": "TAX_ARREARS_DETECTED",
+    "message": "Wykryto zaległości podatkowe: 12 450 PLN (US-2026-8877)"
+  }
+}
+----
+
+**Response 200:**
+[source,json]
+----
+{
+  "rejectedDeclaration": {
+    "declarationId": "decl-789",
+    "declarationType": "TAX_COMPLIANCE",
+    "status": "REJECTED",
+    "reason": {
+      "code": "TAX_ARREARS_DETECTED",
+      "message": "Wykryto zaległości podatkowe: 12 450 PLN (US-2026-8877)"
+    }
+  },
+  "cascadeRejections": [
+    {
+      "declarationType": "FINANCIAL_STANDING",
+      "status": "REJECTED_CASCADE",
+      "cascadeSource": "TAX_COMPLIANCE",
+      "reason": "Zaległości podatkowe unieważniają oświadczenie o sytuacji finansowej"
+    },
+    {
+      "declarationType": "INSURANCE_COVERAGE",
+      "status": "REJECTED_CASCADE",
+      "cascadeSource": "FINANCIAL_STANDING",
+      "reason": "Brak potwierdzenia sytuacji finansowej unieważnia ubezpieczenie"
+    },
+    {
+      "declarationType": "WADIUM_COMMITMENT",
+      "status": "REJECTED_CASCADE",
+      "cascadeSource": "FINANCIAL_STANDING",
+      "reason": "Brak potwierdzenia sytuacji finansowej unieważnia zobowiązanie wadium"
+    },
+    {
+      "declarationType": "ACCEPTANCE_OF_TERMS",
+      "status": "REJECTED_CASCADE",
+      "cascadeSource": "WADIUM_COMMITMENT",
+      "reason": "Brak zobowiązania wadium uniemożliwia akceptację regulaminu"
+    }
+  ],
+  "participationDecision": "PARTICIPATION_REJECTED"
+}
+----
+
+=== EP-4: GET /api/v1/auctions/{auctionId}/declarations
+
+Status wszystkich oświadczeń kandydata z wizualizacją DAG.
+
+**Response 200:**
+[source,json]
+----
+{
+  "auctionId": "auction-123",
+  "auctionKind": "SEALED_BID_TENDER",
+  "candidateId": "party-456",
+  "currentPhase": "CAPABILITY",
+  "phases": [
+    {
+      "phase": "IDENTITY",
+      "isComplete": true,
+      "declarations": [
+        {
+          "declarationType": "LEGAL_CAPACITY",
+          "status": "VERIFIED",
+          "severity": "BLOCKING"
+        },
+        {
+          "declarationType": "IDENTITY_CONFIRMATION",
+          "status": "VERIFIED",
+          "severity": "BLOCKING"
+        },
+        {
+          "declarationType": "DATA_PROCESSING_CONSENT",
+          "status": "SUBMITTED",
+          "severity": "BLOCKING"
+        }
+      ]
+    },
+    {
+      "phase": "QUALIFICATION",
+      "isComplete": true,
+      "declarations": [
+        {
+          "declarationType": "NO_CRIMINAL_RECORD",
+          "status": "VERIFIED",
+          "severity": "BLOCKING"
+        },
+        {
+          "declarationType": "NO_CONFLICT_OF_INTEREST",
+          "status": "VERIFIED",
+          "severity": "BLOCKING"
+        },
+        {
+          "declarationType": "TAX_COMPLIANCE",
+          "status": "VERIFIED",
+          "severity": "BLOCKING"
+        },
+        {
+          "declarationType": "SOCIAL_SECURITY_COMPLIANCE",
+          "status": "VERIFIED",
+          "severity": "BLOCKING"
+        }
+      ]
+    },
+    {
+      "phase": "CAPABILITY",
+      "isComplete": false,
+      "declarations": [
+        {
+          "declarationType": "FINANCIAL_STANDING",
+          "status": "SUBMITTED",
+          "severity": "BLOCKING",
+          "prerequisitesMet": true
+        },
+        {
+          "declarationType": "INSURANCE_COVERAGE",
+          "status": "PENDING",
+          "severity": "BLOCKING",
+          "prerequisitesMet": false,
+          "blockedBy": ["FINANCIAL_STANDING"]
+        },
+        {
+          "declarationType": "TECHNICAL_COMPETENCE",
+          "status": "SUBMITTED",
+          "severity": "WARNING"
+        },
+        {
+          "declarationType": "ENVIRONMENTAL_COMPLIANCE",
+          "status": "PENDING",
+          "severity": "INFORMATIVE",
+          "prerequisitesMet": false,
+          "blockedBy": ["TECHNICAL_COMPETENCE"]
+        },
+        {
+          "declarationType": "ANTI_CORRUPTION",
+          "status": "SUBMITTED",
+          "severity": "BLOCKING",
+          "prerequisitesMet": true
+        }
+      ]
+    },
+    {
+      "phase": "COMMITMENT",
+      "isComplete": false,
+      "declarations": [
+        {
+          "declarationType": "WADIUM_COMMITMENT",
+          "status": "PENDING",
+          "severity": "BLOCKING",
+          "prerequisitesMet": false,
+          "blockedBy": ["FINANCIAL_STANDING"]
+        },
+        {
+          "declarationType": "CONFIDENTIALITY",
+          "status": "PENDING",
+          "severity": "BLOCKING"
+        },
+        {
+          "declarationType": "SUBCONTRACTOR_DISCLOSURE",
+          "status": "PENDING",
+          "severity": "WARNING",
+          "prerequisitesMet": false,
+          "blockedBy": ["TECHNICAL_COMPETENCE", "ANTI_CORRUPTION"]
+        },
+        {
+          "declarationType": "ACCEPTANCE_OF_TERMS",
+          "status": "PENDING",
+          "severity": "BLOCKING",
+          "prerequisitesMet": false,
+          "blockedBy": ["WADIUM_COMMITMENT", "CONFIDENTIALITY"]
+        }
+      ]
+    }
+  ],
+  "participationDecision": null,
+  "dagVisualization": {
+    "nodes": [
+      {"id": "LEGAL_CAPACITY", "status": "VERIFIED", "phase": "IDENTITY"},
+      {"id": "IDENTITY_CONFIRMATION", "status": "VERIFIED", "phase": "IDENTITY"},
+      {"id": "NO_CRIMINAL_RECORD", "status": "VERIFIED", "phase": "QUALIFICATION"},
+      {"id": "NO_CONFLICT_OF_INTEREST", "status": "VERIFIED", "phase": "QUALIFICATION"},
+      {"id": "FINANCIAL_STANDING", "status": "SUBMITTED", "phase": "CAPABILITY"},
+      {"id": "ANTI_CORRUPTION", "status": "SUBMITTED", "phase": "CAPABILITY"}
+    ],
+    "edges": [
+      {"from": "LEGAL_CAPACITY", "to": "IDENTITY_CONFIRMATION"},
+      {"from": "LEGAL_CAPACITY", "to": "NO_CRIMINAL_RECORD"},
+      {"from": "NO_CRIMINAL_RECORD", "to": "ANTI_CORRUPTION"},
+      {"from": "NO_CONFLICT_OF_INTEREST", "to": "ANTI_CORRUPTION"}
+    ]
+  }
+}
+----
+
+=== EP-5: POST /api/v1/auctions/{auctionId}/declarations/advance-phase
+
+Przejście do następnej fazy.
+
+**Response 200 (sukces):**
+[source,json]
+----
+{
+  "previousPhase": "IDENTITY",
+  "currentPhase": "QUALIFICATION",
+  "nextDeclarations": [
+    {"declarationType": "NO_CRIMINAL_RECORD", "severity": "BLOCKING", "prerequisitesMet": true},
+    {"declarationType": "NO_CONFLICT_OF_INTEREST", "severity": "BLOCKING", "prerequisitesMet": true},
+    {"declarationType": "TAX_COMPLIANCE", "severity": "BLOCKING", "prerequisitesMet": true},
+    {"declarationType": "SOCIAL_SECURITY_COMPLIANCE", "severity": "BLOCKING", "prerequisitesMet": true}
+  ]
+}
+----
+
+**Response 400 (niekompletna faza):**
+[source,json]
+----
+{
+  "error": "PHASE_INCOMPLETE",
+  "message": "Faza TOŻSAMOŚĆ nie jest kompletna.",
+  "missingBlocking": ["IDENTITY_CONFIRMATION"],
+  "warningNotSubmitted": ["DATA_PROCESSING_CONSENT"]
+}
+----
+
+=== EP-6: GET /api/v1/auctions/{auctionId}/declarations/participation-decision
+
+Ostateczna decyzja o udziale.
+
+**Response 200:**
+[source,json]
+----
+{
+  "auctionId": "auction-123",
+  "candidateId": "party-456",
+  "decision": "PARTICIPATION_GRANTED",
+  "decidedAt": "2026-05-09T12:00:00Z",
+  "satisfiedDeclarations": [
+    "LEGAL_CAPACITY", "IDENTITY_CONFIRMATION", "DATA_PROCESSING_CONSENT",
+    "NO_CRIMINAL_RECORD", "NO_CONFLICT_OF_INTEREST", "TAX_COMPLIANCE",
+    "SOCIAL_SECURITY_COMPLIANCE", "FINANCIAL_STANDING", "INSURANCE_COVERAGE",
+    "TECHNICAL_COMPETENCE", "ENVIRONMENTAL_COMPLIANCE", "ANTI_CORRUPTION",
+    "WADIUM_COMMITMENT", "CONFIDENTIALITY", "SUBCONTRACTOR_DISCLOSURE",
+    "ACCEPTANCE_OF_TERMS"
+  ],
+  "warnings": ["ENVIRONMENTAL_COMPLIANCE: INFORMATIVE, not verified"]
+}
+----
+
+=== EP-7: POST /api/v1/auctions — tworzenie aukcji z typem
+
+**Request:**
+[source,json]
+----
+{
+  "title": "Samochód Jana Kowalskiego - Volvo XC60",
+  "startingPrice": {"amount": "40000.00", "currency": "PLN"},
+  "endsAt": "2026-05-01T18:00:00Z",
+  "lotId": "lot-123",
+  "auctionKind": "ENGLISH_ASCENDING",
+  "pricingConfig": {
+    "wadiumStrategy": "PERCENTAGE",
+    "wadiumRate": "0.05",
+    "vatRate": "23%",
+    "isExcisable": true,
+    "exciseRate": "3.1%",
+    "isImported": false
+  }
+}
+----
+
+== Diagram stanów oświadczenia
+
+....
+                    ┌───────────┐
+                    │  PENDING  │ ◄── utworzone z szablonem aukcji
+                    └─────┬─────┘
+                          │ submit()
+                          ▼
+                    ┌───────────┐
+            ┌──────│ SUBMITTED  │──────┐
+            │      └─────┬─────┘      │
+            │            │ verify()   │ reject()
+            │            ▼            │
+            │      ┌───────────┐      │
+            │      │  VERIFIED  │      ▼
+            │      └───────────┘  ┌────────────┐
+            │                      │  REJECTED   │──────────┐
+            │                      └────────────┘          │
+            │                                                │ cascade
+            │                                                ▼
+            │                                         ┌─────────────────┐
+            │                                         │ REJECTED_CASCADE │
+            │                                         └────────┬────────┘
+            │                                                  │ remedy()
+            │                                                  ▼
+            │                                         ┌───────────┐
+            └─────────────────────────────────────────│  PENDING   │ ◄── ponowne zgłoszenie
+                                                      └───────────┘
+....
+
+== Konsekwencje
+
+=== Plusy
+
+* **Transparentność** — każdy kandydat wie dokładnie które oświadczenia są wymagane i w jakiej kolejności
+* **Natychmiastowa informacja zwrotna** — odrzucenie powoduje kaskadę z precyzyjną przyczyną
+* **Ekstensybilność** — nowy typ aukcji = nowy szablon; nowe oświadczenie = nowy węzeł w DAG
+* **Audytowalność** — pełna historia oświadczeń z kaskadami, weryfikacjami i naprawami
+* **Weryfikowalność** — graf DAG jest sprawdzany na acykliczność i spójność fazową przy każdej zmianie
+* **Algorytmiczna poprawność** — sortowanie topologiczne gwarantuje poprawną kolejność; domknięcie przechodnie gwarantuje pełną kaskadę
+
+=== Minusy
+
+* **Złożoność** — 16 typów oświadczeń, DAG, kaskady, fazy — znacznie więcej niż obecny `DocumentType`
+* **Migracja** — `Auction` potrzebuje `auctionKind`; istniejące aukcje muszą zostać przypisane do typu
+* **Krzywa uczenia** — zespół musi zrozumieć DAG, sortowanie topologiczne, domknięcie przechodnie
+
+=== Ryzyka
+
+* **Nadmierne projektowanie** — nie każda aukcja potrzebuje 16 oświadczeń → *mitigacja*: szablony per `AuctionKind`; `DUTCH_DESCENDING` wymaga tylko 3
+* **Cykliczne zależności** — błędna modyfikacja DAG może wprowadzić cykl → *mitigacja*: walidacja acykliczności przy budowie + ArchUnit test
+* **Wydajność** — domknięcie przechodnie prekomputowane = O(N²) w pamięci → *mitigacja*: N=16 jest trywialne; nawet 1000 oświadczeń jest wykonalne
+* **Spójność fazowa** — krawędź z niższej fazy do wyższej OK, odwrotnie nie → *mitigacja*: invariant w `DeclarationGraphFactory`
+
+== Powiązania
+
+* [[decisions/2026-04-17-pricing-architecture]] — analogiczny wzorzec kompozytu z kalkulatorami i zależnościami
+* [[decisions/2026-05-05-auction-activation-rules-guidance]] — reguły uczestnictwa (PARTICIPATION phase) zyskują nowy wymiar: oświadczenia
+* [[concepts/hexagonal-architecture]] — `hexabid-statements` jako czysty moduł domenowy bez Springa

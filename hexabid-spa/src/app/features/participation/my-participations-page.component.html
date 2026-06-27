@@ -1,0 +1,50 @@
+<section class="surface intro">
+  <span class="kicker">Moje dopuszczenia</span>
+  <h1>Centrum kwalifikacji</h1>
+  <p>Przeglądaj swoje programy dopuszczenia do aukcji. Uzupełnij brakujące oświadczenia, sprawdź status decyzji i wróć do licytacji.</p>
+</section>
+
+@if (facade.loading()) {
+  <section class="surface">Ładowanie dopuszczeń...</section>
+} @else if (facade.error()) {
+  <section class="alert-inline">{{ facade.error() }}</section>
+} @else if (facade.participations().length === 0) {
+  <section class="surface">
+    <p class="muted">Brak aktywnych programów dopuszczenia. Weź udział w aukcji, która wymaga kwalifikacji licytantów.</p>
+    <a routerLink="/" class="link">Przeglądaj rynek</a>
+  </section>
+} @else {
+  <div class="participations-grid">
+    @for (entry of facade.participations(); track entry.auctionId) {
+      <article class="surface participation-card" [class]="'tone-' + statusTone(entry)">
+        <div class="card-header">
+          <strong class="card-status">{{ statusLabel(entry) }}</strong>
+          <span class="card-progress">{{ entry.program.completedCount }}/{{ entry.program.totalCount }}</span>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="entry.program.progressPercent"></div>
+        </div>
+
+        <div class="card-details">
+          <p>Profil: {{ entry.program.templateName }}</p>
+          @if (entry.decision; as dec) {
+            @if (dec.humanReason) {
+              <p class="card-reason">{{ dec.humanReason }}</p>
+            }
+            @if (dec.missingStatements.length) {
+              <p class="card-missing">Brakuje: {{ dec.missingStatements.join(', ') }}</p>
+            }
+            @if (dec.conditions.length) {
+              <p class="card-conditions">Warunki: {{ dec.conditions.join(', ') }}</p>
+            }
+          }
+        </div>
+
+        <a [routerLink]="['/auction', entry.auctionId]" class="card-link">
+          {{ entry.program.status === 'IN_PROGRESS' ? 'Kontynuuj' : 'Zobacz aukcję' }}
+        </a>
+      </article>
+    }
+  </div>
+}
