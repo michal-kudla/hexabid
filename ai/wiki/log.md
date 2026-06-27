@@ -400,3 +400,12 @@ Chronologiczny zapis wszystkich istotnych zmian, decyzji i postępów w projekci
 - **Why it happened**: `OAuth2SecurityConfiguration` uses `@ConditionalOnMissingClass("...LocalSecurityConfiguration")`, so it was completely skipped when the local auth module was on classpath. `LocalSecurityConfiguration` was the only active filter chain, but it had a broken config that blocked OAuth2.
 - **Verification**: Dev login flow works end-to-end — click Dev → user selection page → redirect to SPA as logged-in user ("online" session status). All console errors resolved (only pre-existing a11y warnings).
 - Tagi: #fix #auth #oauth2 #local-security #httpbasic #session
+
+## [2026-06-27] [GIT] Rebase quality-update na main
+- `quality-update` został zresetowany do `main`, następnie cherry-pick 3 commitów jakościowych (bez auth dev commits):
+  - `d7dd80bf` feat: upgrade hexabid-spa to Angular 22 with TypeScript 6.0.3
+  - `f6dad899` angular 22
+  - `552f787f` quality upgrade (refactor 6 modułów + LocalSecurityConfiguration fix)
+- **Pominięto**: 9 auth commitów (raw dev wersje), które są w main w postaci squashed (`authorization (#23)` + `Authorization (#24)`)
+- **Weryfikacja**: `mvn clean install -Plocal -DskipTests` → 31 modułów OK; `mvn test` → wszystkie testy OK; SPA działa poprawnie z zalogowanym użytkownikiem
+- Tagi: #git #rebase #quality-update #cherry-pick
